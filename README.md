@@ -1,4 +1,4 @@
-# fy7e6 - Web-Based Interpretation Bias Training to Reduce Anxiety: A Sequential, Multiple-Assignment Randomized Trial
+# fy7e6
 
 This repository contains analysis code for this project on the Open Science Framework (OSF): [https://osf.io/fy7e6/](https://osf.io/fy7e6/).
 
