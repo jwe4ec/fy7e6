@@ -1,0 +1,15 @@
+In './data/intermediate_clean' 
+
+ [1] "action_log.csv"                    "affect.csv"                        "angular_training.csv"              "anxiety_identity.csv"             
+ [5] "anxiety_triggers.csv"              "assessing_program.csv"             "attrition_prediction.csv"          "bbsiq.csv"                        
+ [9] "cc.csv"                            "coach_prompt.csv"                  "comorbid.csv"                      "condition_assignment_settings.csv"
+[13] "covid19.csv"                       "credibility.csv"                   "dass21_as.csv"                     "demographics.csv"                 
+[17] "demographics_race.csv"             "email_log.csv"                     "error_log.csv"                     "evaluation.csv"                   
+[21] "evaluation_coach_help_topics.csv"  "evaluation_devices.csv"            "evaluation_places.csv"             "evaluation_preferred_platform.csv"
+[25] "evaluation_reasons_control.csv"    "gift_log.csv"                      "help_seeking.csv"                  "js_psych_trial.csv"               
+[29] "mechanisms.csv"                    "mental_health_change_help.csv"     "mental_health_disorders.csv"       "mental_health_help.csv"           
+[33] "mental_health_history.csv"         "mental_health_why_no_help.csv"     "oa.csv"                            "participant.csv"                  
+[37] "reasons_for_ending.csv"            "reasons_for_ending_change_med.csv" "reasons_for_ending_device_use.csv" "reasons_for_ending_location.csv"  
+[41] "reasons_for_ending_reasons.csv"    "return_intention.csv"              "rr.csv"                            "session_review.csv"               
+[45] "session_review_distractions.csv"   "sms_log.csv"                       "study.csv"                         "task_log.csv"                     
+[49] "technology_use.csv"                "wellness.csv"                     

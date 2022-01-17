@@ -44,3 +44,41 @@ version_control <- function() {
   
   return(groundhog_day)
 }
+
+# ---------------------------------------------------------------------------- #
+# Define convert_POSIXct() ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to convert system-generated timestamps to POSIXct data types 
+# (with "tz = 'UTC'" for user-provided "return_date_as_POSIXct" of "return_intention" 
+# table and "tz = 'EST'" for all system-generated timestamps)
+
+convert_POSIXct <- function(dat) {
+  for (i in 1:length(dat)) {
+    POSIXct_colnames <- c(names(dat[[i]])[grep("as_POSIXct", names(dat[[i]]))],
+                          "system_date_time_earliest",
+                          "system_date_time_latest")
+    
+    for (j in 1:length(POSIXct_colnames)) {
+      # Strip timezone from character vector
+      
+      dat[[i]][, POSIXct_colnames[j]] <- sub(" UTC| EST", "", 
+                                             dat[[i]][, POSIXct_colnames[j]])
+      
+      # Convert character vector to POSIXct, specifying timezone
+      
+      if (names(dat[i]) == "return_intention" & 
+          POSIXct_colnames[j] == "return_date_as_POSIXct") {
+        dat[[i]][, POSIXct_colnames[j]] <- as.POSIXct(dat[[i]][, POSIXct_colnames[j]],
+                                                      format = "%Y-%m-%d %H:%M:%S",
+                                                      tz = "UTC")
+      } else {
+        dat[[i]][, POSIXct_colnames[j]] <- as.POSIXct(dat[[i]][, POSIXct_colnames[j]],
+                                                      format = "%Y-%m-%d %H:%M:%S",
+                                                      tz = "EST")
+      }
+    }
+  }
+  
+  return(dat)
+}
