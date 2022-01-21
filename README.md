@@ -16,7 +16,7 @@ The imported data are considered intermediately cleaned because further analysis
 
 - Resolve TODOs in participant flow
 - Conduct further cleaning
-- Compute Table S1 (Reans and Standard Deviations of Outcomes by Condition Over Time for the Session 1 Assessment Completer Sample)
+- Compute Table S1 (Raw Means and Standard Deviations of Outcomes by Condition Over Time for the Session 1 Assessment Completer Sample)
 - Compute rates of item- and scale-level missingness
 - Compute Table S2 (Demographic Characteristics by Condition for the Session 1 Assessment Completer Sample)
 - Run analyses
