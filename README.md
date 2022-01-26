@@ -19,4 +19,5 @@ The imported data are considered intermediately cleaned because further analysis
 - Compute Table S1 (Raw Means and Standard Deviations of Outcomes by Condition Over Time for the Session 1 Assessment Completer Sample)
 - Compute rates of item- and scale-level missingness
 - Compute Table S2 (Demographic Characteristics by Condition for the Session 1 Assessment Completer Sample)
+- Identify auxiliary variables
 - Run analyses
