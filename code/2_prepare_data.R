@@ -480,6 +480,23 @@ dat$participant[dat$participant$participant_id %in% s5_train_comp_anal_ids,
 # Conduct further cleaning ----
 # ---------------------------------------------------------------------------- #
 
+# TODO: Identify relevant tables. Asked Sonia what variable she has used to look
+# at actual device usage on 1/25/22.
+
+# Tables for substantive analysis:
+#   - "rr" (pos and neg bias), "bbsiq" (pos and neg bias), "oa" (anxiety)
+#   - "task_log" or "angular_training" (training session completion)
+#   - "demographics" ("income", age computed from "birth_year")
+# Tables for baseline characteristics:
+#   - "dass21_as", "demographics"
+# Tables for potential auxiliary variables:
+#   - "demographics", "credibility" (training confidence, change importance), 
+#     "task_log" ("device")
+
+
+
+
+
 # TODO: Collect potential cleaning tasks
 
 # Handle "prefer not to answer"
