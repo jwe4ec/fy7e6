@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Prepare Data
+# Compute Participant Flow
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -134,12 +134,13 @@ nrow(dat$study[dat$study$conditioning %in% cbm_conditions &
 nrow(dat$study[dat$study$conditioning == "CONTROL" &
                  dat$study$participant_id %in% no_start_s1_ids, ]) == 81
 
-# TODO: Compute number in CBM-I and psychoeducation who completed S1 assessment.
-# For now, define this as completing post-training "affect" questions, as this is
-# the last piece of data Sonia stated participants needed to be classified by the
-# attrition algorithm (specifically, the algorithm that the Changes/Issues Log
-# indicates was revised by Sonia to remove R34 features around 5/7/2019). Note:
-# "task_log" and "affect" tables correspond on this. Use "task_log" results.
+# Compute number in CBM-I and psychoeducation who have a row for "affect" with
+# "tag" of "post" at "firstSession", as this is the last criterion that Sonia Baee 
+# stated on 1/28/22 participants needed to be classified by the revised attrition 
+# algorithm (specifically, the algorithm that the Changes/Issues Log indicates was 
+# revised by Sonia to remove R34 features around 5/7/2019).
+
+#   Note: "task_log" and "affect" tables agree on this. Use "task_log" results.
 
 comp_s1_post_affect_ids_task_log <-
   dat$task_log$participant_id[dat$task_log$session_only == "firstSession" &
@@ -159,63 +160,60 @@ nrow(dat$study[dat$study$conditioning %in% cbm_conditions &
 nrow(dat$study[dat$study$conditioning == "CONTROL" &
                  dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 242
 
+#   Note: All "comp_s1_post_affect_ids" also meet the other criteria Sonia stated
+#   were needed for classification by the revised algorithm, namely: (a) a row in
+#   each of "credibility" table, "mental_health_history" table, "affect" table with 
+#   "tag" of "pre", "affect" table with "tag" of "post", and "js_psych_trial" and
+#   (b) "education", "income", and "time_on_page" values in "demographics" table
 
+setdiff(comp_s1_post_affect_ids, dat$credibility$participant_id)
+setdiff(comp_s1_post_affect_ids, dat$mental_health_history$participant_id)
+setdiff(comp_s1_post_affect_ids, dat$affect$participant_id[dat$affect$tag == "pre"])
+setdiff(comp_s1_post_affect_ids, dat$affect$participant_id[dat$affect$tag == "post"])
+setdiff(comp_s1_post_affect_ids, dat$js_psych_trial$participant_id)
 
+req_demog_cols <- c("education", "income", "time_on_page")
+setdiff(comp_s1_post_affect_ids,
+        dat$demographics$participant_id[!is.na(dat$demographics[, req_demog_cols]) &
+                                          dat$demographics[, req_demog_cols] != ""])
 
+#   Note: For participants 249, 445, 984, and 1049, a row for "js_psych_trial" was 
+#   not recorded at "preTest" even though "task_log" suggests they did Recognition
+#   Ratings at that time point. Of these, the CBM-I participants (249, 984, 1049) 
+#   appear to have been classified after a row in "js_psych_trial" became present at
+#   "thirdSession". Participant 445, in psychoeducation, was not classified.
 
-#   TODO: Unclear why 910 and 1674 were not classified. They have all the
-#         data Sonia said was required for classification. The tasks required
-#         need to be clarified as they must be used to define the sample of S1
-#         assessment completers in psychoeducation. Asked Sonia for explanation
-#         and date on which attrition algorithm was actually changed.
+relevant_ids <- c(249, 445, 984, 1049)
+
+relevant_ids == 
+  setdiff(comp_s1_post_affect_ids,
+          dat$js_psych_trial$participant_id[dat$js_psych_trial$session_only == "preTest"])
+
+nrow(dat$js_psych_trial[dat$js_psych_trial$participant_id %in% relevant_ids &
+                          dat$js_psych_trial$session_only == "preTest", ]) == 0
+setdiff(relevant_ids,
+        dat$task_log$participant_id[dat$task_log$session_only == "preTest" &
+                                      dat$task_log$task_name == "recognitionRatings"])
+
+setdiff(relevant_ids,
+        dat$js_psych_trial$participant_id[dat$js_psych_trial$session_only == "thirdSession"])
+
+table(dat$angular_training$conditioning[dat$angular_training$participant_id %in%
+                                          c(249, 445, 984, 1049)],
+      dat$angular_training$session_and_task_info[dat$angular_training$participant_id %in%
+                                                   c(249, 445, 984, 1049)])
+
+#   Note: CBM-I participants 910 and 1674 were not classified even though they met 
+#   all criteria for classification. Unclear why, but Sonia Baee stated on 1/28/22
+#   that it could be that there was an issue exporting the required data from the
+#   server to the attrition algorithm for these participants.
 
 table(dat$study$conditioning[dat$study$participant_id %in% comp_s1_post_affect_ids])
 dat$study$participant_id[dat$study$participant_id %in% comp_s1_post_affect_ids &
                            dat$study$conditioning == "TRAINING"]
 
-comp_s1_oa_ids <-
-  dat$task_log$participant_id[dat$task_log$session_only == "firstSession" &
-                                dat$task_log$task_name == "OA"]
-
-table(dat$study$conditioning[dat$study$participant_id %in% comp_s1_oa_ids])
-dat$study$participant_id[dat$study$participant_id %in% comp_s1_oa_ids &
-                           dat$study$conditioning == "TRAINING"]
-
-comp_s1_return_int_ids <-
-  dat$task_log$participant_id[dat$task_log$session_only == "firstSession" &
-                                dat$task_log$task_name == "ReturnIntention"]
-
-table(dat$study$conditioning[dat$study$participant_id %in% comp_s1_return_int_ids])
-dat$study$participant_id[dat$study$participant_id %in% comp_s1_return_int_ids &
-                           dat$study$conditioning == "TRAINING"]
-
-comp_s1_complete_ids <-
-  dat$task_log$participant_id[dat$task_log$session_only == "firstSession" &
-                                dat$task_log$task_name == "SESSION_COMPLETE"]
-
-table(dat$study$conditioning[dat$study$participant_id %in% comp_s1_complete_ids])
-dat$study$participant_id[dat$study$participant_id %in% comp_s1_complete_ids &
-                           dat$study$conditioning == "TRAINING"]
-
-# View(dat$task_log[dat$task_log$participant_id %in% c(910, 1674), ])
-# View(dat$participant[dat$participant$participant_id %in% c(910, 1674), ])
-# View(dat$study[dat$study$participant_id %in% c(910, 1674), ])
-# 
-# View(dat$credibility[dat$credibility$participant_id %in% c(910, 1674), ])
-# View(dat$demographics[dat$demographics$participant_id %in% c(910, 1674), ])
-# View(dat$mental_health_history[dat$mental_health_history$participant_id %in% c(910, 1674), ])
-# View(dat$affect[dat$affect$participant_id %in% c(910, 1674), ])
-# View(dat$angular_training[dat$angular_training$participant_id == 910, ])
-# View(dat$angular_training[dat$angular_training$participant_id == 1674, ])
-# View(dat$js_psych_trial[dat$js_psych_trial$participant_id == 910, ])
-# View(dat$js_psych_trial[dat$js_psych_trial$participant_id == 1674, ])
-
 table(dat$angular_training$conditioning[dat$angular_training$participant_id == 910])
 table(dat$angular_training$conditioning[dat$angular_training$participant_id == 1674])
-
-
-
-
 
 # Compute number in CBM-I classified as lower risk of dropout, and number classified
 # as higher risk for dropout and Stage 2 randomized to no coaching or coaching
@@ -257,8 +255,7 @@ length(coach_engage_ids) == 136
 coach_not_engage_ids <- setdiff(coach_completion$participant_id, coach_engage_ids)
 length(coach_not_engage_ids) == 146
 
-# TODO: Compute number who completed S2-S4 training and assessment by condition.
-# Waiting to hear from Sonia about features required for attrition algorithm.
+# TODO: Compute number who completed S2-S4 training and assessment by condition
 
 
 
@@ -336,6 +333,7 @@ cbm_diff_report <- output_cbm[output_cbm$participant_id %in% comp_train_ids_cbm_
 
 
 
+
 #     TODO: Why does 602 in "HR_NO_COACH" have no data in "angular_training" despite
 #     having "1" in "task_log" at "firstSession"?
 
@@ -349,28 +347,31 @@ cbm_diff_report <- output_cbm[output_cbm$participant_id %in% comp_train_ids_cbm_
 
 #     TODO: 
 
-# No data in "angular_training" = 602
-# Lacks data for "secondSession" in "task_log" = 832
-# 
+# For the following participants in CBM-I, "task_log" says they completed training 
+# at the given session, but "angular_training" lacks full training data
+
 # firstSession
-# 0 = 406, 465
-# 10 = 639
-# 39 = 384, 1496
-# secondSession
-# 25 = 639
-# 30 = 779
-# 37 = 768
-# 39 = 429, 666, 916, 1756
-# thirdSession
-# 5 = 832
-# 10 = 779
-# 13 = 639
-# 16 = 1659
-# 39 = 429, 572
-# fourthSession
-# 36 = 714
-# fifthSession
-# 4 = 832
+#   No data at all in "angular_training" = 602
+#   0  scenarios in "angular_training"   = 406, 465
+#   10 scenarios in "angular_training"   = 639
+#   39 scenarios in "angular_training"   = 384, 1496
+# secondSession  
+#   25 scenarios in "angular_training"   = 639
+#   30 scenarios in "angular_training"   = 779
+#   37 scenarios in "angular_training"   = 768
+#   39 scenarios in "angular_training"   = 429, 666, 916, 1756
+# thirdSession  
+#   5  scenarios in "angular_training"   = 832
+#   10 scenarios in "angular_training"   = 779
+#   13 scenarios in "angular_training"   = 639
+#   16 scenarios in "angular_training"   = 1659
+#   39 scenarios in "angular_training"   = 429, 572
+# fourthSession  
+#   36 scenarios in "angular_training"   = 714
+# fifthSession  
+#   4  scenarios in "angular_training"   = 832
+
+# Note: 832 lacks data for "secondSession" in "task_log"
 
 
 
@@ -460,7 +461,9 @@ ctl_diff_report <- output_ctl[output_ctl$participant_id %in% comp_train_ids_ctl_
 
 
 
+
 #     TODO: Others in "diff_report"
+
 
 
 
@@ -495,14 +498,14 @@ nrow(dat$study[dat$study$conditioning %in% c("CONTROL") &
 
 
 
+
 # Compute number of S5 training completers in "HR_COACH" who engaged and did 
 # not engage with a coach at least once
 
 length(intersect(comp_s5_train_ids, coach_engage_ids)) == 96
 length(intersect(comp_s5_train_ids, coach_not_engage_ids)) == 35
 
-# TODO: Compute number who completed S5 and 2-month FU assessments by condition.
-# Waiting to hear from Sonia about features required for attrition algorithm.
+# TODO: Compute number who completed S5 and 2-month FU assessments by condition
 
 
 
@@ -614,33 +617,9 @@ dat$participant[dat$participant$participant_id %in% s5_train_comp_anal_ids,
 
 
 # ---------------------------------------------------------------------------- #
-# Conduct further cleaning ----
+# Export data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Identify relevant tables. Asked Sonia what variable she has used to look
-# at actual device usage on 1/25/22.
+dir.create("./data/intermediate")
 
-# Tables for substantive analysis:
-#   - "rr" (pos and neg bias), "bbsiq" (pos and neg bias)
-#   - "oa" and "dass21_as" (anxiety)
-#   - "task_log" or "angular_training" (training session completion)
-#   - "demographics" ("income", age computed from "birth_year")
-# Tables for baseline characteristics:
-#   - "dass21_as", "demographics"
-# Tables for potential auxiliary variables:
-#   - "demographics", "credibility" (training confidence, change importance), 
-#     "task_log" ("device")
-
-
-
-
-
-# TODO: Collect potential cleaning tasks
-
-# Handle "prefer not to answer"
-# Check response ranges
-
-
-
-
-
+save(dat, file = "./data/intermediate/dat.RData")
