@@ -138,7 +138,7 @@ nrow(dat$study[dat$study$conditioning == "CONTROL" &
 # "tag" of "post" at "firstSession", as this is the last criterion that Sonia Baee 
 # stated on 1/28/22 participants needed to be classified by the revised attrition 
 # algorithm (specifically, the algorithm that the Changes/Issues Log indicates was 
-# revised by Sonia to remove R34 features around 5/7/2019).
+# revised by Sonia to remove R34 features on or around 5/21/2019).
 
 #   Note: "task_log" and "affect" tables agree on this. Use "task_log" results.
 
