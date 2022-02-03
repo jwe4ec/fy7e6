@@ -90,7 +90,8 @@ comp_train_ids <- list(comp_s1_train_ids = comp_s1_train_ids,
                        comp_s5_train_ids = comp_s5_train_ids)
 
 # Compare participants who completed training per "task_log" table against those
-# who completed 40 scenarios per "angular_training"
+# who completed 40 scenarios per "angular_training" (i.e., have at least 40 unique
+# values of "step_index")
 
 comp_train_ids_cbm_diff <- data.frame(session = train_session,
                                       comp_train_ids_in_tl_not_at = NA,
@@ -102,12 +103,12 @@ for (i in 1:length(train_session)) {
     paste(setdiff(dat$study$participant_id[dat$study$participant_id %in% comp_train_ids[[i]] &
                                              dat$study$conditioning %in% cbm_conditions],
                   output_cbm$participant_id[output_cbm$session == train_session[i] &
-                                              output_cbm$n_unq_step_index_for_scenarios == 40]),
+                                              output_cbm$n_unq_step_index_for_scenarios >= 40]),
           collapse = ", ")
   comp_train_ids_cbm_diff[comp_train_ids_cbm_diff$session == train_session[i],
                           "comp_train_ids_in_at_not_tl"] <-
     paste(setdiff(output_cbm$participant_id[output_cbm$session == train_session[i] &
-                                              output_cbm$n_unq_step_index_for_scenarios == 40], 
+                                              output_cbm$n_unq_step_index_for_scenarios >= 40], 
                   dat$study$participant_id[dat$study$participant_id %in% comp_train_ids[[i]] &
                                              dat$study$conditioning %in% cbm_conditions]),
           collapse = ", ")
@@ -125,6 +126,23 @@ comp_train_ids_cbm_in_tl_not_at <-
 cbm_diff_report <- output_cbm[output_cbm$participant_id %in% comp_train_ids_cbm_in_tl_not_at, ]
 
 #     TODO: See if "comp_train_ids_in_at_not_tl" is an issue
+
+View(dat$angular_training[dat$angular_training$participant_id == 1189, ]) # TRAINING (looks same as 1705)
+View(dat$angular_training[dat$angular_training$participant_id == 1161, ]) # TRAINING
+View(dat$angular_training[dat$angular_training$participant_id == 1872, ]) # TRAINING AT S1, HR_COACH AT S2
+
+View(dat$task_log[dat$task_log$participant_id == 1189, ])
+View(dat$task_log[dat$task_log$participant_id == 1161, ])
+View(dat$task_log[dat$task_log$participant_id == 1872, ])
+
+dat$study$conditioning[dat$study$participant_id == 1189] == "TRAINING"
+dat$study$conditioning[dat$study$participant_id == 1161] == "TRAINING"
+dat$study$conditioning[dat$study$participant_id == 1872] == "HR_COACH"
+
+# Compare above to 1705, who is indicated as completed S1 training in "task_log"
+View(dat$angular_training[dat$angular_training$participant_id == 1705, ])
+View(dat$task_log[dat$task_log$participant_id == 1705, ])
+
 
 
 
