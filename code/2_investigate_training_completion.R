@@ -125,15 +125,16 @@ comp_train_ids_cbm_in_tl_not_at <-
 
 cbm_diff_report <- output_cbm[output_cbm$participant_id %in% comp_train_ids_cbm_in_tl_not_at, ]
 
-#     TODO: See if "comp_train_ids_in_at_not_tl" is an issue
+#     TODO: Participants in "comp_train_ids_in_at_not_tl" completed at least 40
+#     scenarios in "angular_training" but "task_log" says they didn't do training
 
-View(dat$angular_training[dat$angular_training$participant_id == 1189, ]) # TRAINING (looks same as 1705)
-View(dat$angular_training[dat$angular_training$participant_id == 1161, ]) # TRAINING
-View(dat$angular_training[dat$angular_training$participant_id == 1872, ]) # TRAINING AT S1, HR_COACH AT S2
-
-View(dat$task_log[dat$task_log$participant_id == 1189, ])
-View(dat$task_log[dat$task_log$participant_id == 1161, ])
-View(dat$task_log[dat$task_log$participant_id == 1872, ])
+# View(dat$angular_training[dat$angular_training$participant_id == 1189, ]) # TRAINING (looks same as 1705)
+# View(dat$angular_training[dat$angular_training$participant_id == 1161, ]) # TRAINING (did > 40 scenarios)
+# View(dat$angular_training[dat$angular_training$participant_id == 1872, ]) # TRAINING AT S1 (did 40 scenarios), HR_COACH AT S2 (did 40 scenarios)
+# 
+# View(dat$task_log[dat$task_log$participant_id == 1189, ])
+# View(dat$task_log[dat$task_log$participant_id == 1161, ])
+# View(dat$task_log[dat$task_log$participant_id == 1872, ])
 
 dat$study$conditioning[dat$study$participant_id == 1189] == "TRAINING"
 dat$study$conditioning[dat$study$participant_id == 1161] == "TRAINING"
@@ -270,29 +271,40 @@ comp_train_ids_ctl_in_tl_not_at <-
 
 ctl_diff_report <- output_ctl[output_ctl$participant_id %in% comp_train_ids_ctl_in_tl_not_at, ]
 
-#     TODO: See if "comp_train_ids_in_at_not_tl" is an issue
+#     Note: Participants in "comp_train_ids_in_at_not_tl" did not complete all
+#     parts for "step_title" of "Anxiety Disorders" at "secondSession". Thus, 
+#     "task_log" appropriately indicates that they did not complete training.
 
-# View(dat$angular_training[dat$angular_training$session_and_task_info == "secondSession" &
-#                             dat$angular_training$participant_id == 857, ])
-# View(dat$angular_training[dat$angular_training$session_and_task_info == "secondSession" &
-#                             dat$angular_training$participant_id == 961, ])
-
-
-
-
+# View(dat$angular_training[dat$angular_training$participant_id == 857, ])
+# View(dat$angular_training[dat$angular_training$participant_id == 961, ])
 
 #     TODO: Others in "diff_report"
 
 
 
 
+View(dat$angular_training[dat$angular_training$participant_id == 281, ]) # No S1 data at all
+View(dat$angular_training[dat$angular_training$participant_id == 782, ]) # No S1 data at all
 
-#     TODO: How was 1280 in "CONTROL" given "5" in "task_log" at "fifthSession" 
-#     when they didn't complete "Open to Others" (only completed "Introduction")?
-#     Asked Henry/Dan on 1/20/22.
+View(dat$angular_training[dat$angular_training$participant_id == 382, ]) # CBM-I at S1
 
-# View(dat$angular_training[dat$angular_training$participant_id == 1280 &
-#                             dat$angular_training$session_and_task_info == "fifthSession", ])
-# View(dat$angular_training[dat$angular_training$participant_id == 1280, ])
-# View(dat$task_log[dat$task_log$participant_id == 1280, ])
-dat$study$conditioning[dat$study$participant_id == 1280]
+View(dat$angular_training[dat$angular_training$participant_id == 1229, ]) # Only has Intro for S1
+View(dat$angular_training[dat$angular_training$participant_id == 528, ]) # Missing parts of S1
+View(dat$angular_training[dat$angular_training$participant_id == 1521, ]) # Missing parts of S1
+
+View(dat$angular_training[dat$angular_training$participant_id == 159, ]) # Only has Intro for S2
+View(dat$angular_training[dat$angular_training$participant_id == 269, ]) # Only has Intro for S2
+
+View(dat$angular_training[dat$angular_training$participant_id == 159, ]) # Only has Intro for S3
+View(dat$angular_training[dat$angular_training$participant_id == 294, ]) # Only has Intro for S3
+View(dat$angular_training[dat$angular_training$participant_id == 382, ]) # Only has Intro for S3
+View(dat$angular_training[dat$angular_training$participant_id == 1204, ]) # Only has Intro for S3
+
+View(dat$angular_training[dat$angular_training$participant_id == 1032, ]) # Only has Intro for S4
+View(dat$angular_training[dat$angular_training$participant_id == 805, ]) # Missing parts of S4
+
+View(dat$angular_training[dat$angular_training$participant_id == 1280, ]) # Only has Intro for S5
+
+# Compare above to 1061, who "task_log" indicates completed training at all sessions
+View(dat$angular_training[dat$angular_training$participant_id == 1061, ])
+View(dat$task_log[dat$task_log$participant_id == 1061, ])
