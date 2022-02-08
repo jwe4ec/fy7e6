@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Investigate Training Completion
+# Compute Training Completion
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -47,7 +47,25 @@ names(dat) <- sub(".csv", "", filenames)
 dat <- convert_POSIXct(dat)
 
 # ---------------------------------------------------------------------------- #
-# Confirm that "task_log" indicates training completion in CBM-I conditions ----
+# Identify training completion per "task_log" table ----
+# ---------------------------------------------------------------------------- #
+
+# Identify participants who completed training at each session per "task_log" table
+
+comp_s1_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "1"]
+comp_s2_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "2"]
+comp_s3_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "3"]
+comp_s4_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "4"]
+comp_s5_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "5"]
+
+comp_train_ids <- list(comp_s1_train_ids = comp_s1_train_ids,
+                       comp_s2_train_ids = comp_s2_train_ids,
+                       comp_s3_train_ids = comp_s3_train_ids,
+                       comp_s4_train_ids = comp_s4_train_ids,
+                       comp_s5_train_ids = comp_s5_train_ids)
+
+# ---------------------------------------------------------------------------- #
+# Compare training completion in "task_log" vs. "angular_training" in CBM-I ----
 # ---------------------------------------------------------------------------- #
 
 # To estimate number of scenarios completed per session in "angular_training" table,
@@ -74,20 +92,6 @@ for (i in 1:length(cbm_ids)) {
                                          "step_index"]))
   }
 }
-
-# Identify participants who completed training at each session per "task_log" table
-
-comp_s1_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "1"]
-comp_s2_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "2"]
-comp_s3_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "3"]
-comp_s4_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "4"]
-comp_s5_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "5"]
-
-comp_train_ids <- list(comp_s1_train_ids = comp_s1_train_ids,
-                       comp_s2_train_ids = comp_s2_train_ids,
-                       comp_s3_train_ids = comp_s3_train_ids,
-                       comp_s4_train_ids = comp_s4_train_ids,
-                       comp_s5_train_ids = comp_s5_train_ids)
 
 # Compare participants who completed training per "task_log" table against those
 # who completed 40 scenarios per "angular_training" (i.e., have at least 40 unique
@@ -116,7 +120,16 @@ for (i in 1:length(train_session)) {
 
 comp_train_ids_cbm_diff
 
-#   TODO: Investigate discrepancies between "task_log" and "angular_training"
+# ---------------------------------------------------------------------------- #
+# Investigate discrepancies in "task_log" vs. "angular_training" in CBM-I conditions ----
+# ---------------------------------------------------------------------------- #
+
+# 1. Investigate discrepancies in "comp_train_ids_in_tl_not_at" of "comp_train_ids_cbm_diff"
+
+#   For participants where training completion in "task_log" table is not accompanied 
+#   by full training data in "angular_training" table, list number of unique "step_index" 
+#   values for "step_title" of "scenario" in "angular_training" table at Sessions 1-5.
+#   Note: Participants without any data in "angular_training" will not be listed.
 
 comp_train_ids_cbm_in_tl_not_at <- 
   paste(comp_train_ids_cbm_diff$comp_train_ids_in_tl_not_at, collapse = ", ")
@@ -124,68 +137,77 @@ comp_train_ids_cbm_in_tl_not_at <-
   sort(unique(as.integer(unlist(strsplit(comp_train_ids_cbm_in_tl_not_at, split = ", ")))))
 
 cbm_diff_report <- output_cbm[output_cbm$participant_id %in% comp_train_ids_cbm_in_tl_not_at, ]
+cbm_diff_report <- cbm_diff_report[order(cbm_diff_report$participant_id), ]
 
-#     TODO: Participants in "comp_train_ids_in_at_not_tl" completed at least 40
-#     scenarios in "angular_training" but "task_log" says they didn't do training
+#   For the following participants, "task_log" says they completed training at the 
+#   given session, but "angular_training" lacks full training data
 
-# View(dat$angular_training[dat$angular_training$participant_id == 1189, ]) # TRAINING (looks same as 1705 below)
-# View(dat$angular_training[dat$angular_training$participant_id == 1161, ]) # TRAINING (did > 40 scenarios)
-# View(dat$angular_training[dat$angular_training$participant_id == 1872, ]) # TRAINING AT S1 (did 40 scenarios), HR_COACH AT S2 (did 40 scenarios)
+#     firstSession
+#       No data at all in "angular_training" = 602
+#       0  scenarios in "angular_training"   = 406, 465
+#       10 scenarios in "angular_training"   = 639
+#       39 scenarios in "angular_training"   = 384, 1496
+#     secondSession  
+#       25 scenarios in "angular_training"   = 639
+#       30 scenarios in "angular_training"   = 779
+#       37 scenarios in "angular_training"   = 768
+#       39 scenarios in "angular_training"   = 429, 666, 916, 1756
+#     thirdSession  
+#       5  scenarios in "angular_training"   = 832
+#       10 scenarios in "angular_training"   = 779
+#       13 scenarios in "angular_training"   = 639
+#       16 scenarios in "angular_training"   = 1659
+#       39 scenarios in "angular_training"   = 429, 572
+#     fourthSession  
+#       36 scenarios in "angular_training"   = 714
+#     fifthSession  
+#       4  scenarios in "angular_training"   = 832
+
+#   On 2/3/2022, Henry Behan compared "date_completed" timestamps in "task_log" for 
+#   9 rows of the CBM-I participants where we have "angular_training" data for fewer 
+#   than 20 scenarios and determined that enough time elapsed between the "preAffect" 
+#   entry in "task_log" and the "1", "2", "3", "4", or "5" entry in "task_log" such
+#   that the participant could have completed the training. We think the participant's 
+#   online session may have timed out, at which point when they pressed the button to 
+#   complete the training, they received the "1", "2", "3", "4", or "5" entry with a 
+#   "date_completed" in "task_log" but were redirected to log in again, resulting in 
+#   a loss of some or all of their "angular_training" data for the session. (A similar 
+#   issue occurred for "js_psych_trial" table training data in Future Thinking study.)
+
+#   Thus, we will consider these cases of training completion in the section "Compute
+#   indicator of training completion by session" below.
+
+# 2. Investigate discrepancies in "comp_train_ids_in_at_not_tl" of "comp_train_ids_cbm_diff"
+
+#   For the following participants, inspection of "angular_training" reveals that 
+#   they completed at least 40 scenarios at a given session but "task_log" does not 
+#   indicate that they completed training at that session.
+
+# View(dat$angular_training[dat$angular_training$participant_id == 1189, ])
+# View(dat$angular_training[dat$angular_training$participant_id == 1161, ])
+# View(dat$angular_training[dat$angular_training$participant_id == 1872, ])
 # 
 # View(dat$task_log[dat$task_log$participant_id == 1189, ])
 # View(dat$task_log[dat$task_log$participant_id == 1161, ])
 # View(dat$task_log[dat$task_log$participant_id == 1872, ])
-# 
-# View(dat$affect[dat$affect$participant_id == 1189, ])
-# View(dat$affect[dat$affect$participant_id == 1161, ])
-# View(dat$affect[dat$affect$participant_id == 1872, ])
-# 
-# dat$study$conditioning[dat$study$participant_id == 1189] == "TRAINING"
-# dat$study$conditioning[dat$study$participant_id == 1161] == "TRAINING"
-# dat$study$conditioning[dat$study$participant_id == 1872] == "HR_COACH"
 
-# Compare above to 1705, who is indicated as completed S1 training in "task_log"
-# View(dat$angular_training[dat$angular_training$participant_id == 1705, ])
-# View(dat$task_log[dat$task_log$participant_id == 1705, ])
+#   Unclear why this occurred, but we will consider these cases of training completion
+#   in the section "Compute indicator of training completion by session" below.
 
+# 3. For participant 832, "task_log" shows that they completed the entire study, but 
+# it lacks a "2" reflecting completion of training at "secondSession". "angular_training" 
+# has data for about 10 scenarios at this session, but the "step_index" skips from 6 to 
+# 25 and then ends at 33 (instead of being consecutive numbers through at least 40).
 
+# View(dat$angular_training[dat$angular_training$participant_id == 832, ])
+# View(dat$task_log[dat$task_log$participant_id == 832, ])
 
-
-
-#     TODO: 
-
-# For the following participants in CBM-I, "task_log" says they completed training 
-# at the given session, but "angular_training" lacks full training data
-
-# firstSession
-#   No data at all in "angular_training" = 602
-#   0  scenarios in "angular_training"   = 406, 465
-#   10 scenarios in "angular_training"   = 639
-#   39 scenarios in "angular_training"   = 384, 1496
-# secondSession  
-#   25 scenarios in "angular_training"   = 639
-#   30 scenarios in "angular_training"   = 779
-#   37 scenarios in "angular_training"   = 768
-#   39 scenarios in "angular_training"   = 429, 666, 916, 1756
-# thirdSession  
-#   5  scenarios in "angular_training"   = 832
-#   10 scenarios in "angular_training"   = 779
-#   13 scenarios in "angular_training"   = 639
-#   16 scenarios in "angular_training"   = 1659
-#   39 scenarios in "angular_training"   = 429, 572
-# fourthSession  
-#   36 scenarios in "angular_training"   = 714
-# fifthSession  
-#   4  scenarios in "angular_training"   = 832
-
-# Note: 832 lacks data for "secondSession" in "task_log"
-
-
-
-
+#   Unclear why this occurred, but we will consider "secondSession" training to have
+#   been completed in this case in the section "Compute indicator of training completion 
+#   by session" below.
 
 # ---------------------------------------------------------------------------- #
-# Confirm that "task_log" indicates training completion in Psychoeducation ----
+# Compare training completion in "task_log" vs. "angular_training" in Psychoeducation ----
 # ---------------------------------------------------------------------------- #
 
 # To estimate participants who completed "CONTROL" training per session in 
@@ -241,7 +263,16 @@ for (i in 1:length(train_session)) {
 
 comp_train_ids_ctl_diff
 
-#   TODO: Investigate discrepancies between "task_log" and "angular_training"
+# ---------------------------------------------------------------------------- #
+# Investigate discrepancies in "task_log" vs. "angular_training" in Psychoeducation ----
+# ---------------------------------------------------------------------------- #
+
+# 1. Investigate discrepancies in "comp_train_ids_in_tl_not_at" of "comp_train_ids_ctl_diff"
+
+#   For participants where training completion in "task_log" table is not accompanied 
+#   by full training data in "angular_training" table, list whether last expected step
+#   title is present in "angular_training" table at Sessions 1-5. Note: Participants 
+#   without any data in "angular_training" will not be listed.
 
 comp_train_ids_ctl_in_tl_not_at <- 
   paste(comp_train_ids_ctl_diff$comp_train_ids_in_tl_not_at, collapse = ", ")
@@ -249,41 +280,60 @@ comp_train_ids_ctl_in_tl_not_at <-
   sort(unique(as.integer(unlist(strsplit(comp_train_ids_ctl_in_tl_not_at, split = ", ")))))
 
 ctl_diff_report <- output_ctl[output_ctl$participant_id %in% comp_train_ids_ctl_in_tl_not_at, ]
+ctl_diff_report <- ctl_diff_report[order(ctl_diff_report$participant_id), ]
 
-#     Note: Participants in "comp_train_ids_in_at_not_tl" did not complete all
-#     parts for "step_title" of "Anxiety Disorders" at "secondSession". Thus, 
-#     "task_log" appropriately indicates that they did not complete training.
+#   For the following participants, "task_log" says they completed training at the 
+#   given session, but "angular_training" lacks full training data
+
+#     firstSession
+#       No data at all in "angular_training" = 281
+#       No data at all in "angular_training" = 782
+#       Completed CBM-I = 382 (as discovered in centralized data cleaning)
+#       Only has Intro in "angular_training" = 1229
+#       Missing parts in "angular_training" = 528
+#       Missing parts in "angular_training" = 1521
+#     secondSession
+#       Only has Intro in "angular_training" = 159
+#       Only has Intro in "angular_training" = 269
+#     thirdSession
+#       Only has Intro in "angular_training" = 159
+#       Only has Intro in "angular_training" = 294
+#       Only has Intro in "angular_training" = 382
+#       Only has Intro in "angular_training" = 1204
+#     fourthSession
+#       Only has Intro in "angular_training" = 1032
+#       Missing parts in "angular_training" = 805
+#     fifthSession
+#       Only has Intro in "angular_training" = 1280
+
+#   On 2/3/2022, Jeremy Eberle compared "date_completed" timestamps in "task_log" for 
+#   each of these cases (except those at Sessions 2 and 4, which have no "preAffect"
+#   entry in "task_log" as it was not assessed at these time points) and determined 
+#   that enough time elapsed between the "preAffect" entry in "task_log" and the "1", 
+#   "3", or "5" entry in "task_log" such that the participant could have completed the 
+#   training. As stated above for CBM-I participants, we think the participant's online 
+#   session may have timed out, resulting in a loss of some or all of the training data.
+
+#   Thus, we will consider these cases of training completion in the section "Compute
+#   indicator of training completion by session" below.
+
+# 2. Investigate discrepancies in "comp_train_ids_in_at_not_tl" of "comp_train_ids_ctl_diff"
+
+#   For participants below, inspection of "angular_training" reveals that they did 
+#   not complete all parts for "step_title" of "Anxiety Disorders" at "secondSession".
+#   Thus, "task_log" correctly indicates that they did not complete the training.
 
 # View(dat$angular_training[dat$angular_training$participant_id == 857, ])
 # View(dat$angular_training[dat$angular_training$participant_id == 961, ])
 
-#     TODO: Others in "diff_report"
+# ---------------------------------------------------------------------------- #
+# Compute indicator of training completion by session ----
+# ---------------------------------------------------------------------------- #
 
-# View(dat$angular_training[dat$angular_training$participant_id == 281, ]) # No S1 data at all (time diff plausible)
-# View(dat$angular_training[dat$angular_training$participant_id == 782, ]) # No S1 data at all (time diff plausible)
-# 
-# View(dat$angular_training[dat$angular_training$participant_id == 382, ]) # CBM-I at S1
-# 
-# View(dat$angular_training[dat$angular_training$participant_id == 1229, ]) # Only has Intro for S1 (time diff plausible)
-# View(dat$angular_training[dat$angular_training$participant_id == 528, ]) # Missing parts of S1 (time diff plausible)
-# View(dat$angular_training[dat$angular_training$participant_id == 1521, ]) # Missing parts of S1 (time diff plausible)
-# 
-# View(dat$angular_training[dat$angular_training$participant_id == 159, ]) # Only has Intro for S2 (no pre-affect for diff)
-# View(dat$angular_training[dat$angular_training$participant_id == 269, ]) # Only has Intro for S2 (no pre-affect for diff)
-# 
-# View(dat$angular_training[dat$angular_training$participant_id == 159, ]) # Only has Intro for S3 (time diff plausible)
-# View(dat$angular_training[dat$angular_training$participant_id == 294, ]) # Only has Intro for S3 (time diff plausible)
-# View(dat$angular_training[dat$angular_training$participant_id == 382, ]) # Only has Intro for S3 (time diff plausible)
-# View(dat$angular_training[dat$angular_training$participant_id == 1204, ]) # Only has Intro for S3 (time diff plausible)
-# 
-# View(dat$angular_training[dat$angular_training$participant_id == 1032, ]) # Only has Intro for S4 (no pre-affect for diff)
-# View(dat$angular_training[dat$angular_training$participant_id == 805, ]) # Missing parts of S4 (no pre-affect for diff)
-# 
-# View(dat$angular_training[dat$angular_training$participant_id == 1280, ]) # Only has Intro for S5 (time diff plausible)
-# 
-# # Compare above to 1061, who "task_log" indicates completed training at all sessions
-# View(dat$angular_training[dat$angular_training$participant_id == 1061, ])
-# View(dat$task_log[dat$task_log$participant_id == 1061, ])
+# TODO
+
+
+
 
 
 
