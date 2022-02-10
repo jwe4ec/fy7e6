@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Compute Training Completion
+# Compute Training and Assessment Completion
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -335,6 +335,8 @@ ctl_diff_report <- ctl_diff_report[order(ctl_diff_report$participant_id), ]
 
 # Create "completion" table where "compl_session_train" indicates whether participant
 # completed a given session's training (1 = yes, 0 = no, NA = session has no training)
+# and where "compl_session_assess" indicates whether participant completed a given
+# session's assessment (1 = yes, 0 = no, NA = session has no assessment)
 
 participant_ids <- unique(dat$participant$participant_id)
 sessions <- c("Eligibility", "preTest", train_session, "PostFollowUp")
@@ -342,7 +344,8 @@ sessions <- c("Eligibility", "preTest", train_session, "PostFollowUp")
 completion <- data.frame(
   participant_id = rep(participant_ids, each = length(sessions)),
   session_only = rep(sessions, length(participant_ids)),
-  compl_session_train = NA
+  compl_session_train = NA,
+  compl_session_assess = NA
 )
 
 completion$session_only <- factor(completion$session_only, levels = sessions)
@@ -426,13 +429,23 @@ completion$compl_session_train[completion$participant_id %in% c(1872, 832) &
 completion$task_name <- NULL
 completion$task_name_diff <- NULL
 
-# Add table to list
+# ---------------------------------------------------------------------------- #
+# Compute indicator of assessment completion by session ----
+# ---------------------------------------------------------------------------- #
 
-dat$completion <- completion
+# TODO: Sonia to do
 
-# TODO: Save table. Consider adding to centralized data cleaning.
 
-save(completion, file = "./data/temp/completion.csv")
+
+
+
+# ---------------------------------------------------------------------------- #
+# Save table ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Consider adding table to centralized data cleaning
+
+write.csv(completion, file = "./data/temp/completion.csv")
 
 
 
