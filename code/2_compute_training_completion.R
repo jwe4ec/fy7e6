@@ -26,7 +26,9 @@ source("./code/1_define_functions.R")
 
 groundhog_day <- version_control()
 
-# No packages loaded
+# Load packages
+
+groundhog.library(dplyr, groundhog_day)
 
 # ---------------------------------------------------------------------------- #
 # Import intermediate clean data ----
@@ -180,8 +182,9 @@ cbm_diff_report <- cbm_diff_report[order(cbm_diff_report$participant_id), ]
 # 2. Investigate discrepancies in "comp_train_ids_in_at_not_tl" of "comp_train_ids_cbm_diff"
 
 #   For the following participants, inspection of "angular_training" reveals that 
-#   they completed at least 40 scenarios at a given session but "task_log" does not 
-#   indicate that they completed training at that session.
+#   they completed at least 40 scenarios at a given session ("firstSession" for 1189
+#   and 1161, "secondSession" for 1872) but "task_log" does not indicate that they 
+#   completed training at that session.
 
 # View(dat$angular_training[dat$angular_training$participant_id == 1189, ])
 # View(dat$angular_training[dat$angular_training$participant_id == 1161, ])
@@ -330,9 +333,106 @@ ctl_diff_report <- ctl_diff_report[order(ctl_diff_report$participant_id), ]
 # Compute indicator of training completion by session ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
+# Create "completion" table where "compl_session_train" indicates whether participant
+# completed a given session's training (1 = yes, 0 = no, NA = session has no training)
 
+participant_ids <- unique(dat$participant$participant_id)
+sessions <- c("Eligibility", "preTest", train_session, "PostFollowUp")
 
+completion <- data.frame(
+  participant_id = rep(participant_ids, each = length(sessions)),
+  session_only = rep(sessions, length(participant_ids)),
+  compl_session_train = NA
+)
+
+completion$session_only <- factor(completion$session_only, levels = sessions)
+
+# Compute "compl_session_train". Based on sections "Investigate discrepancies in 
+# 'task_log' vs. 'angular_training' in CBM-I conditions [Psychoeducation]" above,
+# assume "task_log" entries indicate training completion even if "angular_training" 
+# lacks some or all corresponding training data at a given session.
+
+task_log_train <- dat$task_log[dat$task_log$session_only %in% train_session &
+                                dat$task_log$task_name %in% 1:5, ]
+
+task_log_train$session_only <- factor(task_log_train$session_only,
+                                      levels = train_session)
+
+task_log_train <- task_log_train[order(task_log_train$participant_id,
+                                       task_log_train$session_only), ]
+
+task_log_train <- task_log_train[, c("participant_id", "session_only", "task_name")]
+
+#   If multiple unexpected rows are present, remove duplicated rows. However, no
+#   unexpected rows are present for training entries in "task_log".
+
+sum(task_log_train[duplicated(task_log_train), ]) == 0
+
+#   Check whether training entries in "task_name" correspond to "session_only"
+
+for (i in 1:length(train_session)) {
+  if(sum(task_log_train[task_log_train$session_only == train_session[i] &
+                          task_log_train$task_name != i, ]) == 0) {
+    print(paste0("TRUE for ", train_session[i]))
+  } else {
+    print(paste0("FALSE for ", train_session[i]))
+  }
+}
+
+#   Check for consecutive training entries in "task_name" across "session_only"
+#   values within a given participant (to check for skipped entries)
+
+task_log_train$task_name <- as.integer(task_log_train$task_name)
+
+task_log_train <- task_log_train %>%
+  group_by(participant_id) %>%
+  mutate(task_name_diff = task_name - lag(task_name))
+
+table(task_log_train$task_name_diff, task_log_train$session_only, useNA = "always")
+
+#   Investigate cases of nonconsecutive training entries in "task_name". As found
+#   in section "Investigate discrepancies in 'task_log' vs. 'angular_training' in 
+#   CBM-I conditions" above, participant 832 is missing a "2" for "task_name" at
+#   "secondSession" even though they have full training data at that session in
+#   "angular_training". We will correct this in "compl_session_train" below.
+
+nonconsec_task_name_ids <- 
+  unique(task_log_train$participant_id[!is.na(task_log_train$task_name_diff) &
+                                         task_log_train$task_name_diff != 1])
+
+nonconsec_task_name_ids == 832
+
+# View(task_log_train[task_log_train$participant_id %in% nonconsec_task_name_ids, ])
+
+#   Use "task_name" entries to compute "compl_session_train"
+
+completion <- merge(completion, task_log_train, 
+                    by = c("participant_id", "session_only"),
+                    all.x = TRUE)
+
+completion$compl_session_train[completion$session_only %in% train_session] <- 0
+completion$compl_session_train[!is.na(completion$task_name)] <- 1
+
+# Clean "compl_session_train" based on section "Investigate discrepancies in 'task_log' 
+# vs. 'angular_training' in CBM-I conditions" above
+
+completion$compl_session_train[completion$participant_id %in% c(1189, 1161) &
+                                 completion$session_only == "firstSession"] <- 1
+completion$compl_session_train[completion$participant_id %in% c(1872, 832) &
+                                 completion$session_only == "secondSession"] <- 1
+
+# Remove unneeded columns
+
+completion$task_name <- NULL
+completion$task_name_diff <- NULL
+
+# Add table to list
+
+dat$completion <- completion
+
+# TODO: Save table. Consider adding to centralized data cleaning.
+
+save(completion, file = "./data/temp/completion.csv")
 
 
 
