@@ -46,6 +46,10 @@ names(dat) <- sub(".csv", "", filenames)
 
 dat <- convert_POSIXct(dat)
 
+# Import "completion" table
+
+dat$completion <- read.csv("./data/temp/completion.csv")
+
 # ---------------------------------------------------------------------------- #
 # Import selected coaching-related data ----
 # ---------------------------------------------------------------------------- #
@@ -79,7 +83,7 @@ sink()
 # data collected through 11/27/2020, no filtering of data is needed.
 
 # ---------------------------------------------------------------------------- #
-# Compute participant flow and define analysis samples ----
+# Compute participant flow ----
 # ---------------------------------------------------------------------------- #
 
 # Note: Numbers screened (3519), ineligible (for various reasons, 774 + 111 + 23), 
@@ -109,8 +113,11 @@ nrow(dat$demographics[!(dat$demographics$participant_id %in% stg1_ids), ]) == 0
 
 cbm_conditions <-  c("TRAINING", "LR_TRAINING", "HR_COACH", "HR_NO_COACH")
 
-sum(dat$study$conditioning %in% cbm_conditions) == 1278
-sum(dat$study$conditioning == "CONTROL") == 336
+cbm_ids <- dat$study$participant_id[dat$study$conditioning %in% cbm_conditions]
+length(cbm_ids) == 1278
+
+control_ids <- dat$study$participant_id[dat$study$conditioning == "CONTROL"]
+length(control_ids) == 336
 
 # Compute number in CBM-I and in psychoeducation who started S1 training
 
@@ -119,20 +126,26 @@ start_s1_train_ids <- dat$task_log[dat$task_log$session_only == "firstSession" &
                                    dat$task_log$tag == "pre", "participant_id"]
 length(start_s1_train_ids) == 1239
 
-nrow(dat$study[dat$study$conditioning %in% cbm_conditions &
-                dat$study$participant_id %in% start_s1_train_ids, ]) == 984
-nrow(dat$study[dat$study$conditioning == "CONTROL" &
-                 dat$study$participant_id %in% start_s1_train_ids, ]) == 255
+length(intersect(start_s1_train_ids, cbm_ids)) == 984
+length(intersect(start_s1_train_ids, control_ids)) == 255
 
 # Compute number in CBM-I and psychoeducation who did not start S1 training
 
 no_start_s1_ids <- setdiff(stg1_ids, start_s1_train_ids)
 length(no_start_s1_ids) == 375
 
-nrow(dat$study[dat$study$conditioning %in% cbm_conditions &
-                 dat$study$participant_id %in% no_start_s1_ids, ]) == 294
-nrow(dat$study[dat$study$conditioning == "CONTROL" &
-                 dat$study$participant_id %in% no_start_s1_ids, ]) == 81
+length(intersect(no_start_s1_ids, cbm_ids)) == 294
+length(intersect(no_start_s1_ids, control_ids)) == 81
+
+# Compute number who completed S1 training by condition
+
+compl_s1_train_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "firstSession" &
+                                  dat$completion$compl_session_train == 1]
+length(compl_s1_train_ids) == 1082
+
+length(intersect(compl_s1_train_ids, cbm_ids)) == 839
+length(intersect(compl_s1_train_ids, control_ids)) == 243
 
 # Compute number in CBM-I and psychoeducation who have a row for "affect" with
 # "tag" of "post" at "firstSession", as this is the last criterion that Sonia Baee 
@@ -142,38 +155,36 @@ nrow(dat$study[dat$study$conditioning == "CONTROL" &
 
 #   Note: "task_log" and "affect" tables agree on this. Use "task_log" results.
 
-comp_s1_post_affect_ids_task_log <-
+compl_s1_post_affect_ids_task_log <-
   dat$task_log$participant_id[dat$task_log$session_only == "firstSession" &
                                 dat$task_log$task_name == "Affect" &
                                 dat$task_log$tag == "post"]
-comp_s1_post_affect_ids_affect <- 
+compl_s1_post_affect_ids_affect <- 
   dat$affect$participant_id[dat$affect$session_only == "firstSession" &
                               dat$affect$tag == "post"]
 
-identical(comp_s1_post_affect_ids_task_log, comp_s1_post_affect_ids_affect)
+identical(compl_s1_post_affect_ids_task_log, compl_s1_post_affect_ids_affect)
 
-comp_s1_post_affect_ids <- comp_s1_post_affect_ids_task_log
-length(comp_s1_post_affect_ids) == 1079
+compl_s1_post_affect_ids <- compl_s1_post_affect_ids_task_log
+length(compl_s1_post_affect_ids) == 1079
 
-nrow(dat$study[dat$study$conditioning %in% cbm_conditions &
-                 dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 837
-nrow(dat$study[dat$study$conditioning == "CONTROL" &
-                 dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 242
+length(intersect(compl_s1_post_affect_ids, cbm_ids)) == 837
+length(intersect(compl_s1_post_affect_ids, control_ids)) == 242
 
-#   Note: All "comp_s1_post_affect_ids" also meet the other criteria Sonia stated
+#   Note: All "compl_s1_post_affect_ids" also meet the other criteria Sonia stated
 #   were needed for classification by the revised algorithm, namely: (a) a row in
 #   each of "credibility" table, "mental_health_history" table, "affect" table with 
 #   "tag" of "pre", "affect" table with "tag" of "post", and "js_psych_trial" and
 #   (b) "education", "income", and "time_on_page" values in "demographics" table
 
-setdiff(comp_s1_post_affect_ids, dat$credibility$participant_id)
-setdiff(comp_s1_post_affect_ids, dat$mental_health_history$participant_id)
-setdiff(comp_s1_post_affect_ids, dat$affect$participant_id[dat$affect$tag == "pre"])
-setdiff(comp_s1_post_affect_ids, dat$affect$participant_id[dat$affect$tag == "post"])
-setdiff(comp_s1_post_affect_ids, dat$js_psych_trial$participant_id)
+setdiff(compl_s1_post_affect_ids, dat$credibility$participant_id)
+setdiff(compl_s1_post_affect_ids, dat$mental_health_history$participant_id)
+setdiff(compl_s1_post_affect_ids, dat$affect$participant_id[dat$affect$tag == "pre"])
+setdiff(compl_s1_post_affect_ids, dat$affect$participant_id[dat$affect$tag == "post"])
+setdiff(compl_s1_post_affect_ids, dat$js_psych_trial$participant_id)
 
 req_demog_cols <- c("education", "income", "time_on_page")
-setdiff(comp_s1_post_affect_ids,
+setdiff(compl_s1_post_affect_ids,
         dat$demographics$participant_id[!is.na(dat$demographics[, req_demog_cols]) &
                                           dat$demographics[, req_demog_cols] != ""])
 
@@ -186,7 +197,7 @@ setdiff(comp_s1_post_affect_ids,
 relevant_ids <- c(249, 445, 984, 1049)
 
 relevant_ids == 
-  setdiff(comp_s1_post_affect_ids,
+  setdiff(compl_s1_post_affect_ids,
           dat$js_psych_trial$participant_id[dat$js_psych_trial$session_only == "preTest"])
 
 nrow(dat$js_psych_trial[dat$js_psych_trial$participant_id %in% relevant_ids &
@@ -208,25 +219,52 @@ table(dat$angular_training$conditioning[dat$angular_training$participant_id %in%
 #   that it could be that there was an issue exporting the required data from the
 #   server to the attrition algorithm for these participants.
 
-table(dat$study$conditioning[dat$study$participant_id %in% comp_s1_post_affect_ids])
-dat$study$participant_id[dat$study$participant_id %in% comp_s1_post_affect_ids &
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s1_post_affect_ids])
+dat$study$participant_id[dat$study$participant_id %in% compl_s1_post_affect_ids &
                            dat$study$conditioning == "TRAINING"]
 
 table(dat$angular_training$conditioning[dat$angular_training$participant_id == 910])
 table(dat$angular_training$conditioning[dat$angular_training$participant_id == 1674])
 
+# Compute number in CBM-I and psychoeducation who did not complete S1 training
+# and classification measures
+
+no_compl_s1_post_affect_ids <- setdiff(stg1_ids, compl_s1_post_affect_ids)
+length(no_compl_s1_post_affect_ids) == 535
+
+length(intersect(no_compl_s1_post_affect_ids, cbm_ids)) == 441
+length(intersect(no_compl_s1_post_affect_ids, control_ids)) == 94
+
+# Compute number in CBM-I and psychoeducation who did not complete S1 training
+
+no_compl_s1_train_ids <- setdiff(stg1_ids, compl_s1_train_ids)
+length(no_compl_s1_train_ids) == 532
+
+length(intersect(no_compl_s1_train_ids, cbm_ids)) == 439
+length(intersect(no_compl_s1_train_ids, control_ids)) == 93
+
+# Compute number in CBM-I and psychoeducation who completed S1 training but did
+# not complete classification measures
+
+compl_s1_train_but_not_s1_post_affect_ids <- intersect(compl_s1_train_ids, 
+                                                       no_compl_s1_post_affect_ids)
+length(compl_s1_train_but_not_s1_post_affect_ids) == 3
+
+length(intersect(compl_s1_train_but_not_s1_post_affect_ids, cbm_ids)) == 2
+length(intersect(compl_s1_train_but_not_s1_post_affect_ids, control_ids)) == 1
+
 # Compute number in CBM-I classified as lower risk of dropout, and number classified
 # as higher risk for dropout and Stage 2 randomized to no coaching or coaching
 
 nrow(dat$study[dat$study$conditioning == "LR_TRAINING" &
-                 dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 288
+                 dat$study$participant_id %in% compl_s1_post_affect_ids, ]) == 288
 
 nrow(dat$study[dat$study$conditioning %in% c("HR_NO_COACH", "HR_COACH") &
-                 dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 547
+                 dat$study$participant_id %in% compl_s1_post_affect_ids, ]) == 547
 nrow(dat$study[dat$study$conditioning == "HR_NO_COACH" &
-                 dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 265
+                 dat$study$participant_id %in% compl_s1_post_affect_ids, ]) == 265
 nrow(dat$study[dat$study$conditioning == "HR_COACH" &
-                 dat$study$participant_id %in% comp_s1_post_affect_ids, ]) == 282
+                 dat$study$participant_id %in% compl_s1_post_affect_ids, ]) == 282
 
 # Compute number in "HR_COACH" who were and were not outreached (attempted
 # to be contacted) by a coach, regardless of whether the participant responded.
@@ -236,7 +274,7 @@ nrow(dat$study[dat$study$conditioning == "HR_COACH" &
 
 HR_COACH_ids <- 
   dat$study$participant_id[dat$study$conditioning == "HR_COACH" &
-                             dat$study$participant_id %in% comp_s1_post_affect_ids]
+                             dat$study$participant_id %in% compl_s1_post_affect_ids]
 
 identical(sort(HR_COACH_ids), sort(coach_completion$participant_id))
 
@@ -255,261 +293,65 @@ length(coach_engage_ids) == 136
 coach_not_engage_ids <- setdiff(coach_completion$participant_id, coach_engage_ids)
 length(coach_not_engage_ids) == 146
 
-# TODO: Compute number who completed S2-S4 training and assessment by condition
+# TODO: Compute number who completed S1 assessment by condition
 
 
 
 
 
-# Confirm that "task_log" entries are the best indicator of completing training
-# for CBM conditions
+# Compute number who completed S2-S4 training by condition
 
-cbm_ids <- 
-  unique(dat$angular_training[dat$angular_training$conditioning %in% cbm_conditions, 
-                              "participant_id"])
-train_session <- paste0(c("first", "second", "third", "fourth", "fifth"), "Session")
+compl_s2_train_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "secondSession" &
+                                  dat$completion$compl_session_train == 1]
+compl_s3_train_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "thirdSession" &
+                                  dat$completion$compl_session_train == 1]
+compl_s4_train_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "fourthSession" &
+                                  dat$completion$compl_session_train == 1]
 
-output_cbm <- data.frame(participant_id = rep(cbm_ids, each = length(train_session)),
-                         session = rep(train_session, length(cbm_ids)),
-                         n_unq_step_index_for_scenarios = NA)
+length(compl_s2_train_ids) == 778
+length(compl_s3_train_ids) == 703
+length(compl_s4_train_ids) == 601
 
-for (i in 1:length(cbm_ids)) {
-  for (j in 1:length(train_session)) {
-    output_cbm[output_cbm$participant_id == cbm_ids[i] & output_cbm$session == train_session[j],
-               "n_unq_step_index_for_scenarios"] <- 
-      length(unique(dat$angular_training[dat$angular_training$step_title == "scenario" &
-                                           dat$angular_training$participant_id == cbm_ids[i] &
-                                           dat$angular_training$session_and_task_info == train_session[j],
-                                         "step_index"]))
-  }
-}
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s2_train_ids])
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s3_train_ids])
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s4_train_ids])
 
-comp_s1_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "1"]
-comp_s2_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "2"]
-comp_s3_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "3"]
-comp_s4_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "4"]
-comp_s5_train_ids <- dat$task_log$participant_id[dat$task_log$task_name == "5"]
+# TODO: Compute number who completed S2-S4 assessment by condition
 
-comp_train_ids <- list(comp_s1_train_ids = comp_s1_train_ids,
-                       comp_s2_train_ids = comp_s2_train_ids,
-                       comp_s3_train_ids = comp_s3_train_ids,
-                       comp_s4_train_ids = comp_s4_train_ids,
-                       comp_s5_train_ids = comp_s5_train_ids)
 
-comp_train_ids_cbm_diff <- data.frame(session = train_session,
-                                      comp_train_ids_in_tl_not_at = NA,
-                                      comp_train_ids_in_at_not_tl = NA)
 
-for (i in 1:length(train_session)) {
-  comp_train_ids_cbm_diff[comp_train_ids_cbm_diff$session == train_session[i],
-                          "comp_train_ids_in_tl_not_at"] <-
-    paste(setdiff(dat$study$participant_id[dat$study$participant_id %in% comp_train_ids[[i]] &
-                                             dat$study$conditioning %in% cbm_conditions],
-                  output_cbm$participant_id[output_cbm$session == train_session[i] &
-                                              output_cbm$n_unq_step_index_for_scenarios == 40]),
-          collapse = ", ")
-  comp_train_ids_cbm_diff[comp_train_ids_cbm_diff$session == train_session[i],
-                          "comp_train_ids_in_at_not_tl"] <-
-    paste(setdiff(output_cbm$participant_id[output_cbm$session == train_session[i] &
-                                              output_cbm$n_unq_step_index_for_scenarios == 40], 
-            dat$study$participant_id[dat$study$participant_id %in% comp_train_ids[[i]] &
-                                       dat$study$conditioning %in% cbm_conditions]),
-          collapse = ", ")
-}
 
-comp_train_ids_cbm_diff
 
-#   TODO: Investigate discrepancies between "task_log" and "angular_training"
+# Compute number who completed S5 training by condition
 
-comp_train_ids_cbm_in_tl_not_at <- 
-  paste(comp_train_ids_cbm_diff$comp_train_ids_in_tl_not_at, collapse = ", ")
-comp_train_ids_cbm_in_tl_not_at <- 
-  sort(unique(as.integer(unlist(strsplit(comp_train_ids_cbm_in_tl_not_at, split = ", ")))))
+compl_s5_train_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "fifthSession" &
+                                  dat$completion$compl_session_train == 1]
+length(compl_s5_train_ids) == 559
 
-cbm_diff_report <- output_cbm[output_cbm$participant_id %in% comp_train_ids_cbm_in_tl_not_at, ]
-
-#     TODO: See if "comp_train_ids_in_at_not_tl" is an issue
-
-
-
-
-
-#     TODO: Why does 602 in "HR_NO_COACH" have no data in "angular_training" despite
-#     having "1" in "task_log" at "firstSession"?
-
-# View(dat$angular_training[dat$angular_training$participant_id == 602, ])
-# View(dat$task_log[dat$task_log$participant_id == 602, ])
-# dat$study$conditioning[dat$study$participant_id == 602]
-
-
-
-
-
-#     TODO: 
-
-# For the following participants in CBM-I, "task_log" says they completed training 
-# at the given session, but "angular_training" lacks full training data
-
-# firstSession
-#   No data at all in "angular_training" = 602
-#   0  scenarios in "angular_training"   = 406, 465
-#   10 scenarios in "angular_training"   = 639
-#   39 scenarios in "angular_training"   = 384, 1496
-# secondSession  
-#   25 scenarios in "angular_training"   = 639
-#   30 scenarios in "angular_training"   = 779
-#   37 scenarios in "angular_training"   = 768
-#   39 scenarios in "angular_training"   = 429, 666, 916, 1756
-# thirdSession  
-#   5  scenarios in "angular_training"   = 832
-#   10 scenarios in "angular_training"   = 779
-#   13 scenarios in "angular_training"   = 639
-#   16 scenarios in "angular_training"   = 1659
-#   39 scenarios in "angular_training"   = 429, 572
-# fourthSession  
-#   36 scenarios in "angular_training"   = 714
-# fifthSession  
-#   4  scenarios in "angular_training"   = 832
-
-# Note: 832 lacks data for "secondSession" in "task_log"
-
-
-
-
-
-#     TODO: How was 832 in "HR_COACHING" given "5" in "task_log" at "fifthSession" 
-#     when they didn't complete 40 scenarios (only completed a few)? Also seems that
-#     S2 and S3 lacked a full complement of scenarios. Asked Henry/Dan on 1/20/22.
-#     S2 also has no data in "task_log".
-
-# View(dat$angular_training[dat$angular_training$participant_id == 832 &
-#                             dat$angular_training$session_and_task_info == "fifthSession", ])
-# View(dat$angular_training[dat$angular_training$participant_id == 832, ])
-# View(dat$task_log[dat$task_log$participant_id == 832, ])
-# dat$study$conditioning[dat$study$participant_id == 832]
-
-
-
-
-
-# Confirm that "task_log" entries are the best indicator of completing training
-# for psychoeducation condition
-
-ctl_ids <-
-  unique(dat$angular_training[dat$angular_training$conditioning %in% "CONTROL", 
-                              "participant_id"])
-
-last_step_title <- list(firstSession = "When Is Anxiety Impairing?",
-                        secondSession = "Anxiety Disorders",
-                        thirdSession = c("Maintenance", "Maintenance of Anxiety"),
-                        fourthSession = "Other Psychological Problems",
-                        fifthSession = c("Open to Others", "Being Open to Others"))
-
-output_ctl <- data.frame(participant_id = rep(ctl_ids, each = length(train_session)),
-                         session = rep(train_session, length(ctl_ids)),
-                         last_step_title_present = NA)
-
-for (i in 1:length(ctl_ids)) {
-  for (j in 1:length(train_session)) {
-    output_ctl[output_ctl$participant_id == ctl_ids[i] & output_ctl$session == train_session[j],
-               "last_step_title_present"] <- 
-      any(dat$angular_training[dat$angular_training$participant_id == ctl_ids[i] &
-                                 dat$angular_training$session_and_task_info == train_session[j],
-                               "step_title"] %in% last_step_title[[j]])
-  }
-}
-
-comp_train_ids_ctl_diff <- data.frame(session = train_session,
-                                      comp_train_ids_in_tl_not_at = NA,
-                                      comp_train_ids_in_at_not_tl = NA)
-
-for (i in 1:length(train_session)) {
-  comp_train_ids_ctl_diff[comp_train_ids_ctl_diff$session == train_session[i],
-                          "comp_train_ids_in_tl_not_at"] <-
-    paste(setdiff(dat$study$participant_id[dat$study$participant_id %in% comp_train_ids[[i]] &
-                                             dat$study$conditioning == "CONTROL"],
-                  output_ctl$participant_id[output_ctl$session == train_session[i] &
-                                              output_ctl$last_step_title_present == TRUE]),
-          collapse = ", ")
-  comp_train_ids_ctl_diff[comp_train_ids_ctl_diff$session == train_session[i],
-                          "comp_train_ids_in_at_not_tl"] <-
-    paste(setdiff(output_ctl$participant_id[output_ctl$session == train_session[i] &
-                                              output_ctl$last_step_title_present == TRUE],
-                  dat$study$participant_id[dat$study$participant_id %in% comp_train_ids[[i]] &
-                                             dat$study$conditioning == "CONTROL"]),
-          collapse = ", ")
-}
-
-comp_train_ids_ctl_diff
-
-#   TODO: Investigate discrepancies between "task_log" and "angular_training"
-
-comp_train_ids_ctl_in_tl_not_at <- 
-  paste(comp_train_ids_ctl_diff$comp_train_ids_in_tl_not_at, collapse = ", ")
-comp_train_ids_ctl_in_tl_not_at <- 
-  sort(unique(as.integer(unlist(strsplit(comp_train_ids_ctl_in_tl_not_at, split = ", ")))))
-
-ctl_diff_report <- output_ctl[output_ctl$participant_id %in% comp_train_ids_ctl_in_tl_not_at, ]
-
-#     TODO: See if "comp_train_ids_in_at_not_tl" is an issue
-
-# View(dat$angular_training[dat$angular_training$session_and_task_info == "secondSession" &
-#                             dat$angular_training$participant_id == 857, ])
-# View(dat$angular_training[dat$angular_training$session_and_task_info == "secondSession" &
-#                             dat$angular_training$participant_id == 961, ])
-
-
-
-
-
-#     TODO: Others in "diff_report"
-
-
-
-
-
-#     TODO: How was 1280 in "CONTROL" given "5" in "task_log" at "fifthSession" 
-#     when they didn't complete "Open to Others" (only completed "Introduction")?
-#     Asked Henry/Dan on 1/20/22.
-
-# View(dat$angular_training[dat$angular_training$participant_id == 1280 &
-#                             dat$angular_training$session_and_task_info == "fifthSession", ])
-# View(dat$angular_training[dat$angular_training$participant_id == 1280, ])
-# View(dat$task_log[dat$task_log$participant_id == 1280, ])
-dat$study$conditioning[dat$study$participant_id == 1280]
-
-
-
-
-
-# TODO: Compute number who completed S5 training by condition
-
-length(comp_s5_train_ids) == 559
-
-nrow(dat$study[dat$study$conditioning %in% c("LR_TRAINING") &
-                 dat$study$participant_id %in% comp_s5_train_ids, ]) == 140
-nrow(dat$study[dat$study$conditioning %in% c("HR_NO_COACH") &
-                 dat$study$participant_id %in% comp_s5_train_ids, ]) == 134
-nrow(dat$study[dat$study$conditioning %in% c("HR_COACH") &
-                 dat$study$participant_id %in% comp_s5_train_ids, ]) == 131
-nrow(dat$study[dat$study$conditioning %in% c("CONTROL") &
-                 dat$study$participant_id %in% comp_s5_train_ids, ]) == 154
-
-
-
-
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s5_train_ids])
 
 # Compute number of S5 training completers in "HR_COACH" who engaged and did 
 # not engage with a coach at least once
 
-length(intersect(comp_s5_train_ids, coach_engage_ids)) == 96
-length(intersect(comp_s5_train_ids, coach_not_engage_ids)) == 35
+length(intersect(compl_s5_train_ids, coach_engage_ids)) == 96
+length(intersect(compl_s5_train_ids, coach_not_engage_ids)) == 35
 
 # TODO: Compute number who completed S5 and 2-month FU assessments by condition
 
+# Note: Consider unexpected multiple entries
+#   See https://github.com/jwe4ec/MT-Data-CalmThinkingStudy#unexpected-multiple-entries
 
 
 
+
+
+# ---------------------------------------------------------------------------- #
+# Define analysis samples ----
+# ---------------------------------------------------------------------------- #
 
 # Identify analysis exclusions due to having more than two unique sets of
 # DASS-21-AS screening responses by condition (for more information, see
@@ -532,14 +374,14 @@ nrow(dat$study[dat$study$participant_id %in% exclude_repeat_screen_ids &
                  dat$study$conditioning == "CONTROL", ]) == 1     # 1453
 
 #   Note: Participants 1644, 1893, and 1453 did not complete Session 1 post-
-#   affect questions so are already not Session 1 assessment completers
+#   affect questions so are already not classification measure completers
 
-setdiff(exclude_repeat_screen_ids, comp_s1_post_affect_ids)
+setdiff(exclude_repeat_screen_ids, compl_s1_post_affect_ids)
 
 #   Note: Participant 1755 did not complete Session 5 training so is already
 #   not a Session 5 training completer
 
-setdiff(exclude_repeat_screen_ids, comp_s5_train_ids)
+setdiff(exclude_repeat_screen_ids, compl_s5_train_ids)
 
 # Identify analysis exclusions due to switching conditions, by condition 
 # (for more information, see 
@@ -550,76 +392,56 @@ exclude_switch_condition_ids <- 382
 nrow(dat$study[dat$study$participant_id %in% exclude_switch_condition_ids &
                  dat$study$conditioning == "CONTROL", ]) == 1     # 382
 
-# TODO: Identify S1 assessment completer sample by condition
+# Identify classification measure completer analysis sample by condition
 
 exclude_ids <- c(exclude_repeat_screen_ids, exclude_switch_condition_ids)
 
-s1_assess_comp_anal_ids <- setdiff(comp_s1_post_affect_ids, exclude_ids)
-length(s1_assess_comp_anal_ids) == 1075
+class_meas_compl_anlys_ids <- setdiff(compl_s1_post_affect_ids, exclude_ids)
+length(class_meas_compl_anlys_ids) == 1075
 
-nrow(dat$study[dat$study$participant_id %in% s1_assess_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "TRAINING", ]) == 2  # 910, 1674
 
-nrow(dat$study[dat$study$participant_id %in% s1_assess_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "LR_TRAINING", ]) == 288
-nrow(dat$study[dat$study$participant_id %in% s1_assess_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "HR_NO_COACH", ]) == 263
-nrow(dat$study[dat$study$participant_id %in% s1_assess_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "HR_COACH", ]) == 281
-nrow(dat$study[dat$study$participant_id %in% s1_assess_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "CONTROL", ]) == 241
 
+# Identify S5 training completer analysis sample by condition. For "HR_COACH", 
+# include only participants who engaged with coach at least once.
 
+s5_train_compl_anlys_ids <- setdiff(compl_s5_train_ids, 
+                                    c(coach_not_engage_ids, exclude_ids))
+length(s5_train_compl_anlys_ids) == 521
 
-
-
-# TODO: Identify S5 training completer sample by condition. For "HR_COACH", include
-# only participants who engaged with coach at least once.
-
-s5_train_comp_anal_ids <- setdiff(comp_s5_train_ids, 
-                                  c(coach_not_engage_ids, exclude_ids))
-length(s5_train_comp_anal_ids) == 521
-
-nrow(dat$study[dat$study$participant_id %in% s5_train_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
                  dat$study$conditioning == "LR_TRAINING", ]) == 140
-nrow(dat$study[dat$study$participant_id %in% s5_train_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
                  dat$study$conditioning == "HR_NO_COACH", ]) == 132
-nrow(dat$study[dat$study$participant_id %in% s5_train_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
                  dat$study$conditioning == "HR_COACH", ]) == 96
-nrow(dat$study[dat$study$participant_id %in% s5_train_comp_anal_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
                  dat$study$conditioning == "CONTROL", ]) == 153
 
+# Add indicators for classification measure completer sample and S5 training 
+# completer sample to "participant" table
 
+dat$participant$class_meas_compl_anlys <- 0
+dat$participant[dat$participant$participant_id %in% class_meas_compl_anlys_ids,
+                "class_meas_compl_anlys"] <- 1
 
-
-
-# TODO: Add indicators for S1 assessment completer and S5 training completer samples
-# to "participant" table
-
-dat$participant$s1_assess_comp_anal <- 0
-dat$participant[dat$participant$participant_id %in% s1_assess_comp_anal_ids,
-                "s1_assess_comp_anal"] <- 1
-
-dat$participant$s5_train_comp_anal <- 0
-dat$participant[dat$participant$participant_id %in% s5_train_comp_anal_ids,
-                "s5_train_comp_anal"] <- 1
-
-
-
-
-
-# TODO: Also consider the following
-
-# Unexpected Multiple Entries (https://github.com/jwe4ec/MT-Data-CalmThinkingStudy#unexpected-multiple-entries)
-
-
-
-
+dat$participant$s5_train_compl_anlys <- 0
+dat$participant[dat$participant$participant_id %in% s5_train_compl_anlys_ids,
+                "s5_train_compl_anlys"] <- 1
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
 # ---------------------------------------------------------------------------- #
 
-dir.create("./data/intermediate")
+dir.create("./data/intermediate_clean_further")
 
-save(dat, file = "./data/intermediate/dat.RData")
+save(dat, file = "./data/intermediate_clean_further/dat.RData")
