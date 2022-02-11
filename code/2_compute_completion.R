@@ -433,7 +433,16 @@ completion$task_name_diff <- NULL
 # Compute indicator of assessment completion by session ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Sonia to do
+# TODO: Sonia to do (see mappings below)
+
+# Eligibility = DASS21_AS
+# preTest = TechnologyUse
+# firstSession = CoachPrompt
+# secondSession = OA
+# thirdSession = Mechanisms
+# fourthSession = OA
+# fifthSession = AssessingProgram
+# PostFollowUp = HelpSeeking
 
 
 
