@@ -335,8 +335,7 @@ ctl_diff_report <- ctl_diff_report[order(ctl_diff_report$participant_id), ]
 
 # Create "completion" table where "compl_session_train" indicates whether participant
 # completed a given session's training (1 = yes, 0 = no, NA = session has no training)
-# and where "compl_session_assess" indicates whether participant completed a given
-# session's assessment (1 = yes, 0 = no, NA = session has no assessment)
+
 
 participant_ids <- unique(dat$participant$participant_id)
 sessions <- c("Eligibility", "preTest", train_session, "PostFollowUp")
@@ -344,8 +343,7 @@ sessions <- c("Eligibility", "preTest", train_session, "PostFollowUp")
 completion <- data.frame(
   participant_id = rep(participant_ids, each = length(sessions)),
   session_only = rep(sessions, length(participant_ids)),
-  compl_session_train = NA,
-  compl_session_assess = NA
+  compl_session_train = NA
 )
 
 completion$session_only <- factor(completion$session_only, levels = sessions)
@@ -432,29 +430,120 @@ completion$task_name_diff <- NULL
 # ---------------------------------------------------------------------------- #
 # Compute indicator of assessment completion by session ----
 # ---------------------------------------------------------------------------- #
+# install.packages("hash")
+library(hash)
 
-# TODO: Sonia to do (see mappings below)
+# ------------------------------------ #
+# and where "compl_session_all_task" indicates whether participant completed a given
+# session's tasks (1 = yes, 0 = no)
+session_all_tasks_completion <- function(dat){
+  
+  session_lastTask_mapping = hash()
+  session_lastTask_mapping[["Eligibility"]] = "DASS21_AS"
+  session_lastTask_mapping[["preTest"]] = "TechnologyUse"
+  session_lastTask_mapping[["firstSession"]] = "ReturnIntention"
+  session_lastTask_mapping[["secondSession"]] = "ReturnIntention"
+  session_lastTask_mapping[["thirdSession"]] = "ReturnIntention"
+  session_lastTask_mapping[["fourthSession"]] = "ReturnIntention"
+  session_lastTask_mapping[["fifthSession"]] = "AssessingProgram"
+  session_lastTask_mapping[["PostFollowUp"]] = "HelpSeeking"
+  
+  task_comp_df = tibble()
+  
+  for (session_map in keys(session_lastTask_mapping)){
+    tmp = group_by(filter(dat$task_log, session_only == session_map), participant_id, session_only) %>% 
+      summarise(latest_completed_date = max(date_completed_as_POSIXct), 
+                latest_task_name = task_name[which.max(date_completed_as_POSIXct)], .groups = "drop")  
+    tmp$compl_session_all_task = NA
+    tmp$compl_session_all_task[tmp$latest_task_name == session_lastTask_mapping[[session_map]]] = 1
+    tmp$compl_session_all_task[tmp$latest_task_name != session_lastTask_mapping[[session_map]]] = 0
+    task_comp_df = bind_rows(task_comp_df, tmp)
+  }
+  
+  return(task_comp_df)
+  
+}
+task_comp_df = session_all_tasks_completion(dat)
 
-# Eligibility = DASS21_AS
-# preTest = TechnologyUse
-# firstSession = CoachPrompt
-# secondSession = OA
-# thirdSession = Mechanisms
-# fourthSession = OA
-# fifthSession = AssessingProgram
-# PostFollowUp = HelpSeeking
+# ------------------------------------ #
+# and where "compl_session_all_assess" indicates whether participant completed a given
+# session's assessment (1 = yes, 0 = no)
+session_all_assess_completion <- function(data){
+  
+  session_lastAssess_mapping = hash()
+  session_lastAssess_mapping[["Eligibility"]] = "DASS21_AS"
+  session_lastAssess_mapping[["preTest"]] = "TechnologyUse"
+  session_lastAssess_mapping[["firstSession"]] = "CoachPrompt"
+  session_lastAssess_mapping[["secondSession"]] = "OA"
+  session_lastAssess_mapping[["thirdSession"]] = "Mechanisms"
+  session_lastAssess_mapping[["fourthSession"]] = "OA"
+  session_lastAssess_mapping[["fifthSession"]] = "AssessingProgram"
+  session_lastAssess_mapping[["PostFollowUp"]] = "HelpSeeking"
+  
+  
+  data$compl_session_all_assess = 0
+  for (session_map in keys(session_lastAssess_mapping)){
+    tmp = group_by(filter(dat$task_log, 
+                          session_only == session_map), 
+                   participant_id) %>% mutate(compl_session_all_task = ifelse(task_name %in% session_lastAssess_mapping[[session_map]], 
+                                                                              1, 0))
+    test = tmp[c('participant_id', 'task_name', 'compl_session_all_task', 'session_only')]
+    completed_assess_ids = filter(test, compl_session_all_task == 1)['participant_id']
+    
+    data[(data$session_only == session_map & 
+            data$participant_id %in% completed_assess_ids$participant_id), 'compl_session_all_assess'] = 1
+  }
+  
+  return(data)
+}
+task_assess_comp_df = session_all_assess_completion(task_comp_df)
+
+# ------------------------------------ #
+# these participant did not finish all tasks of a give session but finished all the assessments
+filter(task_assess_comp_df, compl_session_all_assess == 1 & compl_session_all_task == 0) #197,252,510,676,881,1725,1053
+
+# ------------------------------------ #
+# double check the discrepancy between tasklog and a given assessment
+# it seems there is no discrepancy and task log captured all that the data
+check_discrepancy_w_task_log <- function(dat, task_assess_comp_df){
+  
+  session_table_mapping = hash()
+  session_table_mapping[["Eligibility"]] = "dass21_as"
+  session_table_mapping[["preTest"]] = "technology_use"
+  session_table_mapping[["firstSession"]] = "coach_prompt"
+  session_table_mapping[["secondSession"]] = "oa"
+  session_table_mapping[["thirdSession"]] = "mechanisms"
+  session_table_mapping[["fourthSession"]] = "oa"
+  session_table_mapping[["fifthSession"]] = "assessing_program"
+  session_table_mapping[["PostFollowUp"]] = "help_seeking"
+  
+  for (session_map in keys(session_table_mapping)){
+    tmp1 = filter(task_assess_comp_df, compl_session_all_assess == 1, session_only == session_map)
+    tmp = dat[[session_table_mapping[[session_map]]]]
+    if (length(setdiff(tmp1$participant_id,tmp$participant_id)) == 0){
+      print(paste0("no discrepancy with task_log at table: `", session_table_mapping[[session_map]], "` in the session: ", session_map))
+    } 
+    else{
+      print(paste0("the discrepancy with task_log at table: `", session_table_mapping[[session_map]], "` in the session: ", session_map, " are:"))
+      print(setdiff(tmp1$participant_id,tmp$participant_id))
+    }
+  }
+}
+check_discrepancy_w_task_log(dat, task_assess_comp_df)
 
 
-
-
-
+# ------------------------------------ #
+task_assess_comp_df$latest_completed_date = NULL
+task_assess_comp_df$latest_task_name = NULL
+completion_new = merge(completion, task_assess_comp_df, by=c("participant_id","session_only"))
+View(completion_new)
 # ---------------------------------------------------------------------------- #
 # Save table ----
 # ---------------------------------------------------------------------------- #
 
 # TODO: Consider adding table to centralized data cleaning
 
-write.csv(completion, file = "./data/temp/completion.csv")
+write.csv(completion_new, file = "./data/temp/completion.csv")
 
 
 
