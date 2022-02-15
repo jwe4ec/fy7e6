@@ -451,7 +451,7 @@ session_all_tasks_completion <- function(dat) {
   session_lastTask_mapping[["fifthSession"]] <- "AssessingProgram"
   session_lastTask_mapping[["PostFollowUp"]] <- "HelpSeeking"
   
-  task_comp_df = tibble()
+  task_comp_df <- tibble()
   
   for (session_map in keys(session_lastTask_mapping)) {
     tmp <- group_by(filter(dat$task_log, session_only == session_map), 
@@ -493,18 +493,17 @@ session_all_assess_completion <- function(data) {
       mutate(compl_session_all_task = 
                ifelse(task_name %in% session_lastAssess_mapping[[session_map]], 1, 0))
     test <- tmp[c("participant_id", "task_name", "compl_session_all_task", "session_only")]
-    completed_assess_ids = filter(test, compl_session_all_task == 1)["participant_id"]
+    completed_assess_ids <- filter(test, compl_session_all_task == 1)["participant_id"]
     
     data[data$session_only == session_map & 
            data$participant_id %in% completed_assess_ids$participant_id, 
-         "compl_session_all_assess"] = 1
+         "compl_session_all_assess"] <- 1
   }
   
   return(data)
 }
 
 task_assess_comp_df <- session_all_assess_completion(task_comp_df)
-
 
 # These participants did not finish all tasks of a given session but finished all 
 # the assessments: 197, 252, 510, 676, 881, 1725, 1053
