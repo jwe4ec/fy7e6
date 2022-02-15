@@ -32,7 +32,7 @@ groundhog_day <- version_control()
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-load("./data/intermediate/dat.RData")
+load("./data/intermediate_clean_further/dat.RData")
 
 # ---------------------------------------------------------------------------- #
 # Restrict tables ----
