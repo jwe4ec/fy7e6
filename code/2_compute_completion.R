@@ -29,6 +29,7 @@ groundhog_day <- version_control()
 # Load packages
 
 groundhog.library(dplyr, groundhog_day)
+groundhog.library(hash, groundhog_day)
 
 # ---------------------------------------------------------------------------- #
 # Import intermediate clean data ----
@@ -336,7 +337,6 @@ ctl_diff_report <- ctl_diff_report[order(ctl_diff_report$participant_id), ]
 # Create "completion" table where "compl_session_train" indicates whether participant
 # completed a given session's training (1 = yes, 0 = no, NA = session has no training)
 
-
 participant_ids <- unique(dat$participant$participant_id)
 sessions <- c("Eligibility", "preTest", train_session, "PostFollowUp")
 
@@ -430,8 +430,6 @@ completion$task_name_diff <- NULL
 # ---------------------------------------------------------------------------- #
 # Compute indicator of assessment completion by session ----
 # ---------------------------------------------------------------------------- #
-# install.packages("hash")
-library(hash)
 
 # ------------------------------------ #
 # and where "compl_session_all_task" indicates whether participant completed a given
