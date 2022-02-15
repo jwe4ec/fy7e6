@@ -50,7 +50,7 @@ load("./data/intermediate_clean_further/dat.RData")
 #   - "dass21_as", "demographics", "demographics_race"
 # Tables for potential auxiliary variables:
 #   - "demographics", "credibility" (training confidence, change importance), 
-#     "task_log" ("device")
+#     "task_log" ("device"--note: not recorded at "Eligibility")
 # Support tables
 #   - "participant" and "study"
 
