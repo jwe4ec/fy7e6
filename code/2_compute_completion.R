@@ -551,7 +551,7 @@ task_assess_comp_df$latest_task_name <- NULL
 
 completion_new <- merge(completion, 
                         task_assess_comp_df, 
-                        by = c("participant_id", "session_only"))
+                        by = c("participant_id", "session_only"), all = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Save table ----
