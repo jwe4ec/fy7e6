@@ -37,3 +37,36 @@ groundhog_day <- version_control()
 
 
 
+
+# ---------------------------------------------------------------------------- #
+# Search for time-invariant categorical and ordinal auxiliary variables ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Per consultation with Cynthia Tong on 2/22/22, compute proportion of missing 
+# data across time points within each level (treat ordinal variables as categorical)
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Search for time-invariant continuous auxiliary variables ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Per consultation with Cynthia Tong on 2/22/22, compute correlation with 
+# proportion of missing data across time points
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Search for time-varying categorical auxiliary variables ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Per consultation with Cynthia Tong on 2/22/22, compute proportion of missing
+# data within each level at each time point
+
+
+
+
