@@ -428,14 +428,12 @@ completion$task_name <- NULL
 completion$task_name_diff <- NULL
 
 # ---------------------------------------------------------------------------- #
-# Compute indicator of assessment completion by session ----
+# Compute indicator of task completion by session ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Jeremy to review functionality below
-
-
-
-
+# Note: Given that indicator of task completion is not needed for Calm Thinking 
+# main outcomes paper, it is not checked for cleaning needs here. By contrast,
+# the indicators of training and assessment completion are checked and cleaned.
 
 # Compute "compl_session_all_task" to indicate whether participant completed a 
 # given session's tasks (1 = yes, 0 = no). Below, this is done based on whether
@@ -463,11 +461,13 @@ compute_compl_session_all_task <- function(dat) {
       summarise(latest_date_completed = max(date_completed_as_POSIXct), 
                 latest_task_name = task_name[which.max(date_completed_as_POSIXct)], 
                 .groups = "drop")
+    
     tmp$compl_session_all_task <- NA
     tmp$compl_session_all_task[tmp$latest_task_name == 
                                  last_exp_task_name_by_session[[session]]] <- 1
     tmp$compl_session_all_task[tmp$latest_task_name != 
                                  last_exp_task_name_by_session[[session]]] <- 0
+    
     latest_task_compl_df <- bind_rows(latest_task_compl_df, tmp)
   }
   
@@ -476,16 +476,17 @@ compute_compl_session_all_task <- function(dat) {
 
 latest_task_compl_df <- compute_compl_session_all_task(dat)
 
+# ---------------------------------------------------------------------------- #
+# Compute indicator of assessment completion by session ----
+# ---------------------------------------------------------------------------- #
+
 # Compute "compl_session_assess" to indicate whether participant completed a 
 # given session's assessment (1 = yes, 0 = no). Below, this is done based on
 # whether the last expected "task_name" for a given session's assessment is 
 # present in "task_log" at that session. Thus, this assumes that if this task
 # is present, then the participant did all the session's assessment tasks.
 
-# TODO: Jeremy to check default of 0 for "compl_session_assess"
-# TODO: Jeremy to check addition of "compl_session_assess" to "latest_task_compl_df"
-
-compute_compl_session_assess <- function(df) {
+compute_compl_session_assess <- function(dat) {
   last_exp_assess_task_name_by_session <- hash()
   last_exp_assess_task_name_by_session[["Eligibility"]] <- "DASS21_AS"
   last_exp_assess_task_name_by_session[["preTest"]] <- "TechnologyUse"
@@ -496,31 +497,44 @@ compute_compl_session_assess <- function(df) {
   last_exp_assess_task_name_by_session[["fifthSession"]] <- "AssessingProgram"
   last_exp_assess_task_name_by_session[["PostFollowUp"]] <- "HelpSeeking"
   
-  df$compl_session_assess <- 0
+  compl_session_assess_df <- tibble()
+  
   for (session in keys(last_exp_assess_task_name_by_session)) {
     tmp <- group_by(filter(dat$task_log, session_only == session), 
                     participant_id) %>% 
       mutate(compl_session_assess = 
-               ifelse(task_name %in% last_exp_assess_task_name_by_session[[session]], 1, 0))
-    tmp2 <- tmp[c("participant_id", "task_name", "compl_session_assess", "session_only")]
-    compl_session_assess_ids <- filter(tmp2, compl_session_assess == 1)["participant_id"]
+               ifelse(task_name == last_exp_assess_task_name_by_session[[session]], 1, 0))
     
-    df[df$session_only == session & 
-         df$participant_id %in% compl_session_assess_ids$participant_id, 
-       "compl_session_assess"] <- 1
+    tmp2 <- tmp[c("participant_id", "session_only", "task_name", "compl_session_assess")]
+    
+    tmp3 <- filter(tmp2, compl_session_assess == 1)
+    names(tmp3)[names(tmp3) == "task_name"] <- "last_exp_assess_task_name"
+
+    compl_session_assess_df <- bind_rows(compl_session_assess_df, tmp3)
   }
   
-  return(df)
+  return(compl_session_assess_df)
 }
 
-latest_task_compl_df <- compute_compl_session_assess(latest_task_compl_df)
+compl_session_assess_df <- compute_compl_session_assess(dat)
 
+  # Remove duplicated rows
 
+compl_session_assess_df <- compl_session_assess_df[!duplicated(compl_session_assess_df), ]
 
+# ---------------------------------------------------------------------------- #
+# Compare task and assessment completion by session ----
+# ---------------------------------------------------------------------------- #
 
+# Note: Given that this comparison is not needed for Calm Thinking main outcomes 
+# paper, it is based on the uncleaned task completion indicator and the as yet
+# uncleaned assessment completion indicator (which is cleaned in section below)
 
 # The following participants did not finish the last expected task of a given
 # session but finished the last expected assessment task of that session
+
+latest_task_compl_df <- merge(latest_task_compl_df, compl_session_assess_df,
+                              by = c("participant_id", "session_only"), all.x = TRUE)
 
 compl_session_assess_not_all_task <- 
   filter(latest_task_compl_df, compl_session_all_task == 0 & compl_session_assess == 1)
@@ -528,11 +542,15 @@ compl_session_assess_not_all_task <-
 all(sort(unique(compl_session_assess_not_all_task$participant_id)) == 
       c(197, 252, 510, 676, 881, 1053, 1725))
 
+# ---------------------------------------------------------------------------- #
+# Clean assessment completion by session ----
+# ---------------------------------------------------------------------------- #
+
 # Check for discrepancies between a participant having a "compl_session_assess"
 # value of 1 at a given session and appearing in the corresponding last expected
-# assessment table at that session. No discrepancies found.
+# assessment table at that session.
 
-check_last_exp_assess_task_name_vs_tbl <- function(dat, latest_task_compl_df) {
+check_last_exp_assess_task_name_vs_tbl <- function(dat, compl_session_assess_df) {
   last_exp_assess_tbl_by_session <- hash()
   last_exp_assess_tbl_by_session[["Eligibility"]] <- "dass21_as"
   last_exp_assess_tbl_by_session[["preTest"]] <- "technology_use"
@@ -544,32 +562,107 @@ check_last_exp_assess_task_name_vs_tbl <- function(dat, latest_task_compl_df) {
   last_exp_assess_tbl_by_session[["PostFollowUp"]] <- "help_seeking"
   
   for (session in keys(last_exp_assess_tbl_by_session)) {
-    tmp <- filter(latest_task_compl_df, 
+    tmp <- filter(compl_session_assess_df, 
                   compl_session_assess == 1, session_only == session)
-    assess_tbl <- dat[[last_exp_assess_tbl_by_session[[session]]]]
     
-    if (length(setdiff(tmp$participant_id, assess_tbl$participant_id)) == 0) {
-      print(paste0("No discrepancy between 'compl_session_assess' and table '", 
-                   last_exp_assess_tbl_by_session[[session]], 
-                   "' at session '", session, "'"))
-    } else {
-      print(paste0("Discrepancy between 'compl_session_assess' and table '", 
-                   last_exp_assess_tbl_by_session[[session]], 
-                   "' at session '", session, "' for 'participant_id' "))
-      print(setdiff(tmp$participant_id, assess_tbl$participant_id))
+    assess_tbl_name <- last_exp_assess_tbl_by_session[[session]]
+    assess_tbl <- dat[[assess_tbl_name]]
+    tmp2 <- filter(assess_tbl, session_only == session)
+    
+    # Ignore "participant_id" of NA in "dass21_as" table at "Eligibility" as
+    # these reflect screening attempts of non-enrolled participants
+    if (assess_tbl_name == "dass21_as") {
+      tmp2 <- filter(tmp2, !is.na(participant_id))
+    }
+    
+    ids_in_tmp_not_tmp2 <- setdiff(tmp$participant_id, tmp2$participant_id)
+    ids_in_tmp2_not_tmp <- setdiff(tmp2$participant_id, tmp$participant_id)
+    
+    if (length(ids_in_tmp_not_tmp2) == 0 & length(ids_in_tmp2_not_tmp) == 0) {
+      print(paste0("At session '", session, "', ",
+                   "no discrepancy between 'compl_session_assess' and table '",
+                   assess_tbl_name, "'"))
+    } else if (length(ids_in_tmp_not_tmp2) != 0) {
+        print(paste0("At session '", session, "', ",
+                     "'participant_id' ", ids_in_tmp_not_tmp2,
+                     " in 'compl_session_assess' but not in table '", assess_tbl_name, "'"))
+    } else if (length(ids_in_tmp2_not_tmp) != 0) {
+        print(paste0("At session '", session, "', ",
+                     "'participant_id' ", ids_in_tmp2_not_tmp,
+                     " in table '", assess_tbl_name, "' but not in 'compl_session_assess'"))
     }
   }
 }
 
-check_last_exp_assess_task_name_vs_tbl(dat, latest_task_compl_df)
+# At "Eligibility", "participant_id" 383 is in "dass21_as" table but not in
+# "compl_session_assess". We will correct this in "compl_session_assess" below.
 
-# Remove unnecessary columns and merge tables
+check_last_exp_assess_task_name_vs_tbl(dat, compl_session_assess_df)
 
-latest_task_compl_df$latest_date_completed <- NULL
-latest_task_compl_df$latest_task_name <- NULL
+# Check for consecutive assessment completion across "session_only" values within 
+# a given participant (to check for skipped entries)
 
-completion <- merge(completion, latest_task_compl_df, 
+compl_session_assess_df$session_only <- factor(compl_session_assess_df$session_only,
+                                               levels = sessions)
+
+compl_session_assess_df <- compl_session_assess_df[order(compl_session_assess_df$participant_id,
+                                                         compl_session_assess_df$session_only), ]
+
+compl_session_assess_df$session_only_int <- as.integer(compl_session_assess_df$session_only)
+
+compl_session_assess_df <- compl_session_assess_df %>%
+  group_by(participant_id) %>%
+  mutate(session_only_int_diff = session_only_int - lag(session_only_int))
+
+table(compl_session_assess_df$session_only_int_diff,
+      compl_session_assess_df$session_only, useNA = "always")
+
+#   Investigate cases of nonconsecutive assessment completion entries
+
+#     As found above, participant 383 lacks "compl_session_assess" at "Eligibility",
+#     resulting in NA for "session_only_int_diff" at "preTest". We will correct this below.
+
+non_eligibility_na_session_only_int_ids <-
+  unique(compl_session_assess_df$participant_id[is.na(compl_session_assess_df$session_only_int_diff) &
+                                                  compl_session_assess_df$session_only != "Eligibility"])
+
+non_eligibility_na_session_only_int_ids == 383
+
+#     Similar to what was found in section "Investigate discrepancies in 'task_log' vs. 
+#     'angular_training' in CBM-I conditions" above, participant 832 is missing
+#     "compl_session_assess" at "secondSession" (because they are missing "task_name"
+#     of "OA" at that session in "task_log"), leading to "session_only_int_diff" of 2
+#     at "thirdSession". Participant has no data in "oa" table at "secondSession". Not
+#     clear why this occurred, but given that "task_log" shows participant was able to
+#     complete the entire study, we will consider this a case of assessment completion
+#     at "secondSession". We will correct this in "compl_session_assess" below.
+
+nonconsec_session_only_int_ids <-
+  unique(compl_session_assess_df$participant_id[!is.na(compl_session_assess_df$session_only_int_diff) &
+                                                  compl_session_assess_df$session_only_int_diff != 1])
+
+nonconsec_session_only_int_ids == 832
+
+# Add "compl_session_assess" to "completion"
+
+completion <- merge(completion, compl_session_assess_df, 
                     by = c("participant_id", "session_only"), all.x = TRUE)
+
+completion$compl_session_assess[is.na(completion$compl_session_assess)] <- 0
+
+# Clean "compl_session_assess" based on result of running above function
+# "check_last_exp_assess_task_name_vs_tbl"
+
+completion$compl_session_assess[completion$participant_id == 383 &
+                                  completion$session_only == "Eligibility"] <- 1
+completion$compl_session_assess[completion$participant_id == 832 &
+                                  completion$session_only == "secondSession"] <- 1
+
+# Remove unneeded columns
+
+completion$last_exp_assess_task_name <- NULL
+completion$session_only_int <- NULL
+completion$session_only_int_diff <- NULL
 
 # ---------------------------------------------------------------------------- #
 # Save table ----
