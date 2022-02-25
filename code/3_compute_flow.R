@@ -293,13 +293,20 @@ length(coach_engage_ids) == 136
 coach_not_engage_ids <- setdiff(coach_completion$participant_id, coach_engage_ids)
 length(coach_not_engage_ids) == 146
 
-# TODO: Compute number who completed S1 assessment by condition
+# Compute number who completed S1 assessment by condition. For participants
+# 910 and 1674, who were not classified, 910 completed it and 1674 didn't.
 
+compl_s1_assess_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "firstSession" &
+                                  dat$completion$compl_session_assess == 1]
+length(compl_s1_assess_ids) == 1077
 
+all(c(910, 1674) %in% compl_s1_assess_ids == c(TRUE, FALSE))
 
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s1_assess_ids])
 
-
-# Compute number who completed S2-S4 training by condition
+# Compute number who completed S2-S4 training by condition. (Note: Participants
+# 910 and 1674, who were not classified, did not complete S2 training.)
 
 compl_s2_train_ids <- 
   dat$completion$participant_id[dat$completion$session_only == "secondSession" &
@@ -319,11 +326,30 @@ table(dat$study$conditioning[dat$study$participant_id %in% compl_s2_train_ids])
 table(dat$study$conditioning[dat$study$participant_id %in% compl_s3_train_ids])
 table(dat$study$conditioning[dat$study$participant_id %in% compl_s4_train_ids])
 
-# TODO: Compute number who completed S2-S4 assessment by condition
+# Compute number who completed S2-S4 assessment by condition. For participants
+# 910 and 1674, who were not classified, neither completed these assessments.
 
+compl_s2_assess_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "secondSession" &
+                                  dat$completion$compl_session_assess == 1]
+compl_s3_assess_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "thirdSession" &
+                                  dat$completion$compl_session_assess == 1]
+compl_s4_assess_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "fourthSession" &
+                                  dat$completion$compl_session_assess == 1]
 
+length(compl_s2_assess_ids) == 777
+length(compl_s3_assess_ids) == 687
+length(compl_s4_assess_ids) == 601
 
+all(c(910, 1674) %in% compl_s2_assess_ids == c(FALSE, FALSE))
+all(c(910, 1674) %in% compl_s3_assess_ids == c(FALSE, FALSE))
+all(c(910, 1674) %in% compl_s4_assess_ids == c(FALSE, FALSE))
 
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s2_assess_ids])
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s3_assess_ids])
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s4_assess_ids])
 
 # Compute number who completed S5 training by condition
 
@@ -340,17 +366,27 @@ table(dat$study$conditioning[dat$study$participant_id %in% compl_s5_train_ids])
 length(intersect(compl_s5_train_ids, coach_engage_ids)) == 96
 length(intersect(compl_s5_train_ids, coach_not_engage_ids)) == 35
 
-# TODO: Compute number who completed S5 and 2-month FU assessments by condition
+# Compute number who completed S5 and 2-month FU assessments by condition. For 
+# participants 910 and 1674, who were not classified, neither completed these.
 
-# Note: Consider unexpected multiple entries
-#   See https://github.com/jwe4ec/MT-Data-CalmThinkingStudy#unexpected-multiple-entries
+compl_s5_assess_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "fifthSession" &
+                                  dat$completion$compl_session_assess == 1]
+compl_fu_assess_ids <- 
+  dat$completion$participant_id[dat$completion$session_only == "PostFollowUp" &
+                                  dat$completion$compl_session_assess == 1]
 
+length(compl_s5_assess_ids) == 555
+length(compl_fu_assess_ids) == 483
 
+all(c(910, 1674) %in% compl_s5_assess_ids == c(FALSE, FALSE))
+all(c(910, 1674) %in% compl_fu_assess_ids == c(FALSE, FALSE))
 
-
+table(dat$study$conditioning[dat$study$participant_id %in% compl_s5_assess_ids])
+table(dat$study$conditioning[dat$study$participant_id %in% compl_fu_assess_ids])
 
 # ---------------------------------------------------------------------------- #
-# Define analysis samples ----
+# Identify analysis exclusions ----
 # ---------------------------------------------------------------------------- #
 
 # Identify analysis exclusions due to having more than two unique sets of
@@ -373,13 +409,18 @@ nrow(dat$study[dat$study$participant_id %in% exclude_repeat_screen_ids &
 nrow(dat$study[dat$study$participant_id %in% exclude_repeat_screen_ids &
                  dat$study$conditioning == "CONTROL", ]) == 1     # 1453
 
-#   Note: Participants 1644, 1893, and 1453 did not complete Session 1 post-
-#   affect questions so are already not classification measure completers
+#   Note: Participants 1453 and 1893 did not start Session 1 training so are 
+#   already not ITT participants
+
+setdiff(exclude_repeat_screen_ids, start_s1_train_ids)
+
+#   Note: Participant 1644 did not complete Session 1 post-affect questions so 
+#   is already not a classification measure completer
 
 setdiff(exclude_repeat_screen_ids, compl_s1_post_affect_ids)
 
 #   Note: Participant 1755 did not complete Session 5 training so is already
-#   not a Session 5 training completer
+#   not a Session 5 training completer in Analysis C1
 
 setdiff(exclude_repeat_screen_ids, compl_s5_train_ids)
 
@@ -392,9 +433,89 @@ exclude_switch_condition_ids <- 382
 nrow(dat$study[dat$study$participant_id %in% exclude_switch_condition_ids &
                  dat$study$conditioning == "CONTROL", ]) == 1     # 382
 
-# Identify classification measure completer analysis sample by condition
+#   Note: Participant 382 would otherwise be part of every relevant analysis sample 
+#   if they were not excluded   
+
+setdiff(exclude_switch_condition_ids, start_s1_train_ids)       # ITT sample
+setdiff(exclude_switch_condition_ids, compl_s1_post_affect_ids) # Class. measure completer sample
+setdiff(exclude_switch_condition_ids, compl_s5_train_ids)       # S5 training completer C1 sample
+
+# Collect analysis exclusions
 
 exclude_ids <- c(exclude_repeat_screen_ids, exclude_switch_condition_ids)
+
+# ---------------------------------------------------------------------------- #
+# Define analysis samples for CBM-I vs. Psychoed comparison (C1) ----
+# ---------------------------------------------------------------------------- #
+
+# Identify intent-to-treat (ITT) analysis sample by condition. Because including 
+# "HR_COACH" participants in the CBM-I vs. Psychoed comparison would conflate the 
+# effect of CBM-I with the effect of coaching, we will exclude "HR_COACH" from
+# this comparison and use a bootstrapping procedure to increase the weighting of
+# "HR_NO_COACH" such that it reflects all HR participants (as though they were
+# not randomized to no coaching vs. coaching). The corrected ITT sample size for 
+# "HR_NO_COACH" will be the sum of (a) the ITT sample for "HR_NO_COACH" and (b) 
+# the ITT sample for "HR_COACH" (if we included "HR_COACH" in the ITT sample).
+
+itt_anlys_ids <- setdiff(start_s1_train_ids, exclude_ids)
+length(itt_anlys_ids) == 1234
+
+nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
+                 dat$study$conditioning %in% cbm_conditions, ]) == 980
+
+nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
+                 dat$study$conditioning == "TRAINING", ]) == 148
+nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
+                 dat$study$conditioning == "LR_TRAINING", ]) == 288
+nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
+                 dat$study$conditioning == "HR_NO_COACH", ]) == 263   # Uncorrected
+nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
+                 dat$study$conditioning %in% c("HR_NO_COACH", 
+                                               "HR_COACH"), ]) == 544 # Corrected
+
+nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
+                 dat$study$conditioning %in% "CONTROL", ]) == 254
+
+# TODO: Identify S5 training completion analysis sample by condition. Unclear how
+# to compute corrected "HR_NO_COACH" sample size.
+
+s5_train_compl_anlys_c1_ids <- setdiff(compl_s5_train_ids, exclude_ids)
+
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+                 dat$study$conditioning == "TRAINING", ]) == 0
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+                 dat$study$conditioning == "LR_TRAINING", ]) == 140
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+                 dat$study$conditioning == "HR_NO_COACH", ]) == 132 # Uncorrected
+# TODO: Compute corrected "HR_NO_COACH" sample size and ultimately update
+#       "s5_train_compl_anlys_c1_ids" based on it
+
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+                 dat$study$conditioning == "CONTROL", ]) == 153
+
+
+
+
+
+# TODO: Add indicators for ITT and S5 training completer samples to "participant" table
+
+dat$participant$itt_anlys <- 0
+dat$participant[dat$participant$participant_id %in% itt_anlys_ids,
+                "itt_anlys"] <- 1
+
+# dat$participant$s5_train_compl_anlys_c1 <- 0
+# dat$participant[dat$participant$participant_id %in% s5_train_compl_anlys_c1_ids,
+#                 "s5_train_compl_anlys_c1"] <- 1
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Define analysis samples for other comparisons (C2-C4) ----
+# ---------------------------------------------------------------------------- #
+
+# Identify classification measure completer analysis sample by condition
 
 class_meas_compl_anlys_ids <- setdiff(compl_s1_post_affect_ids, exclude_ids)
 length(class_meas_compl_anlys_ids) == 1075
@@ -414,17 +535,17 @@ nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
 # Identify S5 training completer analysis sample by condition. For "HR_COACH", 
 # include only participants who engaged with coach at least once.
 
-s5_train_compl_anlys_ids <- setdiff(compl_s5_train_ids, 
-                                    c(coach_not_engage_ids, exclude_ids))
-length(s5_train_compl_anlys_ids) == 521
+s5_train_compl_anlys_c2_4_ids <- setdiff(compl_s5_train_ids, 
+                                         c(coach_not_engage_ids, exclude_ids))
+length(s5_train_compl_anlys_c2_4_ids) == 521
 
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c2_4_ids &
                  dat$study$conditioning == "LR_TRAINING", ]) == 140
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c2_4_ids &
                  dat$study$conditioning == "HR_NO_COACH", ]) == 132
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c2_4_ids &
                  dat$study$conditioning == "HR_COACH", ]) == 96
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c2_4_ids &
                  dat$study$conditioning == "CONTROL", ]) == 153
 
 # Add indicators for classification measure completer sample and S5 training 
@@ -434,9 +555,9 @@ dat$participant$class_meas_compl_anlys <- 0
 dat$participant[dat$participant$participant_id %in% class_meas_compl_anlys_ids,
                 "class_meas_compl_anlys"] <- 1
 
-dat$participant$s5_train_compl_anlys <- 0
-dat$participant[dat$participant$participant_id %in% s5_train_compl_anlys_ids,
-                "s5_train_compl_anlys"] <- 1
+dat$participant$s5_train_compl_anlys_c2_4 <- 0
+dat$participant[dat$participant$participant_id %in% s5_train_compl_anlys_c2_4_ids,
+                "s5_train_compl_anlys_c2_4"] <- 1
 
 # ---------------------------------------------------------------------------- #
 # Export data ----
