@@ -515,13 +515,22 @@ dat$participant[dat$participant$participant_id %in% itt_anlys_ids,
 # Define analysis samples for other comparisons (C2-C4) ----
 # ---------------------------------------------------------------------------- #
 
-# Identify classification measure completer analysis sample by condition
+# Identify classification measure completer analysis sample
 
 class_meas_compl_anlys_ids <- setdiff(compl_s1_post_affect_ids, exclude_ids)
 length(class_meas_compl_anlys_ids) == 1075
 
+# Exclude 2 CBM-I participants (910, 1674) who completed classification measures 
+# but were not classified due to a software bug
+
 nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "TRAINING", ]) == 2  # 910, 1674
+
+class_meas_compl_anlys_ids <- setdiff(class_meas_compl_anlys_ids, c(910, 1674))
+
+# Describe revised classification measure completer analysis sample by condition
+
+length(class_meas_compl_anlys_ids) == 1073
 
 nrow(dat$study[dat$study$participant_id %in% class_meas_compl_anlys_ids &
                  dat$study$conditioning == "LR_TRAINING", ]) == 288
