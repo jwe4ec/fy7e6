@@ -106,6 +106,20 @@ dat$demographics$ethnicity <-
                     "Unknown", "Prefer not to answer"))
 
 # ---------------------------------------------------------------------------- #
+# Clean education ----
+# ---------------------------------------------------------------------------- #
+
+# Reorder levels
+
+dat$demographics$education <-
+  factor(dat$demographics$education,
+         levels = c("Junior High", "Some High School", "High School Graduate", 
+                    "Some College", "Associate's Degree", "Bachelor's Degree",
+                    "Some Graduate School", "Master's Degree", "M.B.A.", "J.D.", 
+                    "M.D.", "Ph.D.", "Other Advanced Degree",
+                    "Prefer not to answer"))
+
+# ---------------------------------------------------------------------------- #
 # Clean employment status ----
 # ---------------------------------------------------------------------------- #
 
@@ -186,10 +200,20 @@ for (i in 1:nrow(dat$demographics_race)) {
   }
 }
 
+# TODO: Exclude participant 1992 from "demographics_race" table in centralized Calm 
+# Thinking data cleaning. Then it will not need to be done here.
+
+dat$demographics_race <- dat$demographics_race[dat$demographics_race$participant_id != 1992, ]
+
+
+
+
+
 # Add "race_col" to "demographics" table
 
 dat$demographics <- merge(dat$demographics,
-                          dat$demographics_race[, c("participant_id", "race_col")],
+                          unique(dat$demographics_race[, c("participant_id", 
+                                                           "race_col")]),
                           by = "participant_id",
                           all.x = TRUE)
 
@@ -244,7 +268,7 @@ dat$demographics$country_col <-
          levels = c(top_countries, "Other", pna))
 
 # ---------------------------------------------------------------------------- #
-# Create table ----
+# Create tables ----
 # ---------------------------------------------------------------------------- #
 
 dem_tbl <- dat$demographics
@@ -254,20 +278,134 @@ dem_tbl <- dat$demographics
 dem_tbl <- merge(dem_tbl, dat$study[, c("participant_id", "conditioning")],
                  by = "participant_id", all.x = TRUE)
 
-# TODO: Order condition levels (consider different samples)
+# TODO: Add analysis sample indicators
+
+dem_tbl <- merge(dem_tbl,
+                 dat$participant[, c("participant_id", "exclude_analysis",
+                                     "itt_anlys", # s5_train_compl_anlys_c1
+                                     "class_meas_compl_anlys", "s5_train_compl_anlys_c2_4")],
+                 by = "participant_id", all.x = TRUE)
 
 
 
 
 
-# TODO: Restrict analysis samples
+# Define new condition variable that separates Psychoed. into participants who 
+# are in the classification measure completer sample and those who are not.
+# "TRAINING" already reflects CBM-I participants in this sample.
+
+dem_tbl$condition_sep <- dem_tbl$conditioning
+
+dem_tbl$condition_sep[dem_tbl$conditioning == "CONTROL" &
+                        dem_tbl$class_meas_compl_anlys == 1] <- "CTRL_cls"
+dem_tbl$condition_sep[dem_tbl$conditioning == "CONTROL" &
+                        dem_tbl$class_meas_compl_anlys == 0] <- "CTRL_ncls"
+
+# Order condition levels
+
+dem_tbl$condition_sep <-
+  factor(dem_tbl$condition_sep,
+         levels = c("TRAINING", "LR_TRAINING", "HR_NO_COACH", "HR_COACH", 
+                    "CTRL_cls", "CTRL_ncls"))
+
+# TODO: Restrict to ITT and Session 5 training completer samples
+
+table(dem_tbl$condition_sep[dem_tbl$itt_anlys == 1])
+# table(dem_tbl$condition_sep[dem_tbl$s5_train_compl_anlys_c1 == 1])
+
+table(dem_tbl$condition_sep[dem_tbl$class_meas_compl_anlys == 1])
+table(dem_tbl$condition_sep[dem_tbl$s5_train_compl_anlys_c2_4 == 1])
+
+dem_tbl_itt <- dem_tbl[dem_tbl$itt_anlys == 1, ]
+dem_tbl_s5_train_compl <- dem_tbl[dem_tbl$s5_train_compl_anlys_c2_4 == 1, ]
 
 
 
 
 
-# TODO: Compute descriptives overall and in each condition
+# Define function to compute descriptives
 
+compute_desc <- function(df) {
+  # Compute sample size
+  
+  n <- data.frame(label = "n",
+                  value = length(df$participant_id))
+  
+  # Compute mean and standard deviation for numeric variables
+  
+  num_res <- data.frame(label = "Age (years): M (SD)",
+                        value = paste0(round(mean(df$age, na.rm = TRUE), 2), 
+                                       " (", round(sd(df$age, na.rm = TRUE), 2), ")"))
+  
+  # Compute count and percentage for factor variables
+  
+  vars <- c("gender", "race_col", "ethnicity", "country_col", "education",
+            "employment_stat", "income", "marital_stat")
+  var_labels <- paste0(c("Gender", "Race", "Ethnicity", "Country", "Education",
+                         "Employment Status", "Annual Income", "Marital Status"),
+                       ": n (%)")
+  
+  fct_res <- data.frame()
+  
+  for (i in 1:length(vars)) {
+    tbl <- table(df[, vars[i]])
+    prop_tbl <- round(prop.table(tbl)*100, 1)
+    
+    tbl_res <- rbind(data.frame(label = var_labels[i],
+                                value = NA),
+                     data.frame(label = names(tbl),
+                                value = paste0(as.numeric(tbl),
+                                               " (", as.numeric(prop_tbl), ")")))
+    fct_res <- rbind(fct_res, tbl_res)
+  }
+  
+  # Combine results
+  
+  res <- rbind(n, num_res, fct_res)
+  
+  return(res)
+}
 
+# Define function to compute descriptives by condition
 
+compute_desc_by_cond <- function(df) {
+  conditions <- levels(droplevels(df$condition_sep))
 
+  for (i in 1:length(conditions)) {
+    df_cond <- df[df$condition_sep == conditions[i], ]
+    
+    cond_res <- compute_desc(df_cond)
+    names(cond_res)[names(cond_res) == "value"] <- conditions[i]
+    
+    if (i == 1) {
+      res_by_cond <- cond_res
+    } else if (i > 1) {
+      cond_res$label <- NULL
+      
+      res_by_cond <- cbind(res_by_cond, cond_res)
+    }
+  }
+  
+  return(res_by_cond)
+}
+
+# Compute descriptives across conditions for ITT sample
+
+res_itt_across_cond <- compute_desc(dem_tbl_itt)
+
+# Compute descriptives by condition for the ITT sample (which includes the
+# classification measure completer sample) and Session 5 training completers
+
+res_itt_by_cond <- compute_desc_by_cond(dem_tbl_itt)
+res_s5_train_compl_by_cond <- compute_desc_by_cond(dem_tbl_s5_train_compl)
+
+# Save tables to CSV
+
+dir.create("./results/demographics")
+
+write.csv(res_itt_across_cond, 
+          "./results/demographics/itt_across_cond.csv", row.names = FALSE)
+write.csv(res_itt_by_cond, 
+          "./results/demographics/itt_by_cond.csv", row.names = FALSE)
+write.csv(res_s5_train_compl_by_cond, 
+          "./results/demographics/s5_train_compl_by_cond.csv", row.names = FALSE)
