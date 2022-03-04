@@ -409,3 +409,9 @@ write.csv(res_itt_by_cond,
           "./results/demographics/itt_by_cond.csv", row.names = FALSE)
 write.csv(res_s5_train_compl_by_cond, 
           "./results/demographics/s5_train_compl_by_cond.csv", row.names = FALSE)
+
+# TODO: Add "Prefer not to answer" for age
+
+
+
+
