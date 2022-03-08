@@ -268,7 +268,13 @@ dat$demographics$country_col <-
          levels = c(top_countries, "Other", pna))
 
 # ---------------------------------------------------------------------------- #
-# Create tables ----
+# Save cleaned data ----
+# ---------------------------------------------------------------------------- #
+
+save(dat, file = "./data/intermediate_clean_further/dat2.RData")
+
+# ---------------------------------------------------------------------------- #
+# Create demographics tables ----
 # ---------------------------------------------------------------------------- #
 
 dem_tbl <- dat$demographics
