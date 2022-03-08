@@ -271,7 +271,9 @@ dat$demographics$country_col <-
 # Save cleaned data ----
 # ---------------------------------------------------------------------------- #
 
-save(dat, file = "./data/intermediate_clean_further/dat2.RData")
+dat2 <- dat
+
+save(dat2, file = "./data/intermediate_clean_further/dat2.RData")
 
 # ---------------------------------------------------------------------------- #
 # Create demographics tables ----
