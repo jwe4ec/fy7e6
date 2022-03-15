@@ -64,13 +64,17 @@ coach_completion <- read.csv("./data/temp/coach_completion.csv")
 # Document data filenames ----
 # ---------------------------------------------------------------------------- #
 
-# Output file names to TXT
+# TODO: Move this to end of code scripts. Output file names to TXT
 
 dir.create("./docs")
 
 sink(file = "./docs/data_filenames.txt")
 print(list.files("./data", recursive = TRUE, full.names = FALSE), width = 80)
 sink()
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Note on filtering data ----
@@ -476,40 +480,58 @@ nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
 nrow(dat$study[dat$study$participant_id %in% itt_anlys_ids &
                  dat$study$conditioning %in% "CONTROL", ]) == 254
 
-# TODO: Identify S5 training completion analysis sample by condition. Unclear how
-# to compute corrected "HR_NO_COACH" sample size.
+# Identify S5 training completion analysis sample by condition. Note that analysis
+# data for corrected "HR_NO_COACH" S5 training completer sample size will be obtained 
+# later by bootstrap sampling from actual "HR_NO_COACH" participants.
 
-s5_train_compl_anlys_c1_ids <- setdiff(compl_s5_train_ids, exclude_ids)
+s5_train_compl_anlys_uncorrected_c1_ids <- setdiff(compl_s5_train_ids, exclude_ids)
 
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_uncorrected_c1_ids &
                  dat$study$conditioning == "TRAINING", ]) == 0
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_uncorrected_c1_ids &
                  dat$study$conditioning == "LR_TRAINING", ]) == 140
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
-                 dat$study$conditioning == "HR_NO_COACH", ]) == 132 # Uncorrected
-# TODO: Compute corrected "HR_NO_COACH" sample size and ultimately update
-#       "s5_train_compl_anlys_c1_ids" based on it
-
-nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_c1_ids &
+nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_uncorrected_c1_ids &
                  dat$study$conditioning == "CONTROL", ]) == 153
 
+#   Base corrected "HR_NO_COACH" sample size for S5 training completers on the
+#   actual proportion of "HR_NO_COACH" participants who completed S5 training. 
+#   That is, assume that had "HR_COACH" participants not received coaching, they 
+#   would have dropped out at the same rate as "HR_NO_COACH" participants.
 
+prop_comp_s5_hr_no_coach <- 
+  nrow(dat$study[dat$study$participant_id %in% compl_s5_train_ids &
+                   dat$study$conditioning == "HR_NO_COACH", ]) /
+  nrow(dat$study[dat$study$conditioning == "HR_NO_COACH", ])
 
+n_s5_train_compl_anlys_c1_ids_hr_no_coach <-
+  nrow(dat$study[dat$study$participant_id %in% s5_train_compl_anlys_uncorrected_c1_ids &
+                   dat$study$conditioning == "HR_NO_COACH", ])
 
+n_s5_train_compl_anlys_c1_ids_hr_no_coach == 132                     # Uncorrected
 
-# TODO: Add indicators for ITT and S5 training completer samples to "participant" table
+n_itt_anlys_ids_hr_coach <-
+  nrow(dat$study[!(dat$study$participant_id %in% exclude_ids) &
+                   dat$study$conditioning == "HR_COACH", ])
+
+n_s5_train_compl_anlys_c1_ids_hr_no_coach_corrected <-
+  n_s5_train_compl_anlys_c1_ids_hr_no_coach +
+  prop_comp_s5_hr_no_coach * n_itt_anlys_ids_hr_coach
+
+round(n_s5_train_compl_anlys_c1_ids_hr_no_coach_corrected, 0) == 274 # Corrected
+
+#   Compute corrected S5 CBM-I training completer sample size
+
+0 + 140 + 274 == 414
+
+# Add indicators for ITT and S5 training completer samples to "participant" table
 
 dat$participant$itt_anlys <- 0
 dat$participant[dat$participant$participant_id %in% itt_anlys_ids,
                 "itt_anlys"] <- 1
 
-# dat$participant$s5_train_compl_anlys_c1 <- 0
-# dat$participant[dat$participant$participant_id %in% s5_train_compl_anlys_c1_ids,
-#                 "s5_train_compl_anlys_c1"] <- 1
-
-
-
-
+dat$participant$s5_train_compl_anlys_uncorrected_c1 <- 0
+dat$participant[dat$participant$participant_id %in% s5_train_compl_anlys_uncorrected_c1_ids,
+                "s5_train_compl_anlys_uncorrected_c1"] <- 1
 
 # ---------------------------------------------------------------------------- #
 # Define analysis samples for other comparisons (C2-C4) ----
