@@ -286,17 +286,13 @@ dem_tbl <- dat$demographics
 dem_tbl <- merge(dem_tbl, dat$study[, c("participant_id", "conditioning")],
                  by = "participant_id", all.x = TRUE)
 
-# TODO: Add analysis sample indicators
+# Add analysis sample indicators
 
 dem_tbl <- merge(dem_tbl,
                  dat$participant[, c("participant_id", "exclude_analysis",
-                                     "itt_anlys", # s5_train_compl_anlys_c1
+                                     "itt_anlys", "s5_train_compl_anlys_uncorrected_c1",
                                      "class_meas_compl_anlys", "s5_train_compl_anlys_c2_4")],
                  by = "participant_id", all.x = TRUE)
-
-
-
-
 
 # Define new condition variable that separates Psychoed. into participants who 
 # are in the classification measure completer sample and those who are not.
@@ -316,20 +312,16 @@ dem_tbl$condition_sep <-
          levels = c("TRAINING", "LR_TRAINING", "HR_NO_COACH", "HR_COACH", 
                     "CTRL_cls", "CTRL_ncls"))
 
-# TODO: Restrict to ITT and Session 5 training completer samples
+# Restrict to ITT and Session 5 training completer samples
 
 table(dem_tbl$condition_sep[dem_tbl$itt_anlys == 1])
-# table(dem_tbl$condition_sep[dem_tbl$s5_train_compl_anlys_c1 == 1])
+table(dem_tbl$condition_sep[dem_tbl$s5_train_compl_anlys_uncorrected_c1 == 1])
 
 table(dem_tbl$condition_sep[dem_tbl$class_meas_compl_anlys == 1])
 table(dem_tbl$condition_sep[dem_tbl$s5_train_compl_anlys_c2_4 == 1])
 
 dem_tbl_itt <- dem_tbl[dem_tbl$itt_anlys == 1, ]
 dem_tbl_s5_train_compl <- dem_tbl[dem_tbl$s5_train_compl_anlys_c2_4 == 1, ]
-
-
-
-
 
 # Define function to compute descriptives
 
