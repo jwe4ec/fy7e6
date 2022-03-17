@@ -670,7 +670,7 @@ completion$session_only_int_diff <- NULL
 
 # TODO: Consider adding table to centralized data cleaning
 
-write.csv(completion, file = "./data/temp/completion.csv")
+write.csv(completion, file = "./data/temp/completion.csv", row.names = FALSE)
 
 
 
