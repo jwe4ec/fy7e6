@@ -32,8 +32,8 @@ groundhog_day <- version_control()
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
-
+completion <- read.csv("./data/temp/completion.csv")
+load("./data/intermediate_clean_further/dat2.RData")
 
 
 
