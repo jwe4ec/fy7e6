@@ -77,15 +77,15 @@ compl_itt$session_only[compl_itt$session_only == "preTest"] <- "baseline"
 # Compute proportion of missing assessments across time points ----
 # ---------------------------------------------------------------------------- #
 
-temp_ag <- aggregate(miss_session_assess ~ participant_id,
-                     compl_itt,
-                     FUN = sum)
+tmp_ag <- aggregate(miss_session_assess ~ participant_id,
+                    compl_itt,
+                    FUN = sum)
 
-names(temp_ag)[names(temp_ag) == "miss_session_assess"] <- "miss_session_assess_sum"
+names(tmp_ag)[names(tmp_ag) == "miss_session_assess"] <- "miss_session_assess_sum"
 
-temp_ag$miss_session_assess_prop <- temp_ag$miss_session_assess_sum / 7
+tmp_ag$miss_session_assess_prop <- tmp_ag$miss_session_assess_sum / 7
 
-compl_itt <- merge(compl_itt, temp_ag, by = "participant_id", all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_ag, by = "participant_id", all.x = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Add potential auxiliary variables ----
@@ -193,14 +193,19 @@ compl_itt_iv <- unique(compl_itt_iv)
 cor.test(compl_itt_iv$confident_design, compl_itt_iv$confident_online, 
          method = "pearson")
 
+plot(compl_itt_iv$confident_design, compl_itt_iv$confident_online)
+abline(lm(compl_itt_iv$confident_online ~ compl_itt_iv$confident_design))
+
 # However, the items are not normal, so also estimate their association using 
 # nonparametric test. Goodman & Kruskal's gamma (given many tied ranks) = .64. See
 # https://statistics.laerd.com/spss-tutorials/goodman-and-kruskals-gamma-using-spss-statistics.php
 
-hist(compl_itt_iv$confident_design)
-shapiro.test(compl_itt_iv$confident_design)
+par(mfrow = c(2, 1))
+hist(compl_itt_iv$confident_design, main = "confident_design")
+hist(compl_itt_iv$confident_online, main = "confident_online")
+par(mfrow = c(1, 1))
 
-hist(compl_itt_iv$confident_online)
+shapiro.test(compl_itt_iv$confident_design)
 shapiro.test(compl_itt_iv$confident_online)
 
 GoodmanKruskalGamma(compl_itt_iv$confident_online, 
@@ -222,26 +227,22 @@ compl_itt_iv$confident_m <- rowMeans(compl_itt_iv[, c("confident_online", "confi
 # Restrict analysis samples ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Conduct search for auxiliary variables in three samples: (a) unrestricted ITT
-# sample, (b) restricted ITT sample (i.e., excluding "HR_COACH", but not using
-# bootstrapping to correct sample size of "HR_TRAINING"), and (c) classification
-# measure completer sample
+# Restrict to three samples: (a) unrestricted ITT sample (i.e., all randomized to 
+# CBM-I or Psychoed. who started S1 training, including "HR_COACH"), (b) restricted 
+# ITT sample (i.e., exclude "HR_COACH", but don't use bootstrapping to correct size
+# of "HR_TRAINING"), and (c) classification measure completer sample
 
-# compl_itt_unrestricted <-          # Unrestricted ITT sample
-# compl_itt_restricted <-            # Restricted ITT sample
-# compl_class_meas_compl <-          # Classification measure completers sample
-
-
-
-
+compl_itt_unrestricted <- compl_itt_iv
+compl_itt_restricted <-   compl_itt_iv[compl_itt_iv$conditioning != "HR_COACH", ]
+compl_class_meas_compl <- compl_itt_iv[compl_itt_iv$class_meas_compl_anlys == 1, ]
 
 # ---------------------------------------------------------------------------- #
 # Search for time-invariant categorical and ordinal auxiliary variables ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Per consultation with Cynthia Tong on 2/22/22, compute mean proportion of missing 
-# data across time points within each level of the potential auxiliary variable
-# (treat ordinal variables as categorical)
+# Per consult with Cynthia Tong on 2/22/22, define function to compute mean 
+# proportion of missing assessments across time points within each level of the 
+# potential auxiliary variable (treat ordinal variables as categorical)
 
 compute_desc_by_level <- function(df) {
   # Compute count, mean, and standard deviation
@@ -262,13 +263,13 @@ compute_desc_by_level <- function(df) {
                          FUN = sd, drop = FALSE)
     
     var_res <- rbind(data.frame(label = var_labels[i],
-                                n =     NA,
-                                M =     NA,
-                                SD =    NA),
+                                n     = NA,
+                                M     = NA,
+                                SD    = NA),
                      data.frame(label = names(tbl),
-                                n =     as.numeric(tbl),
-                                M =     round(ag_mean$x, 2),
-                                SD =    round(ag_sd$x, 2)))
+                                n     = as.numeric(tbl),
+                                M     = round(ag_mean$x, 2),
+                                SD    = round(ag_sd$x, 2)))
     
     res <- rbind(res, var_res)
   }
@@ -276,19 +277,62 @@ compute_desc_by_level <- function(df) {
   return(res)
 }
 
-fct_res_itt_uncorrected <- compute_desc_by_level(compl_itt_iv)
+# Run function for each analysis sample, compute size of each sample, combine 
+# results into table, and export table
 
+fct_res_itt_unrestricted <- compute_desc_by_level(compl_itt_unrestricted)
+fct_res_itt_restricted   <- compute_desc_by_level(compl_itt_restricted)
+fct_res_class_meas_compl <- compute_desc_by_level(compl_class_meas_compl)
 
+nrow(compl_itt_unrestricted) == 1234
+nrow(compl_itt_restricted)   == 953
+nrow(compl_class_meas_compl) == 1073
 
+fct_res <- cbind(fct_res_itt_unrestricted, 
+                 fct_res_itt_restricted[, names(fct_res_itt_restricted) != "label"], 
+                 fct_res_class_meas_compl[, names(fct_res_class_meas_compl) != "label"])
 
+dir.create("./results/search_aux_vars")
+
+write.csv(fct_res,
+          file = "./results/search_aux_vars/potential_cat_ord_aux_vars.csv",
+          row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Search for time-invariant continuous auxiliary variables ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Per consultation with Cynthia Tong on 2/22/22, compute correlation with 
-# proportion of missing data across time points. No need to test "age" and "income"
-# (treated as continuous in analysis) because they are already analysis variables.
+# Relevant variables are not normally distributed. Thus, compute Spearman's rank-
+# order correlation in addition to Pearson's product-moment correlation
+
+par(mfrow = c(3, 2))
+hist(compl_itt_unrestricted$miss_session_assess_prop, main = "miss_session_assess_prop")
+hist(compl_itt_unrestricted$confident_m, main = "confident_m")
+hist(compl_itt_unrestricted$confident_online, main = "confident_online")
+hist(compl_itt_unrestricted$confident_design, main = "confident_design")
+hist(compl_itt_unrestricted$important, main = "important")
+par(mfrow = c(1, 1))
+
+shapiro.test(compl_itt_unrestricted$miss_session_assess_prop)
+shapiro.test(compl_itt_unrestricted$confident_m)
+shapiro.test(compl_itt_unrestricted$confident_online)
+shapiro.test(compl_itt_unrestricted$confident_design)
+shapiro.test(compl_itt_unrestricted$important)
+
+par(mfrow = c(2, 2))
+plot(compl_itt_unrestricted$confident_m, compl_itt_unrestricted$miss_session_assess_prop,
+     xlab = "confident_m", ylab = "miss_session_assess_prop")
+plot(compl_itt_unrestricted$confident_online, compl_itt_unrestricted$miss_session_assess_prop,
+     xlab = "confident_online", ylab = "miss_session_assess_prop")
+plot(compl_itt_unrestricted$confident_design, compl_itt_unrestricted$miss_session_assess_prop,
+     xlab = "confident_design", ylab = "miss_session_assess_prop")
+plot(compl_itt_unrestricted$important, compl_itt_unrestricted$miss_session_assess_prop,
+     xlab = "important", ylab = "miss_session_assess_prop")
+par(mfrow = c(1, 1))
+
+# Per consult with Cynthia Tong on 2/22/22, define function to compute correlation 
+# with proportion of missing assessments across time points. No need to test "age" 
+# and "income" (treated as continuous in analysis) as they are already in analysis.
 
 compute_corr <- function(df) {
   # Compute correlation
@@ -305,17 +349,24 @@ compute_corr <- function(df) {
   
   for (i in 1:length(vars)) {
     n <- sum(!is.na(df[, vars[i]]))
-    corr <- cor.test(df$miss_session_assess_prop, df[, vars[i]], 
-                     method = "pearson")
+    corr_pearson <- cor.test(df$miss_session_assess_prop, df[, vars[i]], 
+                             method = "pearson")
+    corr_spearman <- cor.test(df$miss_session_assess_prop, df[, vars[i]], 
+                              method = "spearman")
     
     var_res <- data.frame(Variable = var_labels[i],
                           n = n,
-                          r = round(corr$estimate, 2),
-                          CI_95_pct = paste0("[",  round(corr$conf.int[1], 2),
-                                             ", ", round(corr$conf.int[2], 2), "]"),
-                          t = round(corr$statistic, 2),
-                          df = corr$parameter,
-                          p = round(corr$p.value, 3))
+                          
+                          r_pearson = round(corr_pearson$estimate, 2),
+                          CI_95_pct = paste0("[",  round(corr_pearson$conf.int[1], 2),
+                                             ", ", round(corr_pearson$conf.int[2], 2), "]"),
+                          t = round(corr_pearson$statistic, 2),
+                          df = corr_pearson$parameter,
+                          p_pearson = round(corr_pearson$p.value, 3),
+                          
+                          r_spearman = round(corr_spearman$estimate, 2),
+                          S = round(corr_spearman$statistic, 2),
+                          p_spearman = round(corr_spearman$p.value, 3))
     
     res <- rbind(res, var_res)
   }
@@ -323,8 +374,26 @@ compute_corr <- function(df) {
   return(res)
 }
 
-num_res_itt_uncorrected <- compute_corr(compl_itt_iv)
+# Run function for each analysis sample, compute size of each sample, combine 
+# results into table, and export table
 
+num_res_itt_unrestricted <- compute_corr(compl_itt_unrestricted)
+num_res_itt_restricted   <- compute_corr(compl_itt_restricted)
+num_res_class_meas_compl <- compute_corr(compl_class_meas_compl)
 
+nrow(compl_itt_unrestricted) == 1234
+nrow(compl_itt_restricted)   == 953
+nrow(compl_class_meas_compl) == 1073
 
+ncol <- length(num_res_itt_unrestricted)
 
+num_res <- rbind(c("ITT Sample (Unrestricted)", rep(NA, ncol - 1)),
+                 num_res_itt_unrestricted,
+                 c("ITT Sample (Restricted)", rep(NA, ncol - 1)),
+                 num_res_itt_restricted,
+                 c("Classification Measure Completer Sample", rep(NA, ncol - 1)),
+                 num_res_class_meas_compl)
+
+write.csv(num_res,
+          file = "./results/search_aux_vars/potential_num_aux_vars.csv",
+          row.names = FALSE)
