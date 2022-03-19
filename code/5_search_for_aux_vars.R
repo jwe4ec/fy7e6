@@ -28,7 +28,8 @@ groundhog_day <- version_control()
 
 # Load packages
 
-groundhog.library(DescTools, groundhog_day)
+pkgs <- c("dplyr", "DescTools")
+groundhog.library(pkgs, groundhog_day)
 
 # ---------------------------------------------------------------------------- #
 # Import data ----
@@ -47,16 +48,12 @@ completion$miss_session_assess <- NA
 completion$miss_session_assess[completion$compl_session_assess == 1] <- 0
 completion$miss_session_assess[completion$compl_session_assess == 0] <- 1
 
-# TODO: Add condition
+# Add condition
 
 completion <- merge(completion, dat2$study[, c("participant_id", "conditioning")],
                     by = "participant_id", all.x = TRUE)
 
-
-
-
-
-# TODO: Add analysis sample indicators
+# Add analysis sample indicators
 
 completion <- merge(completion,
                     dat2$participant[, c("participant_id", "exclude_analysis",
@@ -64,17 +61,9 @@ completion <- merge(completion,
                                          "class_meas_compl_anlys", "s5_train_compl_anlys_c2_4")],
                     by = "participant_id", all.x = TRUE)
 
-
-
-
-
-# TODO: Restrict to ITT sample
+# Restrict to ITT sample
 
 compl_itt <- completion[completion$itt_anlys == 1, ]
-
-
-
-
 
 # Collapse "Eligibility" and "preTest" into "baseline" given that no analysis
 # variable was assessed at both time points. To do so, remove "Eligibility"
@@ -88,14 +77,15 @@ compl_itt$session_only[compl_itt$session_only == "preTest"] <- "baseline"
 # Compute proportion of missing assessments across time points ----
 # ---------------------------------------------------------------------------- #
 
-compl_itt_ag <- aggregate(miss_session_assess ~ participant_id,
-                          compl_itt,
-                          FUN = sum)
+temp_ag <- aggregate(miss_session_assess ~ participant_id,
+                     compl_itt,
+                     FUN = sum)
 
-names(compl_itt_ag)[names(compl_itt_ag) == "miss_session_assess"] <- 
-  "miss_session_assess_sum"
+names(temp_ag)[names(temp_ag) == "miss_session_assess"] <- "miss_session_assess_sum"
 
-compl_itt_ag$miss_session_assess_prop <- compl_itt_ag$miss_session_assess_sum / 7
+temp_ag$miss_session_assess_prop <- temp_ag$miss_session_assess_sum / 7
+
+compl_itt <- merge(compl_itt, temp_ag, by = "participant_id", all.x = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Add potential auxiliary variables ----
@@ -128,17 +118,72 @@ tmp_at$confident_design[tmp_at$confident_design == "Prefer not to answer"] <- 55
 
 tmp_at$confident_design <- as.numeric(tmp_at$confident_design)
 
+# Extract device. Note that "device" is not recorded at "Eligibility" or at "task_name" 
+# of "SESSION_COMPLETE"; remove these rows. Assume that "device" recorded at "preTest" 
+# also applies to "Eligibility"; thus, recode "preTest" as "baseline".
+
+tmp_tl <- dat2$task_log[, c("participant_id", "session_only", "device", "task_name")]
+
+tmp_tl <- tmp_tl[tmp_tl$session_only != "Eligibility" & 
+                   tmp_tl$task_name != "SESSION_COMPLETE", ]
+
+tmp_tl$session_only[tmp_tl$session_only == "preTest"] <- "baseline"
+
+# Recode "device" into "device_col" where multiple device types at a given session 
+# are indicated with a value of "multiple types"
+
+tmp_tl_unq <- unique(tmp_tl[, c("participant_id", "session_only", "device")])
+
+n_devices <- tmp_tl_unq %>%
+  group_by(across(all_of(c("participant_id", "session_only")))) %>%
+  summarise(count=n()) %>%
+  as.data.frame()
+
+names(n_devices)[names(n_devices) == "count"] <- "n_devices"
+
+tmp_tl_unq <- merge(tmp_tl_unq, n_devices, 
+                    by = c("participant_id", "session_only"), all.x = TRUE)
+
+tmp_tl_unq$device_col <- tmp_tl_unq$device
+tmp_tl_unq$device_col[tmp_tl_unq$n_devices > 1] <- "multiple types"
+
+tmp_tl_unq2 <- unique(tmp_tl_unq[, c("participant_id", "session_only", 
+                                     "n_devices", "device_col")])
+
 # Add extracted variables
 
-compl_itt_ag <- merge(compl_itt_ag, tmp_dem, by = "participant_id", all.x = TRUE)
-compl_itt_ag <- merge(compl_itt_ag, tmp_cred, by = "participant_id", all.x = TRUE)
-compl_itt_ag <- merge(compl_itt_ag, tmp_at, by = "participant_id", all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_dem, by = "participant_id", all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_cred, by = "participant_id", all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_at, by = "participant_id", all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_tl_unq2, by = c("participant_id", 
+                                                  "session_only"), all.x = TRUE)
+
+# Sort by "participant_id" and "session_only"
+
+sessions <- c("baseline",
+              paste0(c("first", "second", "third", "fourth", "fifth"), "Session"),
+              "PostFollowUp")
+  
+compl_itt$session_only <- factor(compl_itt$session_only, levels = sessions)
+
+compl_itt <- compl_itt[order(compl_itt$participant_id, compl_itt$session_only), ]
 
 # Recode "prefer not to answer" in potential auxiliary variables
 
 target_cols <- c("confident_online", "confident_design", "important")
 
-compl_itt_ag[, target_cols][compl_itt_ag[, target_cols] == 555] <- NA
+compl_itt[, target_cols][compl_itt[, target_cols] == 555] <- NA
+
+# ---------------------------------------------------------------------------- #
+# Create data frame for time-invariant auxiliary variables ----
+# ---------------------------------------------------------------------------- #
+
+time_varying_cols <- c("session_only", "compl_session_train", "compl_session_assess",
+                       "miss_session_assess", "n_devices", "device_col")
+
+compl_itt_iv <- compl_itt[, names(compl_itt)[!(names(compl_itt) %in% time_varying_cols)]]
+
+compl_itt_iv <- unique(compl_itt_iv)
 
 # ---------------------------------------------------------------------------- #
 # Consider correlation between training confidence items ----
@@ -146,21 +191,21 @@ compl_itt_ag[, target_cols][compl_itt_ag[, target_cols] == 555] <- NA
 
 # "confident_design" and "confident_online" are highly correlated, r = .49
 
-cor.test(compl_itt_ag$confident_design, compl_itt_ag$confident_online, 
+cor.test(compl_itt_iv$confident_design, compl_itt_iv$confident_online, 
          method = "pearson")
 
 # However, the items are not normal, so also estimate their association using 
 # nonparametric test. Goodman & Kruskal's gamma (given many tied ranks) = .64. See
 # https://statistics.laerd.com/spss-tutorials/goodman-and-kruskals-gamma-using-spss-statistics.php
 
-hist(compl_itt_ag$confident_design)
-shapiro.test(compl_itt_ag$confident_design)
+hist(compl_itt_iv$confident_design)
+shapiro.test(compl_itt_iv$confident_design)
 
-hist(compl_itt_ag$confident_online)
-shapiro.test(compl_itt_ag$confident_online)
+hist(compl_itt_iv$confident_online)
+shapiro.test(compl_itt_iv$confident_online)
 
-GoodmanKruskalGamma(compl_itt_ag$confident_online, 
-                    compl_itt_ag$confident_design, conf.level = .95)
+GoodmanKruskalGamma(compl_itt_iv$confident_online, 
+                    compl_itt_iv$confident_design, conf.level = .95)
 
 # Given the strong association, compute and analyze mean of available items, following
 # Hohensee et al. (2020, https://doi.org/hmbk), who found that the mean predicted dropout. 
@@ -168,10 +213,10 @@ GoodmanKruskalGamma(compl_itt_ag$confident_online,
 # "preTest") than "confident_design" (given during "firstSession" training, unclear why 
 # so few have data), also analyze the items separately.
 
-sum(!is.na(compl_itt_ag$confident_online)) == 1229
-sum(!is.na(compl_itt_ag$confident_design)) == 662
+sum(!is.na(compl_itt_iv$confident_online)) == 1229
+sum(!is.na(compl_itt_iv$confident_design)) == 662
 
-compl_itt_ag$confident_m <- rowMeans(compl_itt_ag[, c("confident_online", "confident_design")],
+compl_itt_iv$confident_m <- rowMeans(compl_itt_iv[, c("confident_online", "confident_design")],
                                      na.rm = TRUE)
 
 # ---------------------------------------------------------------------------- #
@@ -188,7 +233,7 @@ compl_itt_ag$confident_m <- rowMeans(compl_itt_ag[, c("confident_online", "confi
 # compl_class_meas_compl <-          # Classification measure completers sample
 
 
-  
+
 
 
 # ---------------------------------------------------------------------------- #
@@ -232,7 +277,7 @@ compute_desc_by_level <- function(df) {
   return(res)
 }
 
-fct_res_itt_uncorrected <- compute_desc_by_level(compl_itt_ag)
+fct_res_itt_uncorrected <- compute_desc_by_level(compl_itt_iv)
 
 
 
@@ -279,7 +324,7 @@ compute_corr <- function(df) {
   return(res)
 }
 
-num_res_itt_uncorrected <- compute_corr(compl_itt_ag)
+num_res_itt_uncorrected <- compute_corr(compl_itt_iv)
 
 
 
