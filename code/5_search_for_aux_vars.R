@@ -119,44 +119,43 @@ tmp_at$confident_design[tmp_at$confident_design == "Prefer not to answer"] <- 55
 tmp_at$confident_design <- as.numeric(tmp_at$confident_design)
 
 # Extract device. Note that "device" is not recorded at "Eligibility" or at "task_name" 
-# of "SESSION_COMPLETE"; remove these rows. Assume that "device" recorded at "preTest" 
-# also applies to "Eligibility"; thus, recode "preTest" as "baseline".
+# of "SESSION_COMPLETE"; remove these rows.
 
 tmp_tl <- dat2$task_log[, c("participant_id", "session_only", "device", "task_name")]
 
 tmp_tl <- tmp_tl[tmp_tl$session_only != "Eligibility" & 
                    tmp_tl$task_name != "SESSION_COMPLETE", ]
 
-tmp_tl$session_only[tmp_tl$session_only == "preTest"] <- "baseline"
+# Compute time-invariant "device_col" representing device types used throughout
+# study (where "multiple types" is more than one type)
 
-# Recode "device" into "device_col" where multiple device types at a given session 
-# are indicated with a value of "multiple types"
-
-tmp_tl_unq <- unique(tmp_tl[, c("participant_id", "session_only", "device")])
+tmp_tl_unq <- unique(tmp_tl[, c("participant_id", "device")])
 
 n_devices <- tmp_tl_unq %>%
-  group_by(across(all_of(c("participant_id", "session_only")))) %>%
+  group_by(across("participant_id")) %>%
   summarise(count=n()) %>%
   as.data.frame()
 
 names(n_devices)[names(n_devices) == "count"] <- "n_devices"
 
 tmp_tl_unq <- merge(tmp_tl_unq, n_devices, 
-                    by = c("participant_id", "session_only"), all.x = TRUE)
+                    by = c("participant_id"), all.x = TRUE)
 
 tmp_tl_unq$device_col <- tmp_tl_unq$device
 tmp_tl_unq$device_col[tmp_tl_unq$n_devices > 1] <- "multiple types"
 
-tmp_tl_unq2 <- unique(tmp_tl_unq[, c("participant_id", "session_only", 
-                                     "n_devices", "device_col")])
+tmp_tl_unq$device_col <-
+  factor(tmp_tl_unq$device_col,
+         levels = c("desktop", "tablet", "mobile", "multiple types"))
+
+tmp_tl_unq2 <- unique(tmp_tl_unq[, c("participant_id", "n_devices", "device_col")])
 
 # Add extracted variables
 
 compl_itt <- merge(compl_itt, tmp_dem, by = "participant_id", all.x = TRUE)
 compl_itt <- merge(compl_itt, tmp_cred, by = "participant_id", all.x = TRUE)
 compl_itt <- merge(compl_itt, tmp_at, by = "participant_id", all.x = TRUE)
-compl_itt <- merge(compl_itt, tmp_tl_unq2, by = c("participant_id", 
-                                                  "session_only"), all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_tl_unq2, by = "participant_id", all.x = TRUE)
 
 # Sort by "participant_id" and "session_only"
 
@@ -179,7 +178,7 @@ compl_itt[, target_cols][compl_itt[, target_cols] == 555] <- NA
 # ---------------------------------------------------------------------------- #
 
 time_varying_cols <- c("session_only", "compl_session_train", "compl_session_assess",
-                       "miss_session_assess", "n_devices", "device_col")
+                       "miss_session_assess")
 
 compl_itt_iv <- compl_itt[, names(compl_itt)[!(names(compl_itt) %in% time_varying_cols)]]
 
@@ -248,10 +247,10 @@ compute_desc_by_level <- function(df) {
   # Compute count, mean, and standard deviation
   
   vars <- c("gender", "race_col", "ethnicity", "country_col", "education",
-            "employment_stat", "marital_stat")
+            "employment_stat", "marital_stat", "device_col")
   
   var_labels <- c("Gender", "Race", "Ethnicity", "Country", "Education",
-                  "Employment Status", "Marital Status")
+                  "Employment Status", "Marital Status", "Device")
   
   res <- data.frame()
   
@@ -325,17 +324,6 @@ compute_corr <- function(df) {
 }
 
 num_res_itt_uncorrected <- compute_corr(compl_itt_iv)
-
-
-
-
-
-# ---------------------------------------------------------------------------- #
-# Search for time-varying categorical auxiliary variables ----
-# ---------------------------------------------------------------------------- #
-
-# TODO: Per consultation with Cynthia Tong on 2/22/22, compute proportion of missing
-# data within each level at each time point
 
 
 
