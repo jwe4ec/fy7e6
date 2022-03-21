@@ -20,7 +20,7 @@ wd_dir <- getwd()
 
 # Load custom functions
 
-source("./code/1_define_functions.R")
+source("./code/01_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -214,8 +214,11 @@ GoodmanKruskalGamma(compl_itt_iv$confident_online,
 # Given the strong association, compute and analyze mean of available items, following
 # Hohensee et al. (2020, https://doi.org/hmbk), who found that the mean predicted dropout. 
 # However, given that far more participants have data for "confident_online" (given at 
-# "preTest") than "confident_design" (given during "firstSession" training, unclear why 
-# so few have data), also analyze the items separately.
+# "preTest") than "confident_design" (given during "firstSession" training), also analyze 
+# the items separately. Note: Henry Behan stated on 3/21/22 that "confident_online" data
+# were likely not collected for participants in conditions other than "CONTROL" after
+# 8/2019 due to a software bug (perhaps addition of a videos page interfered with data
+# collection; the videos page was not added to the "CONTROL" condition).
 
 sum(!is.na(compl_itt_iv$confident_online)) == 1229
 sum(!is.na(compl_itt_iv$confident_design)) == 662
