@@ -35,7 +35,7 @@ groundhog_day <- version_control()
 # Obtain file names of intermediate clean CSV data files
 
 int_cln_data_dir <- paste0(wd_dir, "/data/intermediate_clean")
-filenames <- list.files(int_cln_data_dir, pattern = "*.csv", full.names = FALSE)
+filenames <- list.files(int_cln_data_dir, pattern = "\\.csv$", full.names = FALSE)
 
 # Import tables into list and name tables
 
