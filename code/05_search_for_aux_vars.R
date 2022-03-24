@@ -35,12 +35,13 @@ groundhog.library(pkgs, groundhog_day)
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
-completion <- read.csv("./data/temp/completion.csv")
 load("./data/intermediate_clean_further/dat2.RData")
 
 # ---------------------------------------------------------------------------- #
 # Prepare data ----
 # ---------------------------------------------------------------------------- #
+
+completion <- dat2$completion
 
 # Compute indicator for missing a given session's assessment
 
