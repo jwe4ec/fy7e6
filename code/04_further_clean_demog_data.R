@@ -236,18 +236,19 @@ dat$demographics$country[dat$demographics$country == "Ã…land Islands"] <- "Å
 
 # Define desired levels order (decreasing frequency ending with "prefer not to answer")
 
-country_levels <- unlist(attr(sort(table(dat$demographics$country), decreasing = TRUE), 
-                              "dimnames"))
+country_levels <- names(sort(table(dat$demographics$country), decreasing = TRUE))
 country_levels <- c(country_levels[country_levels != pna], pna)
 
 # Reorder levels of "country"
 
 dat$demographics$country <- factor(dat$demographics$country, levels = country_levels)
 
-# Define "country_col", collapsing countries not in top 5 into "Other"
+# Define "country_col", collapsing countries with fewer than 10 participants into "Other"
 
-top_countries <- head(country_levels, 5)
-all(top_countries == c("United States", "Australia", "Canada", "United Kingdom", "Germany"))
+top_countries <- 
+  names(table(dat$demographics$country)[as.numeric(table(dat$demographics$country)) > 10])
+
+all(top_countries == c("United States", "Australia", "United Kingdom", "Canada"))
 
 dat$demographics$country_col <- NA
 
