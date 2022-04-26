@@ -258,7 +258,7 @@ model_bbsiq_neg_a2_2 <-
              data = jagsdata, inits = inits, n.chains = 1)
 
 options(scipen = 999)                 # Prevent printing in scientific notation
-total_iterations <- 10                # Specify total number of iterations
+total_iterations <- 350000            # Specify total number of iterations
 burn_iterations <- total_iterations/2 # Specify burn-in period (typically half)
 remaining_iterations <- total_iterations - burn_iterations
 
@@ -575,7 +575,7 @@ model_oasis_a2_2 <-
              data = jagsdata, inits = inits, n.chains = 1)
 
 options(scipen = 999)                 # Prevent printing in scientific notation
-total_iterations <- 10            # Specify total number of iterations
+total_iterations <- 350000            # Specify total number of iterations
 burn_iterations <- total_iterations/2 # Specify burn-in period (typically half)
 remaining_iterations <- total_iterations - burn_iterations
 

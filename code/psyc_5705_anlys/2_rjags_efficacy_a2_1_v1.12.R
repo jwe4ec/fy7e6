@@ -1,73 +1,54 @@
 # ---------------------------------------------------------------------------- #
-# RJAGS Models for Negative BBSIQ and OASIS: CBM vs. Psychoeducation v2.0
+# RJAGS Models for Negative BBSIQ and OASIS: CBM vs. Psychoeducation v1.12
 # Authors: Katharine E. Daniel and Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-# Notes ----
+# 1. TODO: Test MCAR to identify auxiliary variables ----
 # ---------------------------------------------------------------------------- #
 
-# Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
-# directory to parent folder
+# For main outcomes paper (but not for PSYC 7505 paper), run in a separate
+# script correlations between all measured variables and their missing data
+# indicators. If correlation between a measured variable and a missing data
+# indicator exceeds .4, then add the variable as auxiliary in the following
+# code using code from Class 24 as an example.
 
 # ---------------------------------------------------------------------------- #
-# Store working directory, check correct R version, load packages ----
+# 2. Load packages and set working directory ----
 # ---------------------------------------------------------------------------- #
 
-# Store working directory
+library(rjags)
 
-wd_dir <- getwd()
-
-# Load custom functions
-
-source("./code/01_define_functions.R")
-
-# Check correct R version, load groundhog package, and specify groundhog_day
-
-groundhog_day <- version_control()
-
-# Load packages
-
-groundhog.library(rjags, groundhog_day)
+setwd("/Users/katiedaniel/Documents/UVA/Year 4/Fall/Bayesian/Class Paper/Analyses")
 
 # ---------------------------------------------------------------------------- #
-# TODO: Add auxiliary variables ----
-# ---------------------------------------------------------------------------- #
-
-# Add any auxiliary variables to this code (see code from Class 24 as example)
-
-
-
-
-
-# ---------------------------------------------------------------------------- #
-# Negative BBSIQ for session 1 assessment completers ----
+# 3. Negative BBSIQ for session 1 assessment completers ----
 # ---------------------------------------------------------------------------- #
 
 # Load data ----
 
-bbsiq_dat <- read.csv("./data/temp/bbsiq_session_1_ax_completers_v2.0.csv")
+bbsiq_dat <- read.csv("./Data/bbsiq_session_1_ax_completers_v1.0.csv")
 
 # Extract data in wide format for RJAGS ----
 
 # This outcome is measured at 4 time points, so make matrix with 4 columns.
 
-neg_bias <- matrix(NA, nrow = length(unique(bbsiq_dat$participant_id)),
+neg_bias <- matrix(NA, nrow = length(unique(bbsiq_dat$participantID)),
                    ncol = 4) # 4 time points
 
-for (i in 1:length(unique(bbsiq_dat$participant_id))) {
+for (i in 1:length(unique(bbsiq_dat$participantID))) {
   neg_bias[i, 1] <-
-    bbsiq_dat$neg_bias[which(bbsiq_dat$participant_id ==
-                               unique(bbsiq_dat$participant_id)[i])][1]
+    bbsiq_dat$neg_bias[which(bbsiq_dat$participantID ==
+                               unique(bbsiq_dat$participantID)[i])][1]
   neg_bias[i, 2] <-
-    bbsiq_dat$neg_bias[which(bbsiq_dat$participant_id ==
-                               unique(bbsiq_dat$participant_id)[i])][2]
+    bbsiq_dat$neg_bias[which(bbsiq_dat$participantID ==
+                               unique(bbsiq_dat$participantID)[i])][2]
   neg_bias[i, 3] <-
-    bbsiq_dat$neg_bias[which(bbsiq_dat$participant_id ==
-                               unique(bbsiq_dat$participant_id)[i])][3]
+    bbsiq_dat$neg_bias[which(bbsiq_dat$participantID ==
+                               unique(bbsiq_dat$participantID)[i])][3]
   neg_bias[i, 4] <-
-    bbsiq_dat$neg_bias[which(bbsiq_dat$participant_id ==
-                               unique(bbsiq_dat$participant_id)[i])][4]
+    bbsiq_dat$neg_bias[which(bbsiq_dat$participantID ==
+                               unique(bbsiq_dat$participantID)[i])][4]
 }
 
 # Because these values are same for all subjects over time, just create vector.
@@ -79,24 +60,24 @@ S3 <- c(0, 0, 0, 1)
 # Because these values do not change over time within a participant, just take
 # the first value for each participant
 
-SES <- rep(NA, length(unique(bbsiq_dat$participant_id)))
-Age <- rep(NA, length(unique(bbsiq_dat$participant_id)))
-a1 <- rep(NA, length(unique(bbsiq_dat$participant_id)))
-a2_1 <- rep(NA, length(unique(bbsiq_dat$participant_id)))
+SES <- rep(NA, length(unique(bbsiq_dat$participantID)))
+Age <- rep(NA, length(unique(bbsiq_dat$participantID)))
+a1 <- rep(NA, length(unique(bbsiq_dat$participantID)))
+a2_1 <- rep(NA, length(unique(bbsiq_dat$participantID)))
 
-for (i in 1:length(unique(bbsiq_dat$participant_id))) {
+for (i in 1:length(unique(bbsiq_dat$participantID))) {
   SES[i] <-
-    bbsiq_dat$income_dollar_centered[which(bbsiq_dat$participant_id ==
-                                             unique(bbsiq_dat$participant_id)[i])][1]
+    bbsiq_dat$income_dollar_centered[which(bbsiq_dat$participantID ==
+                                             unique(bbsiq_dat$participantID)[i])][1]
   Age[i] <-
-    bbsiq_dat$age_centered[which(bbsiq_dat$participant_id ==
-                                   unique(bbsiq_dat$participant_id)[i])][1]
+    bbsiq_dat$age_centered[which(bbsiq_dat$participantID ==
+                                   unique(bbsiq_dat$participantID)[i])][1]
   a1[i] <-
-    bbsiq_dat$a1[which(bbsiq_dat$participant_id ==
-                         unique(bbsiq_dat$participant_id)[i])][1]
+    bbsiq_dat$a1[which(bbsiq_dat$participantID ==
+                         unique(bbsiq_dat$participantID)[i])][1]
   a2_1[i] <-
-    bbsiq_dat$a2_1[which(bbsiq_dat$participant_id ==
-                           unique(bbsiq_dat$participant_id)[i])][1]
+    bbsiq_dat$a2_1[which(bbsiq_dat$participantID ==
+                           unique(bbsiq_dat$participantID)[i])][1]
 }
 
 # Specify JAGS model with likelihood, priors, and parameters of interest ----
@@ -246,8 +227,8 @@ outcome_name <- "neg_bias"                      # Specify outcome name
 sample_name <- "session_1_ax_completers"        # Specify sample name
 a2_name <- "a2_1"                               # Specify a2 contrast name
 
-dir.create("./results")
-path1 <- paste0("./results/", outcome_name, "_", sample_name, "_", a2_name)
+dir.create("./Results")
+path1 <- paste0("./Results/", outcome_name, "_", sample_name, "_", a2_name)
 dir.create(path1)
 
 writeLines(modelString_bbsiq_neg_a2_1,
@@ -261,7 +242,7 @@ inits <- list(beta = rep(0, 44), Inv_Sig_e2 = 1,
 
 # Specify data ----
 
-jagsdata <- list(N = length(unique(bbsiq_dat$participant_id)),
+jagsdata <- list(N = length(unique(bbsiq_dat$participantID)),
                  J = 4,
                  SES = SES,
                  Age = Age,
@@ -277,7 +258,7 @@ model_bbsiq_neg_a2_1 <-
              data = jagsdata, inits = inits, n.chains = 1)
 
 options(scipen = 999)                 # Prevent printing in scientific notation
-total_iterations <- 10                # Specify total number of iterations
+total_iterations <- 350000            # Specify total number of iterations
 burn_iterations <- total_iterations/2 # Specify burn-in period (typically half)
 remaining_iterations <- total_iterations - burn_iterations
 
@@ -350,42 +331,42 @@ print(paste0("All parameters in (-1.96, 1.96): ",
 sink()
 
 # ---------------------------------------------------------------------------- #
-# OASIS for session 1 assessment completers ----
+# 4. OASIS for session 1 assessment completers ----
 # ---------------------------------------------------------------------------- #
 
 # Load data ----
 
-oasis_dat <- read.csv("./data/temp/oa_session_1_ax_completers_v2.0.csv")
+oasis_dat <- read.csv("./Data/oa_session_1_ax_completers_v1.0.csv")
 
 # Extract data in wide format for RJAGS ----
 
 # This outcome is measured at 7 time points, so make matrix with 7 columns.
 
-anxiety_scale <- matrix(NA, nrow = length(unique(oasis_dat$participant_id)),
+anxiety_scale <- matrix(NA, nrow = length(unique(oasis_dat$participantID)),
                         ncol = 7) # 7 time points
 
-for (i in 1:length(unique(oasis_dat$participant_id))) {
+for (i in 1:length(unique(oasis_dat$participantID))) {
   anxiety_scale[i, 1] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][1]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][1]
   anxiety_scale[i, 2] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][2]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][2]
   anxiety_scale[i, 3] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][3]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][3]
   anxiety_scale[i, 4] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][4]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][4]
   anxiety_scale[i, 5] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][5]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][5]
   anxiety_scale[i, 6] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][6]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][6]
   anxiety_scale[i, 7] <-
-    oasis_dat$anxiety_scale[which(oasis_dat$participant_id ==
-                                    unique(oasis_dat$participant_id)[i])][7]
+    oasis_dat$anxiety_scale[which(oasis_dat$participantID ==
+                                    unique(oasis_dat$participantID)[i])][7]
 }
 
 # Because these values are same for all subjects over time, just create vector.
@@ -397,24 +378,24 @@ S3 <- c(0, 0, 0, 0, 0, 0, 1)
 # Because these values do not change over time within a participant, just take
 # the first value for each participant
 
-SES <- rep(NA, length(unique(oasis_dat$participant_id)))
-Age <- rep(NA, length(unique(oasis_dat$participant_id)))
-a1 <- rep(NA, length(unique(oasis_dat$participant_id)))
-a2_1 <- rep(NA, length(unique(oasis_dat$participant_id)))
+SES <- rep(NA, length(unique(oasis_dat$participantID)))
+Age <- rep(NA, length(unique(oasis_dat$participantID)))
+a1 <- rep(NA, length(unique(oasis_dat$participantID)))
+a2_1 <- rep(NA, length(unique(oasis_dat$participantID)))
 
-for (i in 1:length(unique(oasis_dat$participant_id))) {
+for (i in 1:length(unique(oasis_dat$participantID))) {
   SES[i] <-
-    oasis_dat$income_dollar_centered[which(oasis_dat$participant_id ==
-                                             unique(oasis_dat$participant_id)[i])][1]
+    oasis_dat$income_dollar_centered[which(oasis_dat$participantID ==
+                                             unique(oasis_dat$participantID)[i])][1]
   Age[i] <-
-    oasis_dat$age_centered[which(oasis_dat$participant_id ==
-                                   unique(oasis_dat$participant_id)[i])][1]
+    oasis_dat$age_centered[which(oasis_dat$participantID ==
+                                   unique(oasis_dat$participantID)[i])][1]
   a1[i] <-
-    oasis_dat$a1[which(oasis_dat$participant_id ==
-                         unique(oasis_dat$participant_id)[i])][1]
+    oasis_dat$a1[which(oasis_dat$participantID ==
+                         unique(oasis_dat$participantID)[i])][1]
   a2_1[i] <-
-    oasis_dat$a2_1[which(oasis_dat$participant_id ==
-                           unique(oasis_dat$participant_id)[i])][1]
+    oasis_dat$a2_1[which(oasis_dat$participantID ==
+                           unique(oasis_dat$participantID)[i])][1]
 }
 
 # Specify JAGS model with likelihood, priors, and parameters of interest ----
@@ -564,8 +545,8 @@ outcome_name <- "anxiety_scale"                 # Specify outcome name
 sample_name <- "session_1_ax_completers"        # Specify sample name
 a2_name <- "a2_1"                               # Specify a2 contrast name
 
-dir.create("./results")
-path1 <- paste0("./results/", outcome_name, "_", sample_name, "_", a2_name)
+dir.create("./Results")
+path1 <- paste0("./Results/", outcome_name, "_", sample_name, "_", a2_name)
 dir.create(path1)
 
 writeLines(modelString_oasis_a2_1,
@@ -579,7 +560,7 @@ inits <- list(beta = rep(0, 44), Inv_Sig_e2 = 1,
 
 # Specify data ----
 
-jagsdata <- list(N = length(unique(oasis_dat$participant_id)),
+jagsdata <- list(N = length(unique(oasis_dat$participantID)),
                  J = 7,
                  SES = SES,
                  Age = Age,
@@ -595,7 +576,7 @@ model_oasis_a2_1 <-
              data = jagsdata, inits = inits, n.chains = 1)
 
 options(scipen = 999)                 # Prevent printing in scientific notation
-total_iterations <- 10                # Specify total number of iterations
+total_iterations <- 350000            # Specify total number of iterations
 burn_iterations <- total_iterations/2 # Specify burn-in period (typically half)
 remaining_iterations <- total_iterations - burn_iterations
 
