@@ -300,6 +300,17 @@ dat3$oa$oa_m <- rowMeans(dat3$oa[, oa_items], na.rm = TRUE)
 length(dass21_as_items) == 7
 dat3$dass21_as$dass21_as_m <- dat3$dass21_as$dass21_as_total_anal / 7
 
+# Change NaN values (occur when all items are NA) to NA. This was already done
+# for "dass21_as_total_anal" used to compute "dass21_as_m".
+
+dat3$rr$rr_neg_threat_m[is.nan(dat3$rr$rr_neg_threat_m)] <- NA
+dat3$rr$rr_pos_threat_m[is.nan(dat3$rr$rr_pos_threat_m)] <- NA
+dat3$bbsiq$bbsiq_neg_m[is.nan(dat3$bbsiq$bbsiq_neg_m)] <- NA
+dat3$bbsiq$bbsiq_ben_m[is.nan(dat3$bbsiq$bbsiq_ben_m)] <- NA
+dat3$oa$oa_m[is.nan(dat3$oa$oa_m)] <- NA
+
+sum(is.nan(dat3$dass21_as$dass21_as_m)) == 0
+
 # ---------------------------------------------------------------------------- #
 # Collapse "Eligibility" and "preTest" into "baseline" ----
 # ---------------------------------------------------------------------------- #
@@ -508,9 +519,9 @@ wd_c2_4_s5_train_compl   <- grand_mean_center(wd_c2_4_s5_train_compl)
 
 unneeded_a2 <- c("a2_1", "a2_2", "a2_3")
 
-wd_c1_corr_itt <- 
+wd_c1_corr_itt <-
   lapply(wd_c1_corr_itt,            function(x) { x[, !(names(x) %in% unneeded_a2)]})
-wd_c1_corr_s5_train_compl <- 
+wd_c1_corr_s5_train_compl <-
   lapply(wd_c1_corr_s5_train_compl, function(x) { x[, !(names(x) %in% unneeded_a2)]})
 
 wd_c2_4_class_meas_compl$a1 <- NULL
