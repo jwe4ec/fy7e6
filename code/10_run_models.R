@@ -43,7 +43,7 @@ load("./data/final_clean/wd_c2_4_s5_train_compl.RData")
 load("./results/bayesian/model_and_initial_values/inits.RData")
 
 # ---------------------------------------------------------------------------- #
-# Specify data ----
+# Define "specify_jags_dat()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to specify JAGS data for non-OASIS (4 time points) and OASIS
@@ -78,6 +78,10 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
                    t2                  = t2,
                    y                   = y_mat)
 }
+
+# ---------------------------------------------------------------------------- #
+# Define "run_jags_model()" ----
+# ---------------------------------------------------------------------------- #
 
 # Define function to run JAGS model
 
@@ -173,6 +177,10 @@ run_jags_model <- function(sample, jags_dat, inits,
   
   sink()
 }
+
+# ---------------------------------------------------------------------------- #
+# Run models ----
+# ---------------------------------------------------------------------------- #
 
 # TODO: Test individual models and potentially combine functions
 
