@@ -63,14 +63,20 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
   
   y_mat <- as.matrix(df[, paste0(y_var, ".", assessed_at_j)])
   
-  jags_dat <- list(N      = length(df[, "participant_id"]),
-                   J      = length(assessed_at_j),
-                   income = df[, "income_dollar_ctr"],
-                   age    = df[, "age_ctr"],
-                   a      = df[, a_contrast],
-                   t1     = t1, 
-                   t2     = t2,
-                   y      = y_mat)
+  jags_dat <- list(N                   = length(df[, "participant_id"]),
+                   J                   = length(assessed_at_j),
+                   income              = df[, "income_dollar_ctr"],
+                   age                 = df[, "age_ctr"],
+                   employment_stat_col = df[, "employment_stat_col"],
+                   marital_stat_col    = df[, "marital_stat_col"],
+                   confident_online    = df[, "confident_online"],
+                   important           = df[, "important"],
+                   gender_col          = df[, "gender_col"],
+                   device_col_bin      = df[, "device_col_bin"],
+                   a                   = df[, a_contrast],
+                   t1                  = t1, 
+                   t2                  = t2,
+                   y                   = y_mat)
 }
 
 # Define function to run JAGS model

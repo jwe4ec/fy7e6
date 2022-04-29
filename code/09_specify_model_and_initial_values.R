@@ -32,7 +32,10 @@ groundhog_day <- version_control()
 # Specify model ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Add auxiliary variables (see code from Class 24 as example)
+# TODO: Exclude cases where a = 0 prior to analysis? Also, age and income are
+# currently centered prior to analysis, but perhaps it's better to center them
+# as part of the model (i.e., "age[i] - mean(age[ ])"; see Class 16). Likely
+# need to center auxiliary variables "confident_online" and "important" too.
 
 
 
@@ -68,11 +71,30 @@ model_string = "model {
                    + beta[19]*income[i]*age[i] 
                    + beta[20]*a[i]*income[i]*age[i]
 
-    # Because we have missing data on the age and income predictors
-
+    # For missing data handling, assume MCAR for age given few missing values and 
+    # assume MAR for income and for y given the auxiliary variables below
+      
     age[i] ~ dnorm(mu_age, Inv_Sig_age)
-    income[i] ~ dnorm(mu_income, Inv_Sig_income)
-
+    
+    # TODO (RESOLVE ERROR FOR mu_income; NEED TO CREATE DUMMY VARIABLES FOR FACTORS 
+    # employment_stat_col AND marital_stat_col?)
+    
+    income[i] ~ dnorm(mu_income[i], Inv_Sig_income)
+    mu_income[i] <- beta[21] + beta[22]*employment_stat_col[i]
+                    + beta[23]*marital_stat_col[i]
+                    + beta[24]*confident_online[i] + beta[25]*important[i]
+                    
+    
+    
+    
+    
+    # TODO: ADD TIME-INVARIANT gender_col AND device_col_bin AS AUXILIARY VARIABLES 
+    # PREDICTING y
+    
+    
+    
+    
+    
     for (j in 1:J) {
       y[i, j] ~ dnorm(mu_Y[i, j], Inv_Sig_e2)
 
@@ -84,7 +106,7 @@ model_string = "model {
 
   # Specify priors for model parameters (all uninformative)
 
-  for (i in 1:20) {               # All 20 betas have same normal distribution
+  for (i in 1:25) {               # All 25 betas have same normal distribution
     beta[i] ~ dnorm(0, 1.0E-6)
   }
 
@@ -156,7 +178,7 @@ model_string = "model {
 # Specify initial values ----
 # ---------------------------------------------------------------------------- #
 
-inits <- list(beta = rep(0, 20), Inv_Sig_e2 = 1,
+inits <- list(beta = rep(0, 25), Inv_Sig_e2 = 1,
               Inv_cov = diag(3),
               .RNG.name = "base::Wichmann-Hill", .RNG.seed = 11)
 
