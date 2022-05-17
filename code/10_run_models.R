@@ -28,7 +28,12 @@ groundhog_day <- version_control()
 
 # Load packages
 
-groundhog.library(rjags, groundhog_day)
+pkgs <- c("fastDummies", "rjags")
+groundhog.library(pkgs, groundhog_day)
+
+# Set seed
+
+set.seed(1234)
 
 # ---------------------------------------------------------------------------- #
 # Import data and initial values ----
@@ -43,6 +48,63 @@ load("./data/final_clean/wd_c2_4_s5_train_compl.RData")
 load("./results/bayesian/model_and_initial_values/inits.RData")
 
 # ---------------------------------------------------------------------------- #
+# Define "impute_mcar_nominal()" ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to impute missing values for nominal variables we assume are
+# MCAR by randomly assigning levels to NAs in accordance with the distribution 
+# of observed levels
+
+impute_mcar_nominal <- function(df, mcar_nominal_vars) {
+  for (i in 1:length(mcar_nominal_vars)) {
+    nominal_var <- mcar_nominal_vars[i]
+    
+    imp_nominal_var <- paste0(nominal_var, "_imp")
+    
+    # Get numeric levels of nominal variable, excluding NA
+    
+    numeric_levels <- as.numeric(df[, nominal_var][!is.na(df[, nominal_var])])
+    numeric_levels <- sort(unique(numeric_levels))
+    
+    # Compute number of NAs in nominal variable and proportions of observed levels
+    
+    number_of_nas <- sum(is.na(df[, nominal_var]))
+    level_probabilities <- prop.table(table(df[, nominal_var]))
+    
+    # Randomly assign levels to NAs weighted by proportions of observed levels
+    
+    weighted_rnd_numeric_levels <- sample(numeric_levels, size = number_of_nas, 
+                                          replace = TRUE, prob = level_probabilities)
+    weighted_rnd_character_levels <- levels(df[, nominal_var])[weighted_rnd_numeric_levels]
+    
+    df[, imp_nominal_var] <- df[, nominal_var]
+    df[, imp_nominal_var][is.na(df[, imp_nominal_var])] <- weighted_rnd_character_levels
+  }
+  
+  return(df)
+}
+
+# ---------------------------------------------------------------------------- #
+# Define "dummy_code()" ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to dummy code certain nominal variables. Make the most frequent 
+# level the reference group.
+
+dummy_code <- function(df, nominal_vars) {
+  df <- dummy_cols(df, 
+                   select_columns = nominal_vars,
+                   remove_most_frequent_dummy = TRUE,
+                   ignore_na = TRUE)
+  
+  names(df) <- gsub(",", "",  names(df))
+  names(df) <- gsub("/", "_", names(df))
+  names(df) <- gsub(" ", "_", names(df))
+  
+  return(df)
+}
+
+# ---------------------------------------------------------------------------- #
 # Define "specify_jags_dat()" ----
 # ---------------------------------------------------------------------------- #
 
@@ -50,6 +112,24 @@ load("./results/bayesian/model_and_initial_values/inits.RData")
 # (7 time points) outcomes for a given sample and contrast
 
 specify_jags_dat <- function(df, a_contrast, y_var) {
+  # Restrict to groups involved in "a1" or "a2" contrast (i.e., where contrast
+  # code is 1 or -1)
+  
+  df <- df[df[, a_contrast] %in% c(-1, 1), ]
+
+  # Impute missing values for nominal variables we assume are MCAR
+
+  mcar_nominal_vars <- c("employment_stat_col", "marital_stat_col", "gender_col")
+  df <- impute_mcar_nominal(df, mcar_nominal_vars)
+  
+  # Dummy code nominal variables given that JAGS does not recognize them
+  
+  nominal_vars <- c("employment_stat_col_imp", "marital_stat_col_imp", "gender_col_imp", 
+                    "device_col_bin")
+  df <- dummy_code(df, nominal_vars)
+  
+  # Define piecewise linear time variables
+  
   if (y_var %in% c("rr_neg_threat_m", "rr_pos_threat_m",
                    "bbsiq_neg_m", "bbsiq_ben_m", "dass21_as_m")) {
     assessed_at_j <- c(1, 4, 6, 7)
@@ -61,22 +141,64 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
     t2            <- c(0, 0, 0, 0, 0, 0, 1)
   }
   
+  # Compute mean and precision for age and confident_online based on observed data
+  
+  mu_age <- mean(df$age, na.rm = TRUE)
+  mu_confident_online <- mean(df$confident_online, na.rm = TRUE)
+  
+  inv_sig_age              <- 1/var(df$age, na.rm = TRUE)
+  inv_sig_confident_online <- 1/var(df$confident_online, na.rm = TRUE)
+  
+  # Create matrix for outcome
+  
   y_mat <- as.matrix(df[, paste0(y_var, ".", assessed_at_j)])
   
-  jags_dat <- list(N                   = length(df[, "participant_id"]),
-                   J                   = length(assessed_at_j),
-                   income              = df[, "income_dollar_ctr"],
-                   age                 = df[, "age_ctr"],
-                   employment_stat_col = df[, "employment_stat_col"],
-                   marital_stat_col    = df[, "marital_stat_col"],
-                   confident_online    = df[, "confident_online"],
-                   important           = df[, "important"],
-                   gender_col          = df[, "gender_col"],
-                   device_col_bin      = df[, "device_col_bin"],
-                   a                   = df[, a_contrast],
-                   t1                  = t1, 
-                   t2                  = t2,
-                   y                   = y_mat)
+  # Create missing data indicator matrix for outcome (0 = present, 1 = missing)
+  
+  r_mat <- is.na(y_mat)
+  
+  # Combine elements into list
+  
+  jags_dat <- list(N                        = length(df[, "participant_id"]),
+                   J                        = length(assessed_at_j),
+                   
+                   income                   = df[, "income_dollar"],
+                   income_ind               = df[, "income_ind"],
+                   age                      = df[, "age"],
+                   
+                   employment_stat_col      = df[, "employment_stat_col"],
+                   marital_stat_col         = df[, "marital_stat_col"],
+                   gender_col               = df[, "gender_col"],
+                   
+                   employment_stat_col_imp  = df[, "employment_stat_col_imp"],
+                   marital_stat_col_imp     = df[, "marital_stat_col_imp"],
+                   gender_col_imp           = df[, "gender_col_imp"],
+                   
+                   device_col_bin           = df[, "device_col_bin"],
+                   
+                   empl_Student             = df[, "employment_stat_col_imp_Student"],
+                   empl_Other_or_Unknown    = df[, "employment_stat_col_imp_Other_or_Unknown"],
+                   mrtl_Single_or_Dating    = df[, "marital_stat_col_imp_Single_or_Dating"],
+                   mrtl_Sep_Div_or_Wid      = df[, "marital_stat_col_imp_Separated_Divorced_or_Widowed"],
+                   mrtl_Other               = df[, "marital_stat_col_imp_Other"],
+                   gndr_Male                = df[, "gender_col_imp_Male"],
+                   gndr_Trans_or_Other      = df[, "gender_col_imp_Transgender_Other"],
+                   
+                   dvce_multiple_types      = df[, "device_col_bin_multiple_types"],
+                   
+                   confident_online         = df[, "confident_online"],
+                   important                = df[, "important"],
+                   
+                   mu_age                   = mu_age,
+                   mu_confident_online      = mu_confident_online,
+                   inv_sig_age              = inv_sig_age,
+                   inv_sig_confident_online = inv_sig_confident_online,
+                   
+                   a                        = df[, a_contrast],
+                   t1                       = t1, 
+                   t2                       = t2,
+                   y                        = y_mat,
+                   r                        = r_mat)
 }
 
 # ---------------------------------------------------------------------------- #
@@ -110,7 +232,7 @@ run_jags_model <- function(sample, jags_dat, inits,
 
   time0 <- proc.time()
   model_samples <- coda.samples(jags_model,
-                                "para",
+                                c("beta", "gamma", "para"),
                                 n.iter = remaining_iterations)
   (sampling_time <- proc.time() - time0)
 
@@ -182,14 +304,23 @@ run_jags_model <- function(sample, jags_dat, inits,
 # Run models ----
 # ---------------------------------------------------------------------------- #
 
+# TODO: Do we need "income_ind" in "jags_dat"?
+
+
+
+
 # TODO: Test individual models and potentially combine functions
 
-jags_dat <- specify_jags_dat(wd_c1_corr_itt[[1]], "a1", "bbsiq_neg_m")
+
+
+
+test_df <- wd_c1_corr_itt[[1]]
+
+jags_dat <- specify_jags_dat(test_df, "a1", "bbsiq_neg_m")
 run_jags_model("c1_corr_itt", jags_dat, inits, "a1", "bbsiq_neg_m", 10)
 
-jags_dat <- specify_jags_dat(wd_c1_corr_itt[[1]], "a1", "oa_m")
+jags_dat <- specify_jags_dat(test_df, "a1", "oa_m")
 run_jags_model("c1_corr_itt", jags_dat, inits, "a1", "oa_m", 10)
-
 
 
 

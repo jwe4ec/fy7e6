@@ -32,145 +32,158 @@ groundhog_day <- version_control()
 # Specify model ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Exclude cases where a = 0 prior to analysis? Also, age and income are
-# currently centered prior to analysis, but perhaps it's better to center them
-# as part of the model (i.e., "age[i] - mean(age[ ])"; see Class 16). Likely
-# need to center auxiliary variables "confident_online" and "important" too.
-
-
-
-
-
 # Specify JAGS model with likelihood, priors, and parameters of interest
 
 model_string = "model {
-  # Specify likelihood for piecewise linear multilevel model
-
+  # Specify likelihood for piecewise linear multilevel model and selection model
+  
   for (i in 1:N) {
+    # Grand-mean-center continuous covariates and auxiliary variables
+    
+    income_ctr[i] <- income[i] - mean(income)
+    age_ctr[i] <- age[i] - mean(age)
+    
+    confident_online_ctr[i] <- confident_online[i] - mean(confident_online)
+    important_ctr[i] <- important[i] - mean(important)
+    
+    # Level 2 equations of multilevel model
 
-    # Random effects
+    RE[i, 1:3] ~ dmnorm(mu_RE[i, 1:3], inv_cov[1:3, 1:3])
 
-    RE[i, 1:3] ~ dmnorm(mu_RE[i, 1:3], Inv_cov[1:3, 1:3])
+      # Mean random intercept B0i
 
-    # Mean random intercept B0i
+    mu_RE[i, 1] <- beta[1] + beta[2]*a[i] + beta[3]*income_ctr[i] + beta[4]*age_ctr[i] +
+                   beta[5]*a[i]*income_ctr[i] + beta[6]*a[i]*age_ctr[i] +
+                   beta[7]*income_ctr[i]*age_ctr[i] +
+                   beta[8]*a[i]*income_ctr[i]*age_ctr[i]
+                   
+      # Mean random slope B1i (baseline to Session 5)
 
-    mu_RE[i, 1] <- beta[1] + beta[2]*income[i] + beta[3]*age[i]
-                   + beta[4]*income[i]*age[i]
+    mu_RE[i, 2] <- beta[9] + beta[10]*a[i] + beta[11]*income_ctr[i] + beta[12]*age_ctr[i] +
+                   beta[13]*a[i]*income_ctr[i] + beta[14]*a[i]*age_ctr[i] +
+                   beta[15]*income_ctr[i]*age_ctr[i] +
+                   beta[16]*a[i]*income_ctr[i]*age_ctr[i]
 
-    # Mean random slope B1i (baseline to Session 5)
+      # Mean random slope B2i (Session 5 to follow-up)
 
-    mu_RE[i, 2] <- beta[5] + beta[6]*a[i] + beta[7]*income[i] + beta[8]*age[i]
-                   + beta[9]*a[i]*income[i] + beta[10]*a[i]*age[i]
-                   + beta[11]*income[i]*age[i]
-                   + beta[12]*a[i]*income[i]*age[i]
-
-    # Mean random slope B2i (Session 5 to follow-up)
-
-    mu_RE[i, 3] <- beta[13] + beta[14]*a[i] + beta[15]*income[i] + beta[16]*age[i] 
-                   + beta[17]*a[i]*income[i] + beta[18]*a[i]*age[i]
-                   + beta[19]*income[i]*age[i] 
-                   + beta[20]*a[i]*income[i]*age[i]
-
-    # For missing data handling, assume MCAR for age given few missing values and 
-    # assume MAR for income and for y given the auxiliary variables below
-      
-    age[i] ~ dnorm(mu_age, Inv_Sig_age)
-    
-    # TODO (RESOLVE ERROR FOR mu_income; NEED TO CREATE DUMMY VARIABLES FOR FACTORS 
-    # employment_stat_col AND marital_stat_col?)
-    
-    income[i] ~ dnorm(mu_income[i], Inv_Sig_income)
-    mu_income[i] <- beta[21] + beta[22]*employment_stat_col[i]
-                    + beta[23]*marital_stat_col[i]
-                    + beta[24]*confident_online[i] + beta[25]*important[i]
-                    
-    
-    
-    
-    
-    # TODO: ADD TIME-INVARIANT gender_col AND device_col_bin AS AUXILIARY VARIABLES 
-    # PREDICTING y
-    
-    
-    
-    
+    mu_RE[i, 3] <- beta[17] + beta[18]*a[i] + beta[19]*income_ctr[i] + beta[20]*age_ctr[i] +
+                   beta[21]*a[i]*income_ctr[i] + beta[22]*a[i]*age_ctr[i] +
+                   beta[23]*income_ctr[i]*age_ctr[i] +
+                   beta[24]*a[i]*income_ctr[i]*age_ctr[i]
     
     for (j in 1:J) {
-      y[i, j] ~ dnorm(mu_Y[i, j], Inv_Sig_e2)
+      # Level 1 equation of multilevel model
+      
+      y[i, j] ~ dnorm(mu_Y[i, j], inv_sig_e2)
 
-      # Expected outcome for each participant at each time point
+        # Expected outcome for each participant at each time point
 
       mu_Y[i, j] <- RE[i, 1] + RE[i, 2]*t1[j] + RE[i, 3]*t2[j]
+      
+      # Selection model to handle missing data in y[i, j]. Assume MAR conditioned 
+      # on auxiliary variables below.
+
+      r[i, j] ~ dbern(prob_r[i])
     }
+    
+    # Selection model (continued)
+
+    logit(prob_r[i]) <- gamma[1] +
+                        gamma[2]*gndr_Male[i] + gamma[3]*gndr_Trans_or_Other[i] +
+                        gamma[4]*dvce_multiple_types[i]
+
+    # Other missing data handling
+    
+      # Note: Auxiliary variables important and device are completely observed
+      
+      # Assume MCAR for employment status, marital status, and gender auxiliary 
+      # variables given few missing values. Because these are nominal, singly 
+      # impute data for them separately by randomly assigning levels to missing 
+      # values based on the distribution of observed levels.
+      
+      # Assume MCAR for age covariate and confident_online auxiliary variable given 
+      # few missing values. Because these are continuous, assign distributions below
+      # based on observed means and precisions computed separately.
+      
+    age[i] ~ dnorm(mu_age, inv_sig_age)
+    confident_online[i] ~ dnorm(mu_confident_online, inv_sig_confident_online)
+    
+      # Assume MAR for income covariate conditioned on auxiliary variables below
+
+    income[i] ~ dnorm(mu_income[i], inv_sig_income)
+
+    mu_income[i] <- gamma[5] +
+                    gamma[6]*empl_Student[i] +
+                    gamma[7]*empl_Other_or_Unknown[i] +
+                    gamma[8]*mrtl_Single_or_Dating[i] +
+                    gamma[9]*mrtl_Sep_Div_or_Wid[i] +
+                    gamma[10]*mrtl_Other[i] +
+                    gamma[11]*confident_online_ctr[i] +
+                    gamma[12]*important_ctr[i]
   }
 
   # Specify priors for model parameters (all uninformative)
 
-  for (i in 1:25) {               # All 25 betas have same normal distribution
+  for (i in 1:24) {               # All betas have same normal distribution
     beta[i] ~ dnorm(0, 1.0E-6)
   }
+  
+  for (i in 1:12) {               # All gammas have same normal distribution
+    gamma[i] ~ dnorm(0, 1.0E-6)
+  }
+  
+  inv_sig_income ~ dgamma(.001, .001)       # Precision for income covariate
 
-  mu_age ~ dnorm(0, .0000001)
-  Inv_Sig_age ~ dgamma(.001, .001)
-
-  mu_income ~ dnorm(0, .0000001)
-  Inv_Sig_income ~ dgamma(.001, .001)
-
-  Inv_cov[1:3, 1:3] ~ dwish(R[1:3, 1:3], 3) # Precision matrix for random effects
+  inv_cov[1:3, 1:3] ~ dwish(R[1:3, 1:3], 3) # Precision matrix for random effects
   R[1, 1] <- 1
   R[2, 2] <- 1
   R[3, 3] <- 1
-  R[1, 2] <- R[2, 1]
   R[2, 1] <- 0
-  R[1, 3] <- R[3, 1]
+  R[1, 2] <- R[2, 1]
   R[3, 1] <- 0
-  R[2, 3] <- R[3, 2]
+  R[1, 3] <- R[3, 1]
   R[3, 2] <- 0
+  R[2, 3] <- R[3, 2]
 
-  Cov[1:3, 1:3] <- inverse(Inv_cov[1:3, 1:3]) # Var-cov matrix of random effects
+  cov[1:3, 1:3] <- inverse(inv_cov[1:3, 1:3]) # Var-cov matrix for random effects
 
-  Inv_Sig_e2 ~ dgamma(.001, .001)             # Precision for level 1 residual
-  Sig_e2 <- 1/Inv_Sig_e2  # Level 1 residual (measurement error) variance
+  sig_RI  <- cov[1, 1]    # Variance for random intercept B0i
+  sig_RS1 <- cov[2, 2]    # Variance for random slope B1i
+  sig_RS2 <- cov[3, 3]    # Variance for random slope B2i
 
-  Sig_RI  <- Cov[1, 1]    # Variance for random intercept B0i
-  Sig_RS1 <- Cov[2, 2]    # Variance for random slope B1i
-  Sig_RS2 <- Cov[3, 3]    # Variance for random slope B2i
+  cov_1_2 <- cov[1, 2]    # Covariance of random intercept and random slope B1i
+  cov_1_3 <- cov[1, 3]    # Covariance of random intercept and random slope B2i
+  cov_2_3 <- cov[2, 3]    # Covariance of random slope B1i and random slope B2i
 
-  Cov_1_2 <- Cov[1, 2]    # Covariance of random intercept and random slope B1i
-  Cov_1_3 <- Cov[1, 3]    # Covariance of random intercept and random slope B2i
-  Cov_2_3 <- Cov[2, 3]    # Covariance of random slope B1i and random slope B2i
-
-  rho_1_2 <- Cov[1, 2]/sqrt(Cov[1, 1]*Cov[2, 2])  # Correlation of above
-  rho_1_3 <- Cov[1, 3]/sqrt(Cov[1, 1]*Cov[3, 3])  # Correlation of above
-  rho_2_3 <- Cov[2, 3]/sqrt(Cov[2, 2]*Cov[3, 3])  # Correlation of above
+  rho_1_2 <- cov[1, 2]/sqrt(cov[1, 1]*cov[2, 2])  # Correlation of above
+  rho_1_3 <- cov[1, 3]/sqrt(cov[1, 1]*cov[3, 3])  # Correlation of above
+  rho_2_3 <- cov[2, 3]/sqrt(cov[2, 2]*cov[3, 3])  # Correlation of above
+  
+  inv_sig_e2 ~ dgamma(.001, .001)             # Precision for Level 1 residual
+  sig_e2 <- 1/inv_sig_e2  # Level 1 residual (measurement error) variance
   
   # Store parameters of interest into list called para so that we can get HPD
   # credible intervals for them all
-
-  para[1] <- 10*beta[6]               # Condition difference in outcome at Session 5
-  para[2] <- 10*beta[6] + 2*beta[14]  # Condition difference in outcome at follow-up
-
-  para[3] <- 2*beta[6]                # Condition difference in t1 slope (baseline to Session 5)
-  para[4] <- 2*beta[14]               # Condition difference in t2 slope (Session 5 to follow-up)
-
-  # TODO: ADD AUC PARAMETER
   
+  para[1] <- 2*beta[2] + 10*beta[10]               # Contrast difference in outcome at Session 5
+  para[2] <- 2*beta[2] + 10*beta[10] + 2*beta[18]  # Contrast difference in outcome at follow-up
 
+  para[3] <- 2*beta[10]               # Contrast difference in t1 slope (baseline to Session 5)
+  para[4] <- 2*beta[18]               # Contrast difference in t2 slope (Session 5 to follow-up)
+  
+  para[5] <- sig_RI
+  para[6] <- sig_RS1
+  para[7] <- sig_RS2
 
+  para[8]  <- cov_1_2
+  para[9]  <- cov_1_3
+  para[10] <- cov_2_3
 
-
-  para[5] <- Sig_e2  
-  para[6] <- Sig_RI
-  para[7] <- Sig_RS1
-  para[8] <- Sig_RS2
-
-  para[9]  <- Cov_1_2
-  para[10] <- Cov_1_3
-  para[11] <- Cov_2_3
-
-  para[12] <- rho_1_2
-  para[13] <- rho_1_3
-  para[14] <- rho_2_3
+  para[11] <- rho_1_2
+  para[12] <- rho_1_3
+  para[13] <- rho_2_3
+  
+  para[14] <- sig_e2
 }
 "
 
@@ -178,9 +191,8 @@ model_string = "model {
 # Specify initial values ----
 # ---------------------------------------------------------------------------- #
 
-inits <- list(beta = rep(0, 25), Inv_Sig_e2 = 1,
-              Inv_cov = diag(3),
-              .RNG.name = "base::Wichmann-Hill", .RNG.seed = 11)
+inits <- list(beta = rep(0, 24), gamma = rep(0, 12), inv_sig_e2 = 1, inv_cov = diag(3),
+              .RNG.name = "base::Wichmann-Hill", .RNG.seed = 1234)
 
 # ---------------------------------------------------------------------------- #
 # Save model and initial values ----

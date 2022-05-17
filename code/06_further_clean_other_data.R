@@ -381,12 +381,13 @@ anlys_df_wd <- reshape(anlys_df,
 # Add time-invariant variables ----
 # ---------------------------------------------------------------------------- #
 
-# Add condition, covariates, and auxiliary variables
+# Add condition, covariates, "income" missing data indicator, and auxiliary variables
 
 target_vars <- c("participant_id", "conditioning", "exclude_analysis", 
                  "itt_anlys", "s5_train_compl_anlys_uncorrected_c1", 
                  "class_meas_compl_anlys", "s5_train_compl_anlys_c2_4",
                  "gender_col", "device_col_bin",
+                 "income_ind",
                  "employment_stat_col", "marital_stat_col", 
                  "confident_online", "important")
 
@@ -406,32 +407,32 @@ anlys_df_wd$a1[anlys_df_wd$conditioning ==     "NONE"]           <- NA
 anlys_df_wd$a1[anlys_df_wd$conditioning %in% c("TRAINING",
                                                "LR_TRAINING",
                                                "HR_NO_COACH")]   <- 1
-anlys_df_wd$a1[anlys_df_wd$conditioning ==     "HR_COACH"]       <- 0
+anlys_df_wd$a1[anlys_df_wd$conditioning ==     "HR_COACH"]       <- NA
 anlys_df_wd$a1[anlys_df_wd$conditioning ==     "CONTROL"]        <- -1
 
 anlys_df_wd$a2_1 <- NA
 anlys_df_wd$a2_1[anlys_df_wd$conditioning %in% c("NONE",
                                                  "TRAINING")]    <- NA
-anlys_df_wd$a2_1[anlys_df_wd$conditioning ==     "LR_TRAINING"]  <- 0
+anlys_df_wd$a2_1[anlys_df_wd$conditioning ==     "LR_TRAINING"]  <- NA
 anlys_df_wd$a2_1[anlys_df_wd$conditioning ==     "HR_NO_COACH"]  <- -1
 anlys_df_wd$a2_1[anlys_df_wd$conditioning ==     "HR_COACH"]     <- 1
-anlys_df_wd$a2_1[anlys_df_wd$conditioning ==     "CONTROL"]      <- 0
+anlys_df_wd$a2_1[anlys_df_wd$conditioning ==     "CONTROL"]      <- NA
 
 anlys_df_wd$a2_2 <- NA
 anlys_df_wd$a2_2[anlys_df_wd$conditioning %in% c("NONE",
                                                  "TRAINING")]    <- NA
 anlys_df_wd$a2_2[anlys_df_wd$conditioning ==     "LR_TRAINING"]  <- -1
-anlys_df_wd$a2_2[anlys_df_wd$conditioning ==     "HR_NO_COACH"]  <- 0
+anlys_df_wd$a2_2[anlys_df_wd$conditioning ==     "HR_NO_COACH"]  <- NA
 anlys_df_wd$a2_2[anlys_df_wd$conditioning ==     "HR_COACH"]     <- 1
-anlys_df_wd$a2_2[anlys_df_wd$conditioning ==     "CONTROL"]      <- 0
+anlys_df_wd$a2_2[anlys_df_wd$conditioning ==     "CONTROL"]      <- NA
 
 anlys_df_wd$a2_3 <- NA
 anlys_df_wd$a2_3[anlys_df_wd$conditioning %in% c("NONE",
                                                  "TRAINING")]    <- NA
 anlys_df_wd$a2_3[anlys_df_wd$conditioning ==     "LR_TRAINING"]  <- -1
 anlys_df_wd$a2_3[anlys_df_wd$conditioning ==     "HR_NO_COACH"]  <- 1
-anlys_df_wd$a2_3[anlys_df_wd$conditioning ==     "HR_COACH"]     <- 0
-anlys_df_wd$a2_3[anlys_df_wd$conditioning ==     "CONTROL"]      <- 0
+anlys_df_wd$a2_3[anlys_df_wd$conditioning ==     "HR_COACH"]     <- NA
+anlys_df_wd$a2_3[anlys_df_wd$conditioning ==     "CONTROL"]      <- NA
 
 # ---------------------------------------------------------------------------- #
 # Correct ITT sample for Comparison 1 ----
@@ -491,31 +492,37 @@ wd_c2_4_class_meas_compl <- anlys_df_wd[anlys_df_wd$class_meas_compl_anlys == 1,
 wd_c2_4_s5_train_compl <- anlys_df_wd[anlys_df_wd$s5_train_compl_anlys_c2_4 == 1, ]
 
 # ---------------------------------------------------------------------------- #
-# Grand-mean-center continuous predictors ----
+# DEPRECATED: Grand-mean-center continuous predictors ----
 # ---------------------------------------------------------------------------- #
+
+# Note: This code section is no longer used because the variables are now centered
+# in the analysis model script itself based only on participants in the groups that
+# are actually compared in the model
 
 # Define function to grand-mean-center continuous predictors (covariates "age" and 
 # "income_dollar" and auxiliary variables "confident_online" and "important")
 
-grand_mean_center <- function(df) {
-  df$income_dollar_ctr <- df$income_dollar - mean(df$income_dollar, na.rm = TRUE)
-  df$age_ctr <- df$age - mean(df$age, na.rm = TRUE)
-  
-  df$confident_online_ctr <- df$confident_online - mean(df$confident_online, na.rm = TRUE)
-  df$important_ctr <- df$important - mean(df$important, na.rm = TRUE)
-  
-  return(df)
-}
+# grand_mean_center <- function(df) {
+#   df$income_dollar_ctr <- df$income_dollar - mean(df$income_dollar, na.rm = TRUE)
+#   df$age_ctr <- df$age - mean(df$age, na.rm = TRUE)
+#   
+#   df$confident_online_ctr <- df$confident_online - mean(df$confident_online, na.rm = TRUE)
+#   df$important_ctr <- df$important - mean(df$important, na.rm = TRUE)
+#   
+#   return(df)
+# }
 
 # Run function on each analysis dataset
 
-wd_c1_corr_itt            <- lapply(wd_c1_corr_itt, grand_mean_center)
-wd_c1_corr_s5_train_compl <- lapply(wd_c1_corr_s5_train_compl, grand_mean_center)
+# wd_c1_corr_itt            <- lapply(wd_c1_corr_itt, grand_mean_center)
+# wd_c1_corr_s5_train_compl <- lapply(wd_c1_corr_s5_train_compl, grand_mean_center)
+# 
+# wd_c2_4_class_meas_compl <- grand_mean_center(wd_c2_4_class_meas_compl)
+# wd_c2_4_s5_train_compl   <- grand_mean_center(wd_c2_4_s5_train_compl)
 
-wd_c2_4_class_meas_compl <- grand_mean_center(wd_c2_4_class_meas_compl)
-wd_c2_4_s5_train_compl   <- grand_mean_center(wd_c2_4_s5_train_compl)
-
-# Remove unneeded "a1" and "a2" columns
+# ---------------------------------------------------------------------------- #
+# Remove unneeded "a1" and "a2" columns ----
+# ---------------------------------------------------------------------------- #
 
 unneeded_a2 <- c("a2_1", "a2_2", "a2_3")
 
