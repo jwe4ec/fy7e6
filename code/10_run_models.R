@@ -163,7 +163,6 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
                    J                        = length(assessed_at_j),
                    
                    income                   = df[, "income_dollar"],
-                   income_ind               = df[, "income_ind"],
                    age                      = df[, "age"],
                    
                    employment_stat_col      = df[, "employment_stat_col"],
@@ -303,11 +302,6 @@ run_jags_model <- function(sample, jags_dat, inits,
 # ---------------------------------------------------------------------------- #
 # Run models ----
 # ---------------------------------------------------------------------------- #
-
-# TODO: Do we need "income_ind" in "jags_dat"?
-
-
-
 
 # TODO: Test individual models and potentially combine functions
 
