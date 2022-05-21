@@ -206,7 +206,7 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
 
 # Define function to run JAGS model
 
-run_jags_model <- function(sample, jags_dat, inits,
+run_jags_model <- function(bootstrap_sample, analysis_sample, jags_dat, inits,
                            a_contrast, y_var, total_iterations) {
   # Create JAGS model
   
@@ -237,31 +237,34 @@ run_jags_model <- function(sample, jags_dat, inits,
 
   # Save posterior samples, reload them, and create MCMC object
 
-  path1 <- paste0("./results/bayesian/output/", sample, "_", a_contrast, "_", y_var)
-  dir.create(path1, recursive = TRUE)
-
+  path1 <- paste0("./results/bayesian/output/", analysis_sample, "_", a_contrast, "_", y_var)
   path2 <- paste0("/burn_", burn_iterations,
                   "_total_", total_iterations)
-  dir.create(paste0(path1, path2))
+  path3 <- paste0("/per_bootstrap_sample/", bootstrap_sample)
+  
+  dir.create(paste0(path1, path2, path3), recursive = TRUE)
 
   save(model_samples,
-       file = paste0(path1, path2, "/model_samples.RData"))
-  load(paste0(path1, path2, "/model_samples.RData"))
+       file = paste0(path1, path2, path3, "/model_samples_", bootstrap_sample, ".RData"))
+  load(paste0(path1, path2, path3, "/model_samples_", bootstrap_sample, ".RData"))
 
   model_res <- as.mcmc(do.call(rbind, model_samples))
 
   # Save plots
 
-  pdf(file = paste0(path1, path2, "/plots.pdf"))
+  pdf(file = paste0(path1, path2, path3, "/plots_", bootstrap_sample, ".pdf"))
   par(mfrow=c(4,2))
   plot(model_res)
   dev.off()
 
   # Save results and diagnostics
 
-  sink(file = paste0(path1, path2, "/results and diagnostics.txt"))
+  sink(file = paste0(path1, path2, path3, "/results_and_diganostics_", bootstrap_sample, ".txt"))
   
-  print(paste0("Sample: ", sample))
+  print(paste0("Bootstrap Sample: ", bootstrap_sample))
+  cat("\n")
+  
+  print(paste0("Analysis Sample: ", analysis_sample))
   print(paste0("Contrast: ", a_contrast))
   print(paste0("Outcome: ", y_var))
   cat("\n")
@@ -270,7 +273,7 @@ run_jags_model <- function(sample, jags_dat, inits,
   print(paste0("Burn Iterations: ", burn_iterations))
   print(paste0("Remaining Iterations: ", remaining_iterations))
   cat("\n")
-
+  
   print("Burn-In Time:")
   print(burn_in_time)
   cat("\n")
@@ -279,11 +282,13 @@ run_jags_model <- function(sample, jags_dat, inits,
   cat("\n")
 
   print("Summary:")
-  print(summary(model_res))
+  summary <- summary(model_res)
+  print(summary)
 
   print("HPD Credible Intervals:")
   cat("\n")
-  print(HPDinterval(model_res))
+  hpd_interval <- HPDinterval(model_res)
+  print(hpd_interval)
   cat("\n")
 
   print("Geweke's convergence diagnostic:")
@@ -291,35 +296,76 @@ run_jags_model <- function(sample, jags_dat, inits,
   print(geweke)
   print("Parameters in (-1.96, 1.96):")
   cat("\n")
-  print(geweke$z > -1.96 & geweke$z < 1.96)
+  geweke_converge_each <- geweke$z > -1.96 & geweke$z < 1.96
+  print(geweke_converge_each)
   cat("\n")
-  print(paste0("All parameters in (-1.96, 1.96): ",
-               all(geweke$z > -1.96 & geweke$z < 1.96)))
+  geweke_converge_all <- all(geweke_converge_each)
+  print(paste0("All parameters in (-1.96, 1.96): ", geweke_converge_all))
   
   sink()
+  
+  # Save results in list
+  
+  results <- list(bootstrap_sample = bootstrap_sample,
+                  analysis_sample = analysis_sample,
+                  a_contrast = a_contrast,
+                  y_var = y_var,
+                  jags_model = jags_model,
+                  total_iterations = total_iterations,
+                  burn_iterations = burn_iterations,
+                  remaining_iterations = remaining_iterations,
+                  burn_in_time = burn_in_time,
+                  sampling_time = sampling_time,
+                  model_samples = model_samples,
+                  model_res = model_res,
+                  summary = summary,
+                  hpd_interval = hpd_interval,
+                  geweke = geweke,
+                  geweke_converge_each = geweke_converge_each,
+                  geweke_converge_all = geweke_converge_all)
+  
+  return(results)
 }
 
 # ---------------------------------------------------------------------------- #
 # Run models ----
 # ---------------------------------------------------------------------------- #
 
+# TODO: Why does "Probability" attribute of "hpd_interval" say 0.8 and not 0.95?
+
+
+
+
+
 # TODO: Test individual models and potentially combine functions
 
+test_list <- wd_c1_corr_itt[1:2]
+
+results_list <- vector("list", length(test_list))
+
+for (i in 1:length(test_list)) {
+  jags_dat <- specify_jags_dat(test_list[[i]], "a1", "bbsiq_neg_m")
+  results_list[[i]] <- run_jags_model(i, "c1_corr_itt", jags_dat, inits,
+                                      "a1", "bbsiq_neg_m", 10)
+}
 
 
 
-test_df <- wd_c1_corr_itt[[1]]
-
-jags_dat <- specify_jags_dat(test_df, "a1", "bbsiq_neg_m")
-run_jags_model("c1_corr_itt", jags_dat, inits, "a1", "bbsiq_neg_m", 10)
-
-jags_dat <- specify_jags_dat(test_df, "a1", "oa_m")
-run_jags_model("c1_corr_itt", jags_dat, inits, "a1", "oa_m", 10)
 
 
+# TODO: Pool results across 500 bootstrap samples for models that converge. For
+# testing, temporarily pool across models that *didn't* converge.
 
+results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
 
-# TODO: Pool results across 500 bootstrap samples for models that converge
+length(results_list_converged) # Number converged
+
+results_list_converged[[1]]$model_samples # TODO: Asked Cynthia what objects to pool over and how
+results_list_converged[[1]]$model_res
+results_list_converged[[1]]$hpd_interval
+
+# TODO: Run "summary" on pooled results
+
 
 
 
