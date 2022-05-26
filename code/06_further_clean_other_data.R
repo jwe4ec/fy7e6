@@ -3,12 +3,6 @@
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
-# TODO: Compute training noncompletion
-
-
-
-
-
 # ---------------------------------------------------------------------------- #
 # Notes ----
 # ---------------------------------------------------------------------------- #
@@ -381,11 +375,13 @@ anlys_df_wd <- reshape(anlys_df,
 # Add time-invariant variables ----
 # ---------------------------------------------------------------------------- #
 
-# Add condition, covariates, "income" missing data indicator, and auxiliary variables
+# Add condition, sum and proportion of missing training sessions, covariates, 
+# "income" missing data indicator, and auxiliary variables
 
 target_vars <- c("participant_id", "conditioning", "exclude_analysis", 
                  "itt_anlys", "s5_train_compl_anlys_uncorrected_c1", 
                  "class_meas_compl_anlys", "s5_train_compl_anlys_c2_4",
+                 "miss_session_train_sum", "miss_session_train_prop",
                  "gender_col", "device_col_bin",
                  "income_ind",
                  "employment_stat_col", "marital_stat_col", 

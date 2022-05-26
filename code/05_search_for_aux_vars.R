@@ -43,7 +43,11 @@ load("./data/intermediate_clean_further/dat2.RData")
 
 completion <- dat2$completion
 
-# Compute indicator for missing a given session's assessment
+# Compute indicators for missing a given session's training or assessment
+
+completion$miss_session_train <- NA
+completion$miss_session_train[completion$compl_session_train == 1] <- 0
+completion$miss_session_train[completion$compl_session_train == 0] <- 1
 
 completion$miss_session_assess <- NA
 completion$miss_session_assess[completion$compl_session_assess == 1] <- 0
@@ -73,6 +77,23 @@ compl_itt <- completion[completion$itt_anlys == 1, ]
 
 compl_itt <- compl_itt[compl_itt$session_only != "Eligibility", ]
 compl_itt$session_only[compl_itt$session_only == "preTest"] <- "baseline"
+
+# ---------------------------------------------------------------------------- #
+# Compute proportion of missing training sessions across time points ----
+# ---------------------------------------------------------------------------- #
+
+# Note: Proportion of missing training sessions is an outcome (not relevant to
+# missing data handling but computed here for convenience)
+
+tmp_ag <- aggregate(miss_session_train ~ participant_id,
+                    compl_itt,
+                    FUN = sum)
+
+names(tmp_ag)[names(tmp_ag) == "miss_session_train"] <- "miss_session_train_sum"
+
+tmp_ag$miss_session_train_prop <- tmp_ag$miss_session_train_sum / 5
+
+compl_itt <- merge(compl_itt, tmp_ag, by = "participant_id", all.x = TRUE)
 
 # ---------------------------------------------------------------------------- #
 # Compute proportion of missing assessments across time points ----
@@ -238,7 +259,7 @@ compl_itt[, target_cols][compl_itt[, target_cols] == 555] <- NA
 # ---------------------------------------------------------------------------- #
 
 time_varying_cols <- c("session_only", "compl_session_train", "compl_session_assess",
-                       "miss_session_assess")
+                       "miss_session_train", "miss_session_assess")
 
 compl_itt_iv <- compl_itt[, names(compl_itt)[!(names(compl_itt) %in% time_varying_cols)]]
 
