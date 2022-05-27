@@ -46,9 +46,8 @@ model_string = "model {
     confident_online_ctr[i] <- confident_online[i] - mean(confident_online)
     important_ctr[i] <- important[i] - mean(important)
     
-    # TODO: Use Poisson or Tobit regression instead of linear regression given
-    # count data? Seems Tobit is appropriate given that some participants have 
-    # 0 missing training sessions.
+    # TODO: Use zero-inflated Poisson or zero-inflated negative binomial regression 
+    # instead of linear regression given zero-inflated count data?
     
     
     

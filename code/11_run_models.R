@@ -177,7 +177,7 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
   
   # Revise list for specific outcome
   
-  if (y_var == "miss_session_train_prop") {
+  if (y_var == "miss_session_train_sum") {
     # For time-invariant outcome
     
       # Add time-invariant y to list
@@ -394,15 +394,16 @@ for (i in 1:length(test_list)) {
 
 
 
+
 # TODO: Test individual dropout models and potentially combine functions
 
 drp_results_list <- vector("list", length(test_list))
 
 for (i in 1:length(test_list)) {
-  jags_dat <- specify_jags_dat(test_list[[i]], "a1", "miss_session_train_prop")
+  jags_dat <- specify_jags_dat(test_list[[i]], "a1", "miss_session_train_sum")
   drp_results_list[[i]] <- run_jags_model("dropout", i, "c1_corr_itt", 
                                           jags_dat, inits_dropout,
-                                          "a1", "miss_session_train_prop", 10)
+                                          "a1", "miss_session_train_sum", 10)
 }
 
 
