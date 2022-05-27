@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Specify Model and Initial Values
+# Specify Efficacy Model and Initial Values
 # Authors: Katharine E. Daniel and Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -191,15 +191,15 @@ model_string = "model {
 # Specify initial values ----
 # ---------------------------------------------------------------------------- #
 
-inits <- list(beta = rep(0, 24), gamma = rep(0, 12), inv_sig_e2 = 1, inv_cov = diag(3),
-              .RNG.name = "base::Wichmann-Hill", .RNG.seed = 1234)
+inits_efficacy <- list(beta = rep(0, 24), gamma = rep(0, 12), inv_sig_e2 = 1, inv_cov = diag(3),
+                       .RNG.name = "base::Wichmann-Hill", .RNG.seed = 1234)
 
 # ---------------------------------------------------------------------------- #
 # Save model and initial values ----
 # ---------------------------------------------------------------------------- #
 
-path <- "./results/bayesian/model_and_initial_values/"
+path <- "./results/bayesian/efficacy/model_and_initial_values/"
 dir.create(path, recursive = TRUE)
 
 writeLines(model_string, con = paste0(path, "model_string.txt"))
-save(inits, file = paste0(path, "inits.RData"))
+save(inits_efficacy, file = paste0(path, "inits_efficacy.RData"))

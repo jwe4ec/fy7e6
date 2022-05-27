@@ -45,7 +45,8 @@ load("./data/final_clean/wd_c1_corr_s5_train_compl.RData")
 load("./data/final_clean/wd_c2_4_class_meas_compl.RData")
 load("./data/final_clean/wd_c2_4_s5_train_compl.RData")
 
-load("./results/bayesian/model_and_initial_values/inits.RData")
+load("./results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
+load("./results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
 
 # ---------------------------------------------------------------------------- #
 # Define "impute_mcar_nominal()" ----
@@ -108,8 +109,9 @@ dummy_code <- function(df, nominal_vars) {
 # Define "specify_jags_dat()" ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to specify JAGS data for non-OASIS (4 time points) and OASIS
-# (7 time points) outcomes for a given sample and contrast
+# Define function to specify JAGS data for time-varying efficacy (non-OASIS = 4 
+# time points, OASIS = 7 time points) and time-invariant treatment dropout outcomes 
+# for given sample and contrast
 
 specify_jags_dat <- function(df, a_contrast, y_var) {
   # Restrict to groups involved in "a1" or "a2" contrast (i.e., where contrast
@@ -128,19 +130,6 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
                     "device_col_bin")
   df <- dummy_code(df, nominal_vars)
   
-  # Define piecewise linear time variables
-  
-  if (y_var %in% c("rr_neg_threat_m", "rr_pos_threat_m",
-                   "bbsiq_neg_m", "bbsiq_ben_m", "dass21_as_m")) {
-    assessed_at_j <- c(1, 4, 6, 7)
-    t1            <- c(0, 3, 5, 5)
-    t2            <- c(0, 0, 0, 1)
-  } else if (y_var == "oa_m") {
-    assessed_at_j <- c(1, 2, 3, 4, 5, 6, 7)
-    t1            <- c(0, 1, 2, 3, 4, 5, 5)
-    t2            <- c(0, 0, 0, 0, 0, 0, 1)
-  }
-  
   # Compute mean and precision for age and confident_online based on observed data
   
   mu_age <- mean(df$age, na.rm = TRUE)
@@ -149,18 +138,9 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
   inv_sig_age              <- 1/var(df$age, na.rm = TRUE)
   inv_sig_confident_online <- 1/var(df$confident_online, na.rm = TRUE)
   
-  # Create matrix for outcome
-  
-  y_mat <- as.matrix(df[, paste0(y_var, ".", assessed_at_j)])
-  
-  # Create missing data indicator matrix for outcome (0 = present, 1 = missing)
-  
-  r_mat <- is.na(y_mat)
-  
-  # Combine elements into list
+  # Combine time-invariant elements (except y) into list
   
   jags_dat <- list(N                        = length(df[, "participant_id"]),
-                   J                        = length(assessed_at_j),
                    
                    income                   = df[, "income_dollar"],
                    age                      = df[, "age"],
@@ -193,11 +173,62 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
                    inv_sig_age              = inv_sig_age,
                    inv_sig_confident_online = inv_sig_confident_online,
                    
-                   a                        = df[, a_contrast],
-                   t1                       = t1, 
-                   t2                       = t2,
-                   y                        = y_mat,
-                   r                        = r_mat)
+                   a                        = df[, a_contrast])
+  
+  # Revise list for specific outcome
+  
+  if (y_var == "miss_session_train_prop") {
+    # For time-invariant outcome
+    
+      # Add time-invariant y to list
+    
+    jags_dat_time_invariant <- list(y = df[, y_var])
+    
+    jags_dat <- append(jags_dat, jags_dat_time_invariant)
+    
+      # Remove unneeded elements
+    
+    rm_elements <- c("gender_col", "gender_col_imp", "device_col_bin", 
+                     "gndr_Male", "gndr_Trans_or_Other", "dvce_multiple_types")
+    
+    jags_dat[rm_elements] <- NULL
+    
+  } else {
+    # For time-varying outcome
+    
+      # Define piecewise linear time variables
+    
+    if (y_var %in% c("rr_neg_threat_m", "rr_pos_threat_m",
+                     "bbsiq_neg_m", "bbsiq_ben_m", "dass21_as_m")) {
+      assessed_at_j <- c(1, 4, 6, 7)
+      t1            <- c(0, 3, 5, 5)
+      t2            <- c(0, 0, 0, 1)
+    } else if (y_var == "oa_m") {
+      assessed_at_j <- c(1, 2, 3, 4, 5, 6, 7)
+      t1            <- c(0, 1, 2, 3, 4, 5, 5)
+      t2            <- c(0, 0, 0, 0, 0, 0, 1)
+    }
+    
+      # Create matrix for outcome 
+    
+    y_mat <- as.matrix(df[, paste0(y_var, ".", assessed_at_j)])
+    
+      # Create missing data indicator matrix for outcome (0 = present, 1 = missing)
+    
+    r_mat <- is.na(y_mat)
+    
+      # Add time-varying elements to list
+    
+    jags_dat_time_varying <- list(J  = length(assessed_at_j),
+                                  t1 = t1,
+                                  t2 = t2,
+                                  y  = y_mat,
+                                  r  = r_mat)
+    
+    jags_dat <- append(jags_dat, jags_dat_time_varying)
+  }
+  
+  return(jags_dat)
 }
 
 # ---------------------------------------------------------------------------- #
@@ -206,11 +237,15 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
 
 # Define function to run JAGS model
 
-run_jags_model <- function(bootstrap_sample, analysis_sample, jags_dat, inits,
+run_jags_model <- function(analysis_type, bootstrap_sample, analysis_sample, 
+                           jags_dat, inits,
                            a_contrast, y_var, total_iterations) {
   # Create JAGS model
   
-  jags_model <- jags.model(file = "./results/bayesian/model_and_initial_values/model_string.txt",
+  model_string_path <- paste0("./results/bayesian/", analysis_type, 
+                              "/model_and_initial_values/model_string.txt")
+  
+  jags_model <- jags.model(file = model_string_path,
                            data = jags_dat, inits = inits, n.chains = 1)
 
   # Prevent printing in scientific notation
@@ -237,10 +272,11 @@ run_jags_model <- function(bootstrap_sample, analysis_sample, jags_dat, inits,
 
   # Save posterior samples, reload them, and create MCMC object
 
-  path1 <- paste0("./results/bayesian/output/", analysis_sample, "_", a_contrast, "_", y_var)
+  path1 <- paste0("./results/bayesian/", analysis_type, "/out/",
+                  analysis_sample, "_", a_contrast, "_", y_var)
   path2 <- paste0("/burn_", burn_iterations,
                   "_total_", total_iterations)
-  path3 <- paste0("/per_bootstrap_sample/", bootstrap_sample)
+  path3 <- paste0("/per_bs_smp/", bootstrap_sample)
   
   dir.create(paste0(path1, path2, path3), recursive = TRUE)
 
@@ -258,8 +294,11 @@ run_jags_model <- function(bootstrap_sample, analysis_sample, jags_dat, inits,
   dev.off()
 
   # Save results and diagnostics
-
-  sink(file = paste0(path1, path2, path3, "/results_and_diganostics_", bootstrap_sample, ".txt"))
+  
+  sink(file = paste0(path1, path2, path3, "/results_and_dx_", bootstrap_sample, ".txt"))
+  
+  print(paste0("Analysis Type: ", analysis_type))
+  cat("\n")
   
   print(paste0("Bootstrap Sample: ", bootstrap_sample))
   cat("\n")
@@ -306,7 +345,8 @@ run_jags_model <- function(bootstrap_sample, analysis_sample, jags_dat, inits,
   
   # Save results in list
   
-  results <- list(bootstrap_sample = bootstrap_sample,
+  results <- list(analysis_type = analysis_type,
+                  bootstrap_sample = bootstrap_sample,
                   analysis_sample = analysis_sample,
                   a_contrast = a_contrast,
                   y_var = y_var,
@@ -337,16 +377,32 @@ run_jags_model <- function(bootstrap_sample, analysis_sample, jags_dat, inits,
 
 
 
-# TODO: Test individual models and potentially combine functions
+# TODO: Test individual efficacy models and potentially combine functions
 
 test_list <- wd_c1_corr_itt[1:2]
 
-results_list <- vector("list", length(test_list))
+eff_results_list <- vector("list", length(test_list))
 
 for (i in 1:length(test_list)) {
   jags_dat <- specify_jags_dat(test_list[[i]], "a1", "bbsiq_neg_m")
-  results_list[[i]] <- run_jags_model(i, "c1_corr_itt", jags_dat, inits,
-                                      "a1", "bbsiq_neg_m", 10)
+  eff_results_list[[i]] <- run_jags_model("efficacy", i, "c1_corr_itt",
+                                          jags_dat, inits_efficacy,
+                                          "a1", "bbsiq_neg_m", 10)
+}
+
+
+
+
+
+# TODO: Test individual dropout models and potentially combine functions
+
+drp_results_list <- vector("list", length(test_list))
+
+for (i in 1:length(test_list)) {
+  jags_dat <- specify_jags_dat(test_list[[i]], "a1", "miss_session_train_prop")
+  drp_results_list[[i]] <- run_jags_model("dropout", i, "c1_corr_itt", 
+                                          jags_dat, inits_dropout,
+                                          "a1", "miss_session_train_prop", 10)
 }
 
 
