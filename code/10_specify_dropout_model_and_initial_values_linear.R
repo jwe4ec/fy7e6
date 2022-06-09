@@ -35,7 +35,7 @@ groundhog_day <- version_control()
 # Specify JAGS model with likelihood, priors, and parameters of interest
 
 model_string = "model {
-  # Specify likelihood for linear regression
+  # Specify likelihood
   
   for (i in 1:N) {
     # Grand-mean-center continuous covariates and auxiliary variables
@@ -46,12 +46,7 @@ model_string = "model {
     confident_online_ctr[i] <- confident_online[i] - mean(confident_online)
     important_ctr[i] <- important[i] - mean(important)
     
-    # TODO: Use zero-inflated Poisson or zero-inflated negative binomial regression 
-    # instead of linear regression given zero-inflated count data?
-    
-    
-    
-    
+    # Equation for linear regression
     
     y[i] ~ dnorm(mu_Y[i], inv_sig_e2)
 
