@@ -371,12 +371,6 @@ run_jags_model <- function(analysis_type, bootstrap_sample, analysis_sample,
 # Run models ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Why does "Probability" attribute of "hpd_interval" say 0.8 and not 0.95?
-
-
-
-
-
 # TODO: Test individual efficacy models and potentially combine functions
 
 test_list <- wd_c1_corr_itt[1:2]
@@ -389,7 +383,6 @@ for (i in 1:length(test_list)) {
                                           jags_dat, inits_efficacy,
                                           "a1", "bbsiq_neg_m", 10)
 }
-
 
 
 
@@ -416,6 +409,8 @@ for (i in 1:length(test_list)) {
 results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
 
 length(results_list_converged) # Number converged
+
+
 
 results_list_converged[[1]]$model_samples # TODO: Asked Cynthia what objects to pool over and how
 results_list_converged[[1]]$model_res
