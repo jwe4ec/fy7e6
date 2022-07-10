@@ -237,7 +237,7 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
 
 # Define function to run JAGS model
 
-run_jags_model <- function(analysis_type, bootstrap_sample, analysis_sample, 
+run_jags_model <- function(analysis_type, bs_sample, analysis_sample, 
                            jags_dat, inits,
                            a_contrast, y_var, total_iterations) {
   # Create JAGS model
@@ -271,37 +271,45 @@ run_jags_model <- function(analysis_type, bootstrap_sample, analysis_sample,
   (sampling_time <- proc.time() - time0)
 
   # Save posterior samples, reload them, and create MCMC object
-
+  
   path1 <- paste0("./results/bayesian/", analysis_type, "/out/",
                   analysis_sample, "_", a_contrast, "_", y_var)
   path2 <- paste0("/burn_", burn_iterations,
                   "_total_", total_iterations)
-  path3 <- paste0("/per_bs_smp/", bootstrap_sample)
-  
-  dir.create(paste0(path1, path2, path3), recursive = TRUE)
+  path3 <- switch(is.null(bs_sample) + 1, paste0("/per_bs_smp/", bs_sample), NULL)
+  model_results_path <- paste0(path1, path2, path3)
+
+  dir.create(model_results_path, recursive = TRUE)
 
   save(model_samples,
-       file = paste0(path1, path2, path3, "/model_samples_", bootstrap_sample, ".RData"))
-  load(paste0(path1, path2, path3, "/model_samples_", bootstrap_sample, ".RData"))
-
+       file = paste0(model_results_path, "/model_samples",
+                     switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
+                     ".RData"))
+  
   model_res <- as.mcmc(do.call(rbind, model_samples))
 
   # Save plots
 
-  pdf(file = paste0(path1, path2, path3, "/plots_", bootstrap_sample, ".pdf"))
+  pdf(file = paste0(model_results_path, "/plots",
+                    switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
+                    ".pdf"))
   par(mfrow=c(4,2))
   plot(model_res)
   dev.off()
 
   # Save results and diagnostics
   
-  sink(file = paste0(path1, path2, path3, "/results_and_dx_", bootstrap_sample, ".txt"))
+  sink(file = paste0(model_results_path, "/results_and_dx",
+                     switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
+                     ".txt"))
   
   print(paste0("Analysis Type: ", analysis_type))
   cat("\n")
   
-  print(paste0("Bootstrap Sample: ", bootstrap_sample))
-  cat("\n")
+  if (!is.null(bs_sample)) {
+    print(paste0("Bootstrap Sample: ", bs_sample))
+    cat("\n")
+  }
   
   print(paste0("Analysis Sample: ", analysis_sample))
   print(paste0("Contrast: ", a_contrast))
@@ -346,7 +354,7 @@ run_jags_model <- function(analysis_type, bootstrap_sample, analysis_sample,
   # Save results in list
   
   results <- list(analysis_type = analysis_type,
-                  bootstrap_sample = bootstrap_sample,
+                  bs_sample = bs_sample,
                   analysis_sample = analysis_sample,
                   a_contrast = a_contrast,
                   y_var = y_var,
@@ -368,6 +376,62 @@ run_jags_model <- function(analysis_type, bootstrap_sample, analysis_sample,
 }
 
 # ---------------------------------------------------------------------------- #
+# Define "pool_results()" ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to pool results across bootstrap samples for converged models
+
+pool_results <- function(results_list) {
+  # Restrict to converged models (models in which all parameters pass Geweke's test)
+  
+  # TODO: For testing, temporarily pool across models that *didn't* converge
+  
+  
+  
+  
+  
+  results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
+  
+  number_converged <- length(results_list_converged)
+  
+  # Extract means and SDs of estimated parameters for each model
+  
+  results_list_converged_stats <- lapply(results_list_converged, function(x) x[["summary"]]$statistics)
+  
+  results_list_converged_stats_mean <- lapply(results_list_converged_stats, function(x) x[, "Mean"])
+  results_list_converged_stats_sd   <- lapply(results_list_converged_stats, function(x) x[, "SD"])
+  
+  # Pool results across models by computing (a) average of estimated means, (b) 
+  # percentile bootstrap 95% CIs for average of estimated means (2.5th and 97.5th
+  # percentiles of estimated means), (c) empirical SD (SD of estimated means), and 
+  # (d) average SD (mean of estimated SDs)
+  
+  pooled_mean   <- apply(simplify2array(results_list_converged_stats_mean), 1, mean)
+  pooled_pctl_bs_ci_ll <- apply(simplify2array(results_list_converged_stats_mean), 1, 
+                                quantile, probs = .025)
+  pooled_pctl_bs_ci_ul <- apply(simplify2array(results_list_converged_stats_mean), 1, 
+                                quantile, probs = .975)
+  pooled_emp_sd <- apply(simplify2array(results_list_converged_stats_mean), 1, sd)
+  
+  pooled_avg_sd <- apply(simplify2array(results_list_converged_stats_sd), 1, mean)
+  
+  # Combine pooled results in data frame
+  
+  pooled_results <- data.frame(mean = pooled_mean,
+                               pctl_bs_ci_ll = pooled_pctl_bs_ci_ll,
+                               pctl_bs_ci_ul = pooled_pctl_bs_ci_ul,
+                               emp_sd = pooled_emp_sd,
+                               avg_sd = pooled_avg_sd)
+  
+  # Combine number of converged models and pooled results in list
+  
+  pooled <- list(number_converged = number_converged,
+                 results = pooled_results)
+  
+  return(pooled)
+}
+
+# ---------------------------------------------------------------------------- #
 # Run models ----
 # ---------------------------------------------------------------------------- #
 
@@ -384,6 +448,23 @@ for (i in 1:length(test_list)) {
                                           "a1", "bbsiq_neg_m", 10)
 }
 
+save(eff_results_list, file = "./temp_cleaning/eff_results_list.RData")
+
+
+
+
+
+# TODO: Test for "a2" model not requiring pooling
+
+test_df_a2_1 <- wd_c2_4_class_meas_compl
+
+jags_dat <- specify_jags_dat(test_df_a2_1, "a2_1", "bbsiq_neg_m")
+eff_results_a2_1 <- run_jags_model("efficacy", NULL, "c2_4_class_meas_compl",
+                                   jags_dat, inits_efficacy,
+                                   "a2_1", "bbsiq_neg_m", 10)
+
+save(eff_results_a2_1, file = "./temp_cleaning/eff_results_a2_1.RData")
+
 
 
 
@@ -399,6 +480,8 @@ for (i in 1:length(test_list)) {
                                           "a1", "miss_session_train_sum", 10)
 }
 
+save(drp_results_list, file = "./temp_cleaning/drp_results_list.RData")
+
 
 
 
@@ -406,18 +489,11 @@ for (i in 1:length(test_list)) {
 # TODO: Pool results across 500 bootstrap samples for models that converge. For
 # testing, temporarily pool across models that *didn't* converge.
 
-results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
+load("./temp_cleaning/eff_results_list.RData")
+load("./temp_cleaning/drp_results_list.RData")
 
-length(results_list_converged) # Number converged
-
-
-
-results_list_converged[[1]]$model_samples # TODO: Asked Cynthia what objects to pool over and how
-results_list_converged[[1]]$model_res
-results_list_converged[[1]]$hpd_interval
-
-# TODO: Run "summary" on pooled results
-
+pooled_eff <- pool_results(eff_results_list)
+pooled_drp <- pool_results(drp_results_list)
 
 
 
