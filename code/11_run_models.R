@@ -262,27 +262,34 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   time0 <- proc.time()
   update(jags_model, n.iter = burn_iterations)
-  (burn_in_time <- proc.time() - time0)
+  burn_in_time <- proc.time() - time0
 
   time0 <- proc.time()
   model_samples <- coda.samples(jags_model,
                                 c("beta", "gamma", "para"),
                                 n.iter = remaining_iterations)
-  (sampling_time <- proc.time() - time0)
+  sampling_time <- proc.time() - time0
+  
+  total_time <- burn_in_time + sampling_time
 
-  # Save posterior samples, reload them, and create MCMC object
+  # Create directory for saving model results, including results per bootstrap 
+  # sample (if applicable)
   
   path1 <- paste0("./results/bayesian/", analysis_type, "/out/",
                   analysis_sample, "_", a_contrast, "_", y_var)
   path2 <- paste0("/burn_", burn_iterations,
                   "_total_", total_iterations)
+  model_results_path_stem <- paste0(path1, path2)
+  
   path3 <- switch(is.null(bs_sample) + 1, paste0("/per_bs_smp/", bs_sample), NULL)
-  model_results_path <- paste0(path1, path2, path3)
+  model_results_path_specific <- paste0(model_results_path_stem, path3)
 
-  dir.create(model_results_path, recursive = TRUE)
+  dir.create(model_results_path_specific, recursive = TRUE)
+  
+  # Save posterior samples, reload them, and create MCMC object
 
   save(model_samples,
-       file = paste0(model_results_path, "/model_samples",
+       file = paste0(model_results_path_specific, "/model_samples",
                      switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
                      ".RData"))
   
@@ -290,7 +297,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   # Save plots
 
-  pdf(file = paste0(model_results_path, "/plots",
+  pdf(file = paste0(model_results_path_specific, "/plots",
                     switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
                     ".pdf"))
   par(mfrow=c(4,2))
@@ -299,7 +306,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   # Save results and diagnostics
   
-  sink(file = paste0(model_results_path, "/results_and_dx",
+  sink(file = paste0(model_results_path_specific, "/results_and_dx",
                      switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
                      ".txt"))
   
@@ -321,11 +328,14 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   print(paste0("Remaining Iterations: ", remaining_iterations))
   cat("\n")
   
-  print("Burn-In Time:")
+  print("Burn-In Time (seconds):")
   print(burn_in_time)
   cat("\n")
-  print("Sampling Time:")
+  print("Sampling Time (seconds):")
   print(sampling_time)
+  cat("\n")
+  print("Total Time (seconds):")
+  print(total_time)
   cat("\n")
 
   print("Summary:")
@@ -358,12 +368,15 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   analysis_sample = analysis_sample,
                   a_contrast = a_contrast,
                   y_var = y_var,
+                  model_results_path_stem = model_results_path_stem,
+                  model_results_path_specific = model_results_path_stem,
                   jags_model = jags_model,
                   total_iterations = total_iterations,
                   burn_iterations = burn_iterations,
                   remaining_iterations = remaining_iterations,
                   burn_in_time = burn_in_time,
                   sampling_time = sampling_time,
+                  total_time = total_time,
                   model_samples = model_samples,
                   model_res = model_res,
                   summary = summary,
@@ -432,68 +445,94 @@ pool_results <- function(results_list) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Run models ----
+# Define "run_analyses()" ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Test individual efficacy models and potentially combine functions
+# Define function for running analyses and pooling results
 
-test_list <- wd_c1_corr_itt[1:2]
-
-eff_results_list <- vector("list", length(test_list))
-
-for (i in 1:length(test_list)) {
-  jags_dat <- specify_jags_dat(test_list[[i]], "a1", "bbsiq_neg_m")
-  eff_results_list[[i]] <- run_jags_model("efficacy", i, "c1_corr_itt",
-                                          jags_dat, inits_efficacy,
-                                          "a1", "bbsiq_neg_m", 10)
+run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast, 
+                         y_var, total_iterations) {
+  if (a_contrast == "a1") {
+    # Specify "jags_dat" and run JAGS model for each bootstrap sample
+    
+    results_list <- vector("list", length(dat))
+    
+    for (i in 1:length(dat)) {
+      jags_dat <- specify_jags_dat(dat[[i]], a_contrast, y_var)
+      results_list[[i]] <- run_jags_model(analysis_type, i, analysis_sample,
+                                          jags_dat, inits,
+                                          a_contrast, y_var, total_iterations)
+    }
+    
+    names(results_list) <- 1:length(results_list)
+    
+    # TODO: Pool results across 500 bootstrap samples for models that converge. For
+    # testing, temporarily pool across models that *didn't* converge.
+    
+    pooled <- pool_results(results_list)
+    
+    
+    
+    
+    
+    # Obtain path for saving results
+    
+    model_results_path_stem <- results_list[[1]]$model_results_path_stem
+    
+    # Create results object
+    
+    results <- list(per_bs_smp = results_list,
+                    pooled = pooled)
+  } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
+    # Specify "jags_dat" and run JAGS model
+    
+    jags_dat <- specify_jags_dat(dat, a_contrast, y_var)
+    
+    results <- run_jags_model(analysis_type, NULL, analysis_sample,
+                              jags_dat, inits,
+                              a_contrast, y_var, total_iterations)
+    
+    # Obtain path for saving results
+    
+    model_results_path_stem <- results$model_results_path_stem
+  }
+    
+  # Save and return results
+  
+  save(results, file = paste0(model_results_path_stem, "/results.RData"))
+  
+  return(results)
 }
 
-save(eff_results_list, file = "./temp_cleaning/eff_results_list.RData")
+# ---------------------------------------------------------------------------- #
+# Run analyses ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Test individual efficacy and dropout models for "a1"
+
+dat <- wd_c1_corr_itt[1:2]
+
+results_eff_a1_a <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
+                                 "bbsiq_neg_m", 10)
+results_eff_a1_b <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
+                                 "bbsiq_neg_m", 20000)
+results_eff_a1_c <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
+                                 "bbsiq_neg_m", 100000)
+
+results_drp_a1_a <- run_analysis(dat, "dropout", inits_dropout, "c1_corr_itt", "a1", 
+                                 "miss_session_train_sum", 10)
 
 
 
 
 
-# TODO: Test for "a2" model not requiring pooling
+# TODO: Test for "a2" model not requiring pooling. Use equal-tail CIs based on
+# 2.5% and 97.5% quantiles from "summary" here?
 
-test_df_a2_1 <- wd_c2_4_class_meas_compl
+dat <- wd_c2_4_class_meas_compl
 
-jags_dat <- specify_jags_dat(test_df_a2_1, "a2_1", "bbsiq_neg_m")
-eff_results_a2_1 <- run_jags_model("efficacy", NULL, "c2_4_class_meas_compl",
-                                   jags_dat, inits_efficacy,
-                                   "a2_1", "bbsiq_neg_m", 10)
-
-save(eff_results_a2_1, file = "./temp_cleaning/eff_results_a2_1.RData")
-
-
-
-
-
-# TODO: Test individual dropout models and potentially combine functions
-
-drp_results_list <- vector("list", length(test_list))
-
-for (i in 1:length(test_list)) {
-  jags_dat <- specify_jags_dat(test_list[[i]], "a1", "miss_session_train_sum")
-  drp_results_list[[i]] <- run_jags_model("dropout", i, "c1_corr_itt", 
-                                          jags_dat, inits_dropout,
-                                          "a1", "miss_session_train_sum", 10)
-}
-
-save(drp_results_list, file = "./temp_cleaning/drp_results_list.RData")
-
-
-
-
-
-# TODO: Pool results across 500 bootstrap samples for models that converge. For
-# testing, temporarily pool across models that *didn't* converge.
-
-load("./temp_cleaning/eff_results_list.RData")
-load("./temp_cleaning/drp_results_list.RData")
-
-pooled_eff <- pool_results(eff_results_list)
-pooled_drp <- pool_results(drp_results_list)
+results_eff_a2_1_a <- run_analysis(dat, "efficacy", inits_efficacy, "c2_4_class_meas_compl", "a2_1", 
+                                   "bbsiq_neg_m", 10)
 
 
 
