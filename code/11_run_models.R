@@ -540,8 +540,10 @@ results_eff_a2_1_a <- run_analysis(dat, "efficacy", inits_efficacy, "c2_4_class_
 
 # TODO: Iterate across all samples, contrasts, and outcomes
 
-samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
-             "c2_4_class_meas_compl", "c2_4_s5_train_compl")
+analysis_types <- c("efficacy", "dropout")
+
+analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
+                      "c2_4_class_meas_compl", "c2_4_s5_train_compl")
 
 a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
 
@@ -549,6 +551,37 @@ y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
             "bbsiq_neg_m", "bbsiq_ben_m", 
             "oa", "dass21_as_m")
 
+total_iterations <- 10 # TODO: Update after testing
 
 
 
+
+
+
+for (i in 1:length(analysis_types)) {
+  if (analysis_types[i] == "efficacy") {
+    for (j in 1:length(analysis_samples)) {
+      for (k in 1:length(a_contrasts)) {
+        for (l in 1:length(y_vars)) {
+          # TODO: Select appropriate data based on "analysis_sample" and inits 
+          # based on "analysis_type" sooner (maybe part of "run_analysis")
+          
+          run_analysis(dat, analysis_types[i], inits_efficacy,
+                       analysis_samples[j], a_contrasts[k], y_vars[l],
+                       total_iterations)
+          
+          
+          
+          
+          
+        }
+      }
+    }
+  }
+  # TODO: Insert for dropout models
+  
+  
+  
+  
+  
+}
