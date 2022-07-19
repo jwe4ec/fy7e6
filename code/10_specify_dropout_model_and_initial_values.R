@@ -63,28 +63,21 @@ model_string = "model {
     confident_online_ctr[i] <- confident_online[i] - mean(confident_online)
     important_ctr[i] <- important[i] - mean(important)
     
-    # Equation for count model
+    # Equation for count (Poisson regression) model
     
     # TODO: Adding 0.00001 to lambda[i]*z[i] is an rjags hack to avoid incompatibility 
     # error, but should we add 0.00001*(1 - z[i]) instead so 0.00001 is only added when 
-    # z[i] is 0? Similarly, subtracting 0.00001 from r/(r + lambda[i]*z[i]) is a hack, 
-    # but should we subtract 0.00001*(1 - z[i]) instead? I see different approaches here 
+    # z[i] is 0? I see different approaches here 
     # (https://biometry.github.io/APES/LectureNotes/2016-JAGS/ZeroInflation/ZeroInflation_JAGS.pdf)
-    # versus here (https://georgederpa.github.io/teaching/countModels.html). Also, why
-    # should we subtract 0.00001 from r/(r + lambda[i]*z[i]) rather than add it?
+    # versus here (https://georgederpa.github.io/teaching/countModels.html).
     
     
     
     
     
-    y[i] ~ dpois(lambda_hack[i])                       # If using Poisson regression
+    y[i] ~ dpois(lambda_hack[i])
     lambda_hack[i] <- lambda[i]*z[i] + 0.00001
     
-    # y[i] ~ dnegbin(p_negbin[i], r)                   # If using negative binomial regression
-    # p_negbin[i] <- r/(r + lambda[i]*z[i]) - 0.00001  # (also add r ~ dunif(0, 50) prior below
-    #                                                  # for dispersion parameter and add r for
-    #                                                  # monitoring to code.samples()
-
     log(lambda[i]) <- beta[1] + beta[2]*a[i] + beta[3]*income_ctr[i] + beta[4]*age_ctr[i] +
                       beta[5]*a[i]*income_ctr[i] + beta[6]*a[i]*age_ctr[i] +
                       beta[7]*income_ctr[i]*age_ctr[i] +
