@@ -10,22 +10,14 @@
 # Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
 # directory to parent folder
 
-# TODO: For examples of zero-inflated count models in JAGS, see
+# For examples of zero-inflated count models in JAGS, see
 # https://biometry.github.io/APES/LectureNotes/2016-JAGS/ZeroInflation/ZeroInflation_JAGS.pdf
 # https://georgederpa.github.io/teaching/countModels.html
 # https://agabrioblog.onrender.com/tutorial/glm2-jags/glm2-jags/
 
-
-
-
-
-# TODO: For information on frequentist zero-inflated count models in R, see
+# For information on frequentist zero-inflated count models in R, see
 # https://stats.oarc.ucla.edu/r/dae/zip/
 # https://www.rdocumentation.org/packages/pscl/versions/1.5.5/topics/zeroinfl
-
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
@@ -65,18 +57,15 @@ model_string = "model {
     
     # Equation for count (Poisson regression) model
     
-    # TODO: Adding 0.00001 to lambda[i]*z[i] is an rjags hack to avoid incompatibility 
-    # error, but should we add 0.00001*(1 - z[i]) instead so 0.00001 is only added when 
-    # z[i] is 0? I see different approaches here 
-    # (https://biometry.github.io/APES/LectureNotes/2016-JAGS/ZeroInflation/ZeroInflation_JAGS.pdf)
-    # versus here (https://georgederpa.github.io/teaching/countModels.html).
-    
-    
-    
-    
+      # Note: Adding 1.0E-10*(1 - z[i]) to lambda[i]*z[i] is an rjags hack to avoid 
+      # incompatibility error. Per consultation with Cynthia Tong, we add 1.0E-10*(1 
+      # - z[i]) instead of 1.0E-10 because when z[i] is 1, lambda_hack[i] can just be 
+      # lambda[i] (i.e., no need to add a small number to it). For similar hacks, see
+      # https://biometry.github.io/APES/LectureNotes/2016-JAGS/ZeroInflation/ZeroInflation_JAGS.pdf
+      # https://georgederpa.github.io/teaching/countModels.html
     
     y[i] ~ dpois(lambda_hack[i])
-    lambda_hack[i] <- lambda[i]*z[i] + 0.00001
+    lambda_hack[i] <- lambda[i]*z[i] + 1.0E-10*(1 - z[i])
     
     log(lambda[i]) <- beta[1] + beta[2]*a[i] + beta[3]*income_ctr[i] + beta[4]*age_ctr[i] +
                       beta[5]*a[i]*income_ctr[i] + beta[6]*a[i]*age_ctr[i] +
