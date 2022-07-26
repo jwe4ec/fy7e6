@@ -560,8 +560,6 @@ results_eff_a2_1_a <- run_analysis(inits_all, "efficacy", dat_all, "c2_4_class_m
 
 # Iterate across all samples, contrasts, and outcomes
 
-analysis_types <- c("efficacy", "dropout")
-
 analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
                       "c2_4_class_meas_compl", "c2_4_s5_train_compl")
 
@@ -577,33 +575,32 @@ total_iterations <- 10 # TODO: Update after testing
 
 
 
-n_analysis_types   <- length(analysis_types)
 n_analysis_samples <- length(analysis_samples)
 n_a_contrasts      <- length(a_contrasts)
 n_eff_y_vars       <- length(eff_y_vars)
 
 # TODO: Parallelize (a) "a1" contrast analyses in 500 bootstrap samples (see if
-# statement on "a1" contrast in "run_analysis()" above) and (b) nested for loop below
+# statement on "a1" contrast in "run_analysis()" above) and (b) for loops below
 
-for (i in 1:n_analysis_types) {
-  if (analysis_types[i] == "efficacy") {
-    for (j in 1:n_analysis_samples) {
-      for (k in 1:n_a_contrasts) {
-        for (l in 1:n_eff_y_vars) {
-          run_analysis(inits_all, analysis_types[i], dat_all, analysis_samples[j], 
-                       a_contrasts[k], eff_y_vars[l], total_iterations)
-        }                                       # End for loop on "eff_y_vars"
-      }                                         # End for loop on "a_contrasts"
-    }                                           # End for loop on "analysis_samples"
-  } else if (analysis_types[i] == "dropout") {  # End if statement on "efficacy"
-    for (j in 1:n_analysis_samples) {
-      for (k in 1:n_a_contrasts) {
-          run_analysis(inits_all, analysis_types[i], dat_all, analysis_samples[j], 
-                       a_contrasts[k], "miss_session_train_sum", total_iterations)
-      }                                         # End for loop on "a_contrasts"
-    }                                           # End for loop on "analysis_samples"
-  }                                             # End if statement on "dropout"
-}                                               # End for loop on analysis_types
+  # Run "efficacy" models
+
+for (i in 1:n_analysis_samples) {
+  for (j in 1:n_a_contrasts) {
+    for (k in 1:n_eff_y_vars) {
+      run_analysis(inits_all, "efficacy", dat_all, analysis_samples[i], 
+                   a_contrasts[j], eff_y_vars[k], total_iterations)
+    }                                       # End for loop on "eff_y_vars"
+  }                                         # End for loop on "a_contrasts"
+}                                           # End for loop on "analysis_samples"
+
+  # Run "dropout" models
+
+for (i in 1:n_analysis_samples) {
+  for (j in 1:n_a_contrasts) {
+    run_analysis(inits_all, "dropout", dat_all, analysis_samples[i], 
+                 a_contrasts[j], "miss_session_train_sum", total_iterations)
+  }                                         # End for loop on "a_contrasts"
+}                                           # End for loop on "analysis_samples"
 
 
 
