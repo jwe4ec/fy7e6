@@ -516,11 +516,11 @@ results_eff_a1_a <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt",
                                  "bbsiq_neg_m", 10)
 results_eff_a1_b <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
                                  "bbsiq_neg_m", 20000)
-results_eff_a1_c <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
-                                 "bbsiq_neg_m", 100000)
 
 results_drp_a1_a <- run_analysis(dat, "dropout", inits_dropout, "c1_corr_itt", "a1", 
                                  "miss_session_train_sum", 10)
+results_drp_a1_b <- run_analysis(dat, "dropout", inits_dropout, "c1_corr_itt", "a1", 
+                                 "miss_session_train_sum", 20000)
 
 
 

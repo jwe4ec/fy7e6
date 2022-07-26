@@ -38,9 +38,10 @@ model_string = "model {
   # Specify likelihood for piecewise linear multilevel model and selection model
   
   for (i in 1:N) {
-    # Grand-mean-center continuous covariates and auxiliary variables
+    # Grand-mean-center continuous covariates and auxiliary variables, rescaling
+    # income to avoid Geweke's convergence diagnostic values of Inf
     
-    income_ctr[i] <- income[i] - mean(income)
+    income_ctr[i] <- (income[i] - mean(income))/10000
     age_ctr[i] <- age[i] - mean(age)
     
     confident_online_ctr[i] <- confident_online[i] - mean(confident_online)
