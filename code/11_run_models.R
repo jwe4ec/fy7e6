@@ -36,17 +36,26 @@ groundhog.library(pkgs, groundhog_day)
 set.seed(1234)
 
 # ---------------------------------------------------------------------------- #
-# Import data and initial values ----
+# Import initial values and data ----
 # ---------------------------------------------------------------------------- #
-
-load("./data/final_clean/wd_c1_corr_itt.RData")
-load("./data/final_clean/wd_c1_corr_s5_train_compl.RData")
-
-load("./data/final_clean/wd_c2_4_class_meas_compl.RData")
-load("./data/final_clean/wd_c2_4_s5_train_compl.RData")
 
 load("./results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
 load("./results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
+
+load("./data/final_clean/wd_c1_corr_itt.RData")
+load("./data/final_clean/wd_c1_corr_s5_train_compl.RData")
+load("./data/final_clean/wd_c2_4_class_meas_compl.RData")
+load("./data/final_clean/wd_c2_4_s5_train_compl.RData")
+
+# Store initial values and data in lists
+
+inits_all <- list(efficacy = inits_efficacy,
+                  dropout  = inits_dropout)
+
+dat_all <- list(c1_corr_itt            = wd_c1_corr_itt,
+                c1_corr_s5_train_compl = wd_c1_corr_s5_train_compl,
+                c2_4_class_meas_compl  = wd_c2_4_class_meas_compl,
+                c2_4_s5_train_compl    = wd_c2_4_s5_train_compl)
 
 # ---------------------------------------------------------------------------- #
 # Define "impute_mcar_nominal()" ----
@@ -450,9 +459,24 @@ pool_results <- function(results_list) {
 
 # Define function for running analyses and pooling results
 
-run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast, 
-                         y_var, total_iterations) {
+run_analysis <- function(inits_all, analysis_type, dat_all, analysis_sample, 
+                         a_contrast, y_var, total_iterations) {
+  # Select "inits" and "dat" based on "analysis_type" and "analysis_sample"
+  
+  inits <- inits_all[[analysis_type]]
+  dat <- dat_all[[analysis_sample]]
+  
+  # Run analysis based on "a_contrast"
+  
   if (a_contrast == "a1") {
+    # TODO: Test with only 2 bootstrap samples for now
+    
+    dat <- dat[1:2]
+    
+    
+    
+    
+    
     # Specify "jags_dat" and run JAGS model for each bootstrap sample
     
     results_list <- vector("list", length(dat))
@@ -508,37 +532,33 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Test individual efficacy and dropout models for "a1"
+# TODO: Test individual efficacy and dropout models for "a1". Test with only
+# 2 bootstrap samples for now (see "run_analysis" above).
 
-dat <- wd_c1_corr_itt[1:2]
+results_eff_a1_a <- run_analysis(inits_all, "efficacy", dat_all, "c1_corr_itt", 
+                                 "a1", "bbsiq_neg_m", 10)``
+results_eff_a1_b <- run_analysis(inits_all, "efficacy", dat_all, "c1_corr_itt", 
+                                 "a1", "bbsiq_neg_m", 20000)
 
-results_eff_a1_a <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
-                                 "bbsiq_neg_m", 10)
-results_eff_a1_b <- run_analysis(dat, "efficacy", inits_efficacy, "c1_corr_itt", "a1", 
-                                 "bbsiq_neg_m", 20000)
-
-results_drp_a1_a <- run_analysis(dat, "dropout", inits_dropout, "c1_corr_itt", "a1", 
-                                 "miss_session_train_sum", 10)
-results_drp_a1_b <- run_analysis(dat, "dropout", inits_dropout, "c1_corr_itt", "a1", 
-                                 "miss_session_train_sum", 20000)
-
-
-
-
-
-# TODO: Test for "a2" model not requiring pooling. Use equal-tail CIs based on
-# 2.5% and 97.5% quantiles from "summary" here?
-
-dat <- wd_c2_4_class_meas_compl
-
-results_eff_a2_1_a <- run_analysis(dat, "efficacy", inits_efficacy, "c2_4_class_meas_compl", "a2_1", 
-                                   "bbsiq_neg_m", 10)
+results_drp_a1_a <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt", 
+                                 "a1", "miss_session_train_sum", 10)
+results_drp_a1_b <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt", 
+                                 "a1", "miss_session_train_sum", 20000)
 
 
 
 
 
-# TODO: Iterate across all samples, contrasts, and outcomes
+# TODO: Test for "a2" model not requiring pooling
+
+results_eff_a2_1_a <- run_analysis(inits_all, "efficacy", dat_all, "c2_4_class_meas_compl", 
+                                   "a2_1", "bbsiq_neg_m", 10)
+
+
+
+
+
+# Iterate across all samples, contrasts, and outcomes
 
 analysis_types <- c("efficacy", "dropout")
 
@@ -547,9 +567,9 @@ analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
 
 a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
 
-y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
-            "bbsiq_neg_m", "bbsiq_ben_m", 
-            "oa", "dass21_as_m")
+eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
+                "bbsiq_neg_m", "bbsiq_ben_m", 
+                "oa", "dass21_as_m")
 
 total_iterations <- 10 # TODO: Update after testing
 
@@ -557,31 +577,34 @@ total_iterations <- 10 # TODO: Update after testing
 
 
 
+n_analysis_types   <- length(analysis_types)
+n_analysis_samples <- length(analysis_samples)
+n_a_contrasts      <- length(a_contrasts)
+n_eff_y_vars       <- length(eff_y_vars)
 
-for (i in 1:length(analysis_types)) {
+# TODO: Parallelize (a) "a1" contrast analyses in 500 bootstrap samples (see if
+# statement on "a1" contrast in "run_analysis()" above) and (b) nested for loop below
+
+for (i in 1:n_analysis_types) {
   if (analysis_types[i] == "efficacy") {
-    for (j in 1:length(analysis_samples)) {
-      for (k in 1:length(a_contrasts)) {
-        for (l in 1:length(y_vars)) {
-          # TODO: Select appropriate data based on "analysis_sample" and inits 
-          # based on "analysis_type" sooner (maybe part of "run_analysis")
-          
-          run_analysis(dat, analysis_types[i], inits_efficacy,
-                       analysis_samples[j], a_contrasts[k], y_vars[l],
-                       total_iterations)
-          
-          
-          
-          
-          
-        }
-      }
-    }
-  }
-  # TODO: Insert for dropout models
-  
-  
-  
-  
-  
-}
+    for (j in 1:n_analysis_samples) {
+      for (k in 1:n_a_contrasts) {
+        for (l in 1:n_eff_y_vars) {
+          run_analysis(inits_all, analysis_types[i], dat_all, analysis_samples[j], 
+                       a_contrasts[k], eff_y_vars[l], total_iterations)
+        }                                       # End for loop on "eff_y_vars"
+      }                                         # End for loop on "a_contrasts"
+    }                                           # End for loop on "analysis_samples"
+  } else if (analysis_types[i] == "dropout") {  # End if statement on "efficacy"
+    for (j in 1:n_analysis_samples) {
+      for (k in 1:n_a_contrasts) {
+          run_analysis(inits_all, analysis_types[i], dat_all, analysis_samples[j], 
+                       a_contrasts[k], "miss_session_train_sum", total_iterations)
+      }                                         # End for loop on "a_contrasts"
+    }                                           # End for loop on "analysis_samples"
+  }                                             # End if statement on "dropout"
+}                                               # End for loop on analysis_types
+
+
+
+
