@@ -344,66 +344,10 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "pool_results()" ----
-# ---------------------------------------------------------------------------- #
-
-# Define function to pool results across bootstrap samples for converged models
-
-pool_results <- function(results_list) {
-  # Restrict to converged models (models in which all parameters pass Geweke's test)
-  
-  # TODO: For testing, temporarily pool across models that *didn't* converge
-  
-  
-  
-  
-  
-  results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
-  
-  number_converged <- length(results_list_converged)
-  
-  # Extract means and SDs of estimated parameters for each model
-  
-  results_list_converged_stats <- lapply(results_list_converged, function(x) x[["summary"]]$statistics)
-  
-  results_list_converged_stats_mean <- lapply(results_list_converged_stats, function(x) x[, "Mean"])
-  results_list_converged_stats_sd   <- lapply(results_list_converged_stats, function(x) x[, "SD"])
-  
-  # Pool results across models by computing (a) average of estimated means, (b) 
-  # percentile bootstrap 95% CIs for average of estimated means (2.5th and 97.5th
-  # percentiles of estimated means), (c) empirical SD (SD of estimated means), and 
-  # (d) average SD (mean of estimated SDs)
-  
-  pooled_mean   <- apply(simplify2array(results_list_converged_stats_mean), 1, mean)
-  pooled_pctl_bs_ci_ll <- apply(simplify2array(results_list_converged_stats_mean), 1, 
-                                quantile, probs = .025)
-  pooled_pctl_bs_ci_ul <- apply(simplify2array(results_list_converged_stats_mean), 1, 
-                                quantile, probs = .975)
-  pooled_emp_sd <- apply(simplify2array(results_list_converged_stats_mean), 1, sd)
-  
-  pooled_avg_sd <- apply(simplify2array(results_list_converged_stats_sd), 1, mean)
-  
-  # Combine pooled results in data frame
-  
-  pooled_results <- data.frame(mean = pooled_mean,
-                               pctl_bs_ci_ll = pooled_pctl_bs_ci_ll,
-                               pctl_bs_ci_ul = pooled_pctl_bs_ci_ul,
-                               emp_sd = pooled_emp_sd,
-                               avg_sd = pooled_avg_sd)
-  
-  # Combine number of converged models and pooled results in list
-  
-  pooled <- list(number_converged = number_converged,
-                 results = pooled_results)
-  
-  return(pooled)
-}
-
-# ---------------------------------------------------------------------------- #
 # Define "run_analyses()" ----
 # ---------------------------------------------------------------------------- #
 
-# Define function for running analyses and pooling results
+# Define function for running analyses
 
 run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast, 
                          y_var, total_iterations) {
@@ -420,23 +364,13 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
 
     names(results_list) <- 1:length(results_list)
     
-    # TODO: Pool results across 500 bootstrap samples for models that converge. For
-    # testing, temporarily pool across models that *didn't* converge.
-    
-    pooled <- pool_results(results_list)
-    
-    
-    
-    
-    
     # Obtain path for saving results
     
     model_results_path_stem <- results_list[[1]]$model_results_path_stem
     
     # Create results object
     
-    results <- list(per_bs_smp = results_list,
-                    pooled = pooled)
+    results <- list(per_bs_smp = results_list)
   } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
     # Specify "jags_dat" and run JAGS model
     
@@ -465,52 +399,52 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
 # Create table for combinations of model input parameters
 
 create_parameter_table <- function() {
-   # Specify input elements
+  # Specify input elements
 
-   analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
-                         "c2_4_class_meas_compl", "c2_4_s5_train_compl")
+  analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
+                        "c2_4_class_meas_compl", "c2_4_s5_train_compl")
 
-   a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
+  a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
 
-   eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
-                   "bbsiq_neg_m", "bbsiq_ben_m", 
-                   "oa", "dass21_as_m")
+  eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
+                  "bbsiq_neg_m", "bbsiq_ben_m", 
+                  "oa", "dass21_as_m")
 
-   drp_y_vars <- "miss_session_train_sum"
+  drp_y_vars <- "miss_session_train_sum"
 
-   # Compute lengths of input elements
+  # Compute lengths of input elements
 
-   n_analysis_samples <- length(analysis_samples)
-   n_a_contrasts      <- length(a_contrasts)
-   n_eff_y_vars       <- length(eff_y_vars)
-   n_drp_y_vars       <- length(drp_y_vars)
+  n_analysis_samples <- length(analysis_samples)
+  n_a_contrasts      <- length(a_contrasts)
+  n_eff_y_vars       <- length(eff_y_vars)
+  n_drp_y_vars       <- length(drp_y_vars)
 
-   n_eff_combos <- n_analysis_samples*n_a_contrasts*n_eff_y_vars
-   n_drp_combos <- n_analysis_samples*n_a_contrasts*n_drp_y_vars
+  n_eff_combos <- n_analysis_samples*n_a_contrasts*n_eff_y_vars
+  n_drp_combos <- n_analysis_samples*n_a_contrasts*n_drp_y_vars
 
-   # Specify input combinations for efficacy and dropout models
+  # Specify input combinations for efficacy and dropout models
 
-   eff_combos <- data.frame(analysis_type   = rep("efficacy",
-                                                  times = n_eff_combos),
-                            analysis_sample = rep(analysis_samples, 
-                                                  each  = n_a_contrasts*n_eff_y_vars),
-                            a_contrast      = rep(a_contrasts,
-                                                  times = n_analysis_samples,
-                                                  each  = n_eff_y_vars),
-                            y_var           = rep(eff_y_vars,
-                                                  times = n_analysis_samples*n_a_contrasts))
+  eff_combos <- data.frame(analysis_type   = rep("efficacy",
+                                                 times = n_eff_combos),
+                           analysis_sample = rep(analysis_samples, 
+                                                 each  = n_a_contrasts*n_eff_y_vars),
+                           a_contrast      = rep(a_contrasts,
+                                                 times = n_analysis_samples,
+                                                 each  = n_eff_y_vars),
+                           y_var           = rep(eff_y_vars,
+                                                 times = n_analysis_samples*n_a_contrasts))
 
-   drp_combos <- data.frame(analysis_type   = rep("dropout",
-                                                  times = n_drp_combos),
-                            analysis_sample = rep(analysis_samples, 
-                                                  each  = n_a_contrasts*n_drp_y_vars),
-                            a_contrast      = rep(a_contrasts,
-                                                  times = n_analysis_samples,
-                                                  each  = n_drp_y_vars),
-                            y_var           = rep(drp_y_vars,
-                                                  times = n_analysis_samples*n_a_contrasts))
+  drp_combos <- data.frame(analysis_type   = rep("dropout",
+                                                 times = n_drp_combos),
+                           analysis_sample = rep(analysis_samples, 
+                                                 each  = n_a_contrasts*n_drp_y_vars),
+                           a_contrast      = rep(a_contrasts,
+                                                 times = n_analysis_samples,
+                                                 each  = n_drp_y_vars),
+                           y_var           = rep(drp_y_vars,
+                                                 times = n_analysis_samples*n_a_contrasts))
 
-   model_input_combos <- rbind(eff_combos, drp_combos)
+  model_input_combos <- rbind(eff_combos, drp_combos)
    
-   return(model_input_combos)
+  return(model_input_combos)
 }
