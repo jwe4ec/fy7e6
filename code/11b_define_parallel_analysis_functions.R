@@ -1,17 +1,7 @@
 # ---------------------------------------------------------------------------- #
-# Run Models
-# Authors: Jeremy W. Eberle
+# Define Parallel Analysis Functions
+# Authors: Jeremy W. Eberle and Jackie Huband
 # ---------------------------------------------------------------------------- #
-
-# ---------------------------------------------------------------------------- #
-# Notes ----
-# ---------------------------------------------------------------------------- #
-
-
-
-# Load custom functions
-
-source("./01_define_functions.R")
 
 # ---------------------------------------------------------------------------- #
 # Define "impute_mcar_nominal()" ----
@@ -418,7 +408,7 @@ pool_results <- function(results_list) {
 run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast, 
                          y_var, total_iterations) {
   if (a_contrast == "a1") {
-    # Specify "jags_dat" and run JAGS model for each bootstrap sample
+    # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
     
     results_list <- foreach (i = 1:length(dat)) %dopar% {
 
@@ -428,8 +418,6 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
                                           a_contrast, y_var, total_iterations)
     }
 
-
-    
     names(results_list) <- 1:length(results_list)
     
     # TODO: Pool results across 500 bootstrap samples for models that converge. For
@@ -470,22 +458,23 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
   return(results)
 }
 
-
-
 # ---------------------------------------------------------------------------- #
-# Create table for combinations of parameters ----
+# Define "create_parameter_table()" ----
 # ---------------------------------------------------------------------------- #
-create_parameter_table <- function(){
+
+# Create table for combinations of model input parameters
+
+create_parameter_table <- function() {
    # Specify input elements
 
    analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
-                      "c2_4_class_meas_compl", "c2_4_s5_train_compl")
+                         "c2_4_class_meas_compl", "c2_4_s5_train_compl")
 
    a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
 
    eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
-                "bbsiq_neg_m", "bbsiq_ben_m", 
-                "oa", "dass21_as_m")
+                   "bbsiq_neg_m", "bbsiq_ben_m", 
+                   "oa", "dass21_as_m")
 
    drp_y_vars <- "miss_session_train_sum"
 
@@ -502,25 +491,26 @@ create_parameter_table <- function(){
    # Specify input combinations for efficacy and dropout models
 
    eff_combos <- data.frame(analysis_type   = rep("efficacy",
-                                               times = n_eff_combos),
+                                                  times = n_eff_combos),
                             analysis_sample = rep(analysis_samples, 
-                                               each  = n_a_contrasts*n_eff_y_vars),
+                                                  each  = n_a_contrasts*n_eff_y_vars),
                             a_contrast      = rep(a_contrasts,
-                                               times = n_analysis_samples,
-                                               each  = n_eff_y_vars),
+                                                  times = n_analysis_samples,
+                                                  each  = n_eff_y_vars),
                             y_var           = rep(eff_y_vars,
-                                               times = n_analysis_samples*n_a_contrasts))
+                                                  times = n_analysis_samples*n_a_contrasts))
 
    drp_combos <- data.frame(analysis_type   = rep("dropout",
-                                               times = n_drp_combos),
+                                                  times = n_drp_combos),
                             analysis_sample = rep(analysis_samples, 
-                                               each  = n_a_contrasts*n_drp_y_vars),
+                                                  each  = n_a_contrasts*n_drp_y_vars),
                             a_contrast      = rep(a_contrasts,
-                                               times = n_analysis_samples,
-                                               each  = n_drp_y_vars),
+                                                  times = n_analysis_samples,
+                                                  each  = n_drp_y_vars),
                             y_var           = rep(drp_y_vars,
-                                               times = n_analysis_samples*n_a_contrasts))
+                                                  times = n_analysis_samples*n_a_contrasts))
 
    model_input_combos <- rbind(eff_combos, drp_combos)
+   
    return(model_input_combos)
 }
