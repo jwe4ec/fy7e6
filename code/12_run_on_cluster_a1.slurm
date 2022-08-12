@@ -9,7 +9,7 @@
 #SBATCH --partition=dev
 #SBATCH --account=pactlab
 #SBATCH --output=job_%a.out
-##SBATCH --array=1-6,25-30,49-54,73-78,97,101,105,109 # runs all "a1" models
+##SBATCH --array=1-12,49-50   # runs all "a1" models
 #SBATCH --array=1
 
 
