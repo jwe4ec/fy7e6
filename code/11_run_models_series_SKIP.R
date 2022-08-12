@@ -460,7 +460,7 @@ pool_results <- function(results_list) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "run_analyses()" ----
+# Define "run_analysis()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function for running analyses and pooling results

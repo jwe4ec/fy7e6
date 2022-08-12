@@ -351,6 +351,17 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
 run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast, 
                          y_var, total_iterations) {
+  # TODO: Select "inits" and "dat" based on "analysis_type" and "analysis_sample"
+  
+  # inits <- inits_all[[analysis_type]]
+  # dat <- dat_all[[analysis_sample]]
+  
+  
+  
+  
+  
+  # Run analysis based on "a_contrast"
+  
   if (a_contrast == "a1") {
     # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
     
@@ -396,55 +407,66 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
 # Define "create_parameter_table()" ----
 # ---------------------------------------------------------------------------- #
 
-# Create table for combinations of model input parameters
+# Create table for nested combinations of model input parameters
 
 create_parameter_table <- function() {
   # Specify input elements
+  
+  c1_a_contrasts   <- "a1"
+  c2_4_a_contrasts <- c("a2_1", "a2_2", "a2_3")
 
-  analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
-                        "c2_4_class_meas_compl", "c2_4_s5_train_compl")
-
-  a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
+  c1_analysis_samples   <- c("c1_corr_itt", "c1_corr_s5_train_compl")
+  c2_4_analysis_samples <- c("c2_4_class_meas_compl", "c2_4_s5_train_compl")
 
   eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
                   "bbsiq_neg_m", "bbsiq_ben_m", 
                   "oa", "dass21_as_m")
-
   drp_y_vars <- "miss_session_train_sum"
 
   # Compute lengths of input elements
 
-  n_analysis_samples <- length(analysis_samples)
-  n_a_contrasts      <- length(a_contrasts)
+  n_c1_a_contrasts        <- length(c1_a_contrasts)
+  n_c2_4_a_contrasts      <- length(c2_4_a_contrasts)
+  
+  n_c1_analysis_samples   <- length(c1_analysis_samples)
+  n_c2_4_analysis_samples <- length(c2_4_analysis_samples)
+  
   n_eff_y_vars       <- length(eff_y_vars)
   n_drp_y_vars       <- length(drp_y_vars)
+  
+  n_contrasts_across_analysis_samples <- n_c1_a_contrasts*n_c1_analysis_samples + 
+                                         n_c2_4_a_contrasts*n_c2_4_analysis_samples
 
-  n_eff_combos <- n_analysis_samples*n_a_contrasts*n_eff_y_vars
-  n_drp_combos <- n_analysis_samples*n_a_contrasts*n_drp_y_vars
-
-  # Specify input combinations for efficacy and dropout models
-
-  eff_combos <- data.frame(analysis_type   = rep("efficacy",
-                                                 times = n_eff_combos),
-                           analysis_sample = rep(analysis_samples, 
-                                                 each  = n_a_contrasts*n_eff_y_vars),
-                           a_contrast      = rep(a_contrasts,
-                                                 times = n_analysis_samples,
-                                                 each  = n_eff_y_vars),
-                           y_var           = rep(eff_y_vars,
-                                                 times = n_analysis_samples*n_a_contrasts))
-
-  drp_combos <- data.frame(analysis_type   = rep("dropout",
-                                                 times = n_drp_combos),
-                           analysis_sample = rep(analysis_samples, 
-                                                 each  = n_a_contrasts*n_drp_y_vars),
-                           a_contrast      = rep(a_contrasts,
-                                                 times = n_analysis_samples,
-                                                 each  = n_drp_y_vars),
-                           y_var           = rep(drp_y_vars,
-                                                 times = n_analysis_samples*n_a_contrasts))
-
-  model_input_combos <- rbind(eff_combos, drp_combos)
-   
-  return(model_input_combos)
+  n_eff_combos <- (n_contrasts_across_analysis_samples)*n_eff_y_vars
+  n_drp_combos <- (n_contrasts_across_analysis_samples)*n_drp_y_vars
+  
+  # Specify analysis samples nested within contrasts
+  
+  contrasts_across_analysis_samples <- data.frame(a_contrast      = c(rep(c1_a_contrasts,
+                                                                          each = n_c1_analysis_samples),
+                                                                      rep(c2_4_a_contrasts,
+                                                                          each = n_c2_4_analysis_samples)),
+                                                  analysis_sample = c(rep(c1_analysis_samples,
+                                                                          times = n_c1_a_contrasts),
+                                                                      rep(c2_4_analysis_samples,
+                                                                          times = n_c2_4_a_contrasts)))
+  
+  # Expand to specify outcomes nested within efficacy and dropout models
+  
+  eff_combos <- data.frame(analysis_type = "efficacy",
+                           data.frame(lapply(contrasts_across_analysis_samples, rep, n_eff_y_vars)),
+                           y_var         = rep(eff_y_vars,
+                                               each = n_contrasts_across_analysis_samples))
+  eff_combos <- eff_combos[order(eff_combos$a_contrast, eff_combos$analysis_sample), ]
+  
+  drp_combos <- data.frame(analysis_type = "dropout",
+                           data.frame(lapply(contrasts_across_analysis_samples, rep, n_drp_y_vars)),
+                           y_var         = rep(drp_y_vars,
+                                               each = n_contrasts_across_analysis_samples))
+  drp_combos <- drp_combos[order(drp_combos$a_contrast, drp_combos$analysis_sample), ]
+  
+  all_combos <- rbind(eff_combos, drp_combos)
+  row.names(all_combos) <- 1:nrow(all_combos)
+  
+  return(all_combos)
 }
