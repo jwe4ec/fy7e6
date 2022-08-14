@@ -28,7 +28,7 @@ Sys.sleep(myNum) # Prevents arrays jobs from simultaneously reading files
 # Load custom functions
 
 source("./01_define_functions.R")
-source("./11b_define_parallel_analysis_functions.R")
+source("./12_define_parallel_analysis_functions.R")
 
 # TODO: Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -77,51 +77,41 @@ load("../data/final_clean/wd_c2_4_s5_train_compl.RData")
 load("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
 load("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
 
-# TODO: Store initial values and data in lists
+# Store initial values and data in lists
 
-# inits_all <- list(efficacy = inits_efficacy,
-#                   dropout  = inits_dropout)
-# 
-# dat_all <- list(c1_corr_itt            = wd_c1_corr_itt,
-#                 c1_corr_s5_train_compl = wd_c1_corr_s5_train_compl,
-#                 c2_4_class_meas_compl  = wd_c2_4_class_meas_compl,
-#                 c2_4_s5_train_compl    = wd_c2_4_s5_train_compl)
+inits_all <- list(efficacy = inits_efficacy,
+                  dropout  = inits_dropout)
 
-
-
-
+dat_all <- list(c1_corr_itt            = wd_c1_corr_itt,
+                c1_corr_s5_train_compl = wd_c1_corr_s5_train_compl,
+                c2_4_class_meas_compl  = wd_c2_4_class_meas_compl,
+                c2_4_s5_train_compl    = wd_c2_4_s5_train_compl)
 
 # ---------------------------------------------------------------------------- #
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Test efficacy models for "a1" for "c1_corr_itt" analysis sample
-
-# Get parameters for this run
+# TODO: Test efficacy and dropout models for "a1"
 
 parameter_table <- create_parameter_table()
 
-dat <- wd_c1_corr_itt
 analysis_type <- parameter_table$analysis_type[myNum]
-analysis_sample <- parameter_table$analysis_sample[myNum]
 a_contrast <- parameter_table$a_contrast[myNum]
+analysis_sample <- parameter_table$analysis_sample[myNum]
 y_var <- parameter_table$y_var[myNum]
+
+dat <- dat_all[[analysis_sample]]
+inits <- inits_all[[analysis_type]]
 
 total_iterations <- 10 # TODO: Change to 20000 for final run
 
-run_analysis(dat, analysis_type, inits_efficacy, analysis_sample, a_contrast, y_var, total_iterations)
+run_analysis(dat, analysis_type, inits, analysis_sample, a_contrast, y_var, total_iterations)
 
 
 
 
-# TODO: Test efficacy models for "a1" for "c1_corr_s5_train_compl" analysis sample
-# TODO: Test efficacy models for "a2_1", "a2_2", and "a2_3" for "c2_4_class_meas_compl" 
-#       and "c2_4_s5_train_compl" samples
 
-# TODO: Test dropout models for "a1" for "c1_corr_itt" and "c1_corr_s5_train_compl" 
-#       analysis samples
-# TODO: Test dropout models for "a2_1", "a2_2", and "a2_3" for "c2_4_class_meas_compl" 
-#       and "c2_4_s5_train_compl" samples
+# TODO: Test efficacy and dropout models for "a2_1", "a2_2", and "a2_3"
 
 
 

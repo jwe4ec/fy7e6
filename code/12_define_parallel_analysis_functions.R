@@ -351,15 +351,6 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
 run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast, 
                          y_var, total_iterations) {
-  # TODO: Select "inits" and "dat" based on "analysis_type" and "analysis_sample"
-  
-  # inits <- inits_all[[analysis_type]]
-  # dat <- dat_all[[analysis_sample]]
-  
-  
-  
-  
-  
   # Run analysis based on "a_contrast"
   
   if (a_contrast == "a1") {
