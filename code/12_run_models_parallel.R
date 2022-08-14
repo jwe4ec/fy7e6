@@ -91,7 +91,7 @@ dat_all <- list(c1_corr_itt            = wd_c1_corr_itt,
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Test efficacy and dropout models for "a1"
+# TODO: Test efficacy and dropout models for "a1" by running "a1" Slurm script
 
 parameter_table <- create_parameter_table()
 
@@ -111,7 +111,8 @@ run_analysis(dat, analysis_type, inits, analysis_sample, a_contrast, y_var, tota
 
 
 
-# TODO: Test efficacy and dropout models for "a2_1", "a2_2", and "a2_3"
+# TODO: Test efficacy and dropout models for "a2_1", "a2_2", and "a2_3" by running
+# "a2" Slurm script
 
 
 
