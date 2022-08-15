@@ -18,6 +18,10 @@
 
 wd_dir <- getwd()
 
+# Create directory for console output of each job in job array
+
+dir.create("../jobs")
+
 # Identify run number for index into parameter table
 
 myNum <- as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))

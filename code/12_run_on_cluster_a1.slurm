@@ -2,15 +2,13 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-##SBATCH --cpus-per-task=17   # commented out for testing
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=17
 #SBATCH --time=03:30:00
-##SBATCH --partition=standard # commented out for testing
-#SBATCH --partition=dev
+#SBATCH --partition=standard
 #SBATCH --account=pactlab
-#SBATCH --output=job_%a.out
-##SBATCH --array=1-12,49-50   # runs all "a1" models
-#SBATCH --array=1
+#SBATCH --output=../jobs/job_%a.out
+##SBATCH --array=1-12,49-50   # runs all "a1" models for final run
+#SBATCH --array=1-2           # runs only two models for testing
 
 
 module purge
