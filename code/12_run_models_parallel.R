@@ -22,17 +22,14 @@ wd_dir <- getwd()
 
 dir.create("../jobs")
 
+# Obtain command-line arguments provided by Slurm script
+
+cmdArgs <- commandArgs(trailingOnly = TRUE)
+
 # Identify run number for index into parameter table
 
-myNum <- as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+myNum <- as.integer(cmdArgs[1])
 cat("\nmyNum =", myNum, "\n")
-
-Sys.sleep(myNum) # Prevents arrays jobs from simultaneously reading files
-
-# Load custom functions
-
-source("./01_define_functions.R")
-source("./12_define_parallel_analysis_functions.R")
 
 # TODO: Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -51,18 +48,29 @@ source("./12_define_parallel_analysis_functions.R")
 
 
 
-library(fastDummies)
-library(rjags)
-
 library(parallel)
 library(iterators)
 library(foreach, quietly = TRUE)
 library(doParallel)
 
+library(fastDummies)
+library(rjags)
+
 # Set up cores for parallel code
 
-numCores <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")) - 1
+numCores <- as.integer(cmdArgs[2]) - 1
+cat("\nnumCores =", numCores, "\n")
+
 registerDoParallel(cores = numCores)
+
+# Prevent job array from simultaneously reading files
+
+Sys.sleep(myNum)
+
+# Load custom functions
+
+source("./01_define_functions.R")
+source("./12_define_parallel_analysis_functions.R")
 
 # Set seed
 
