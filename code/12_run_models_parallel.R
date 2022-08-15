@@ -7,56 +7,49 @@
 # Notes ----
 # ---------------------------------------------------------------------------- #
 
-# Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
-# directory to "code" folder
+# This script runs models in parallel via separate Slurm scripts that specify a 
+# job array on the Rivanna supercomputer at the University of Virginia
+
+# Before running script, restart R and set working directory to "code" folder
 
 # ---------------------------------------------------------------------------- #
-# Store working directory, check correct R version, load packages ----
+# Store working directory and load packages ----
 # ---------------------------------------------------------------------------- #
 
 # Store working directory
 
 wd_dir <- getwd()
 
-# Create directory for console output of each job in job array
+# Load groundhog package, specify groundhog_day, and load packages (Slurm script 
+# tells Rivanna to use R 4.1)
 
-dir.create("../jobs")
+library(groundhog)
+meta.groundhog("2022-01-01")
+groundhog_day <- "2022-01-01"
+
+parallel_pkgs <- c("parallel", "iterators", "foreach", "doParallel")
+anlys_pkgs <- c("fastDummies", "rjags")
+
+groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
+
+# Set seed
+
+set.seed(1234)
+
+# ---------------------------------------------------------------------------- #
+# Set up cores for parallel code ----
+# ---------------------------------------------------------------------------- #
 
 # Obtain command-line arguments provided by Slurm script
 
 cmdArgs <- commandArgs(trailingOnly = TRUE)
 
-# Identify run number for index into parameter table
+# Identify job array run number for index into parameter table
 
 myNum <- as.integer(cmdArgs[1])
 cat("\nmyNum =", myNum, "\n")
 
-# TODO: Check correct R version, load groundhog package, and specify groundhog_day
-
-# groundhog_day <- version_control()
-
-
-
-
-
-# TODO: Load packages
-
-# pkgs <- c("fastDummies", "rjags")
-# groundhog.library(pkgs, groundhog_day)
-
-
-
-
-
-library(parallel)
-library(iterators)
-library(foreach, quietly = TRUE)
-library(doParallel)
-
-library(fastDummies)
-library(rjags)
-
-# Set up cores for parallel code
+# Set up cores for parallel code (one core is reserved for manager)
 
 numCores <- as.integer(cmdArgs[2]) - 1
 cat("\nnumCores =", numCores, "\n")
@@ -69,12 +62,7 @@ Sys.sleep(myNum)
 
 # Load custom functions
 
-source("./01_define_functions.R")
 source("./12_define_parallel_analysis_functions.R")
-
-# Set seed
-
-set.seed(1234)
 
 # ---------------------------------------------------------------------------- #
 # Import data and initial values ----
@@ -103,8 +91,6 @@ dat_all <- list(c1_corr_itt            = wd_c1_corr_itt,
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Test efficacy and dropout models for "a1" by running "a1" Slurm script
-
 parameter_table <- create_parameter_table()
 
 analysis_type <- parameter_table$analysis_type[myNum]
@@ -118,6 +104,8 @@ inits <- inits_all[[analysis_type]]
 total_iterations <- 10 # TODO: Change to 20000 for final run
 
 run_analysis(dat, analysis_type, inits, analysis_sample, a_contrast, y_var, total_iterations)
+
+# TODO: Test efficacy and dropout models for "a1" by running "a1" Slurm script
 
 
 
