@@ -200,8 +200,10 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   model_string_path <- paste0("../results/bayesian/", analysis_type, 
                               "/model_and_initial_values/model_string.txt")
   
+  time0 <- proc.time()
   jags_model <- jags.model(file = model_string_path,
                            data = jags_dat, inits = inits, n.chains = 1)
+  create_model_time <- proc.time() - time0
 
   # Prevent printing in scientific notation
 
@@ -225,7 +227,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                                 n.iter = remaining_iterations)
   sampling_time <- proc.time() - time0
   
-  total_time <- burn_in_time + sampling_time
+  total_time <- create_model_time + burn_in_time + sampling_time
 
   # Create directory for saving model results, including results per bootstrap 
   # sample (if applicable)
@@ -283,6 +285,9 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   print(paste0("Remaining Iterations: ", remaining_iterations))
   cat("\n")
   
+  print("Model Creation Time (seconds):")
+  print(create_model_time)
+  cat("\n")
   print("Burn-In Time (seconds):")
   print(burn_in_time)
   cat("\n")
@@ -329,6 +334,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   total_iterations = total_iterations,
                   burn_iterations = burn_iterations,
                   remaining_iterations = remaining_iterations,
+                  create_model_time = create_model_time,
                   burn_in_time = burn_in_time,
                   sampling_time = sampling_time,
                   total_time = total_time,
@@ -344,7 +350,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "run_analyses()" ----
+# Define "run_analysis()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function for running analyses
@@ -433,14 +439,15 @@ create_parameter_table <- function() {
   
   # Specify analysis samples nested within contrasts
   
-  contrasts_across_analysis_samples <- data.frame(a_contrast      = c(rep(c1_a_contrasts,
-                                                                          each = n_c1_analysis_samples),
-                                                                      rep(c2_4_a_contrasts,
-                                                                          each = n_c2_4_analysis_samples)),
-                                                  analysis_sample = c(rep(c1_analysis_samples,
-                                                                          times = n_c1_a_contrasts),
-                                                                      rep(c2_4_analysis_samples,
-                                                                          times = n_c2_4_a_contrasts)))
+  contrasts_across_analysis_samples <- 
+    data.frame(a_contrast      = c(rep(c1_a_contrasts,
+                                       each = n_c1_analysis_samples),
+                                   rep(c2_4_a_contrasts,
+                                       each = n_c2_4_analysis_samples)),
+               analysis_sample = c(rep(c1_analysis_samples,
+                                       times = n_c1_a_contrasts),
+                                   rep(c2_4_analysis_samples,
+                                       times = n_c2_4_a_contrasts)))
   
   # Expand to specify outcomes nested within efficacy and dropout models
   
