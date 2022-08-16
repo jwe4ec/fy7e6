@@ -33,6 +33,10 @@ set.seed(1234)
 # Set up cores for parallel code ----
 # ---------------------------------------------------------------------------- #
 
+# Create directory for console output of each job in job array
+
+dir.create("../jobs")
+
 # Obtain command-line arguments provided by Slurm script
 
 cmdArgs <- commandArgs(trailingOnly = TRUE)
