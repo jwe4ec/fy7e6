@@ -150,3 +150,11 @@ dir.create(path, recursive = TRUE)
 
 writeLines(model_string, con = paste0(path, "model_string.txt"))
 save(inits_dropout, file = paste0(path, "inits_dropout.RData"))
+
+# ---------------------------------------------------------------------------- #
+# Create directory for console outputs of Rivanna jobs ----
+# ---------------------------------------------------------------------------- #
+
+# Create directory for console output of each job (needed later for Rivanna)
+
+dir.create("./jobs")
