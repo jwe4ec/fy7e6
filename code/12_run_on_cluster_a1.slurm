@@ -2,8 +2,8 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=17
-#SBATCH --time=03:30:00
+#SBATCH --cpus-per-task=26
+#SBATCH --time=90:00:00
 #SBATCH --partition=standard
 #SBATCH --account=pactlab
 #SBATCH --output=../jobs/job_%a.out
