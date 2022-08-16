@@ -363,11 +363,10 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
     # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
     
     results_list <- foreach (i = 1:length(dat)) %dopar% {
-
-        jags_dat <- specify_jags_dat(dat[[i]], a_contrast, y_var)
-        run_jags_model(analysis_type, i, analysis_sample,
-                                          jags_dat, inits,
-                                          a_contrast, y_var, total_iterations)
+      jags_dat <- specify_jags_dat(dat[[i]], a_contrast, y_var)
+      run_jags_model(analysis_type, i, analysis_sample,
+                     jags_dat, inits,
+                     a_contrast, y_var, total_iterations)
     }
 
     names(results_list) <- 1:length(results_list)
