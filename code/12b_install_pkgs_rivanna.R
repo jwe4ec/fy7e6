@@ -14,6 +14,14 @@
 # Before running script, restart R and set working directory to "code" folder
 
 # ---------------------------------------------------------------------------- #
+# Create directory for outputs of jobs ----
+# ---------------------------------------------------------------------------- #
+
+# Create directory for console output of each job
+
+dir.create("../jobs")
+
+# ---------------------------------------------------------------------------- #
 # Install packages ----
 # ---------------------------------------------------------------------------- #
 
