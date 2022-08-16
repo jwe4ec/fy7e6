@@ -52,7 +52,7 @@ cat("\nmyNum =", myNum, "\n")
 # Set up cores for parallel code (one core is reserved for manager)
 
 numCores <- as.integer(cmdArgs[2]) - 1
-cat("\nnumCores =", numCores, "\n")
+cat("numCores =", numCores, "\n\n")
 
 registerDoParallel(cores = numCores)
 
