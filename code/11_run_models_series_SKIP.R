@@ -404,66 +404,10 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "pool_results()" ----
-# ---------------------------------------------------------------------------- #
-
-# Define function to pool results across bootstrap samples for converged models
-
-pool_results <- function(results_list) {
-  # Restrict to converged models (models in which all parameters pass Geweke's test)
-  
-  # TODO: For testing, temporarily pool across models that *didn't* converge
-  
-  
-  
-  
-  
-  results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
-  
-  number_converged <- length(results_list_converged)
-  
-  # Extract means and SDs of estimated parameters for each model
-  
-  results_list_converged_stats <- lapply(results_list_converged, function(x) x[["summary"]]$statistics)
-  
-  results_list_converged_stats_mean <- lapply(results_list_converged_stats, function(x) x[, "Mean"])
-  results_list_converged_stats_sd   <- lapply(results_list_converged_stats, function(x) x[, "SD"])
-  
-  # Pool results across models by computing (a) average of estimated means, (b) 
-  # percentile bootstrap 95% CIs for average of estimated means (2.5th and 97.5th
-  # percentiles of estimated means), (c) empirical SD (SD of estimated means), and 
-  # (d) average SD (mean of estimated SDs)
-  
-  pooled_mean   <- apply(simplify2array(results_list_converged_stats_mean), 1, mean)
-  pooled_pctl_bs_ci_ll <- apply(simplify2array(results_list_converged_stats_mean), 1, 
-                                quantile, probs = .025)
-  pooled_pctl_bs_ci_ul <- apply(simplify2array(results_list_converged_stats_mean), 1, 
-                                quantile, probs = .975)
-  pooled_emp_sd <- apply(simplify2array(results_list_converged_stats_mean), 1, sd)
-  
-  pooled_avg_sd <- apply(simplify2array(results_list_converged_stats_sd), 1, mean)
-  
-  # Combine pooled results in data frame
-  
-  pooled_results <- data.frame(mean = pooled_mean,
-                               pctl_bs_ci_ll = pooled_pctl_bs_ci_ll,
-                               pctl_bs_ci_ul = pooled_pctl_bs_ci_ul,
-                               emp_sd = pooled_emp_sd,
-                               avg_sd = pooled_avg_sd)
-  
-  # Combine number of converged models and pooled results in list
-  
-  pooled <- list(number_converged = number_converged,
-                 results = pooled_results)
-  
-  return(pooled)
-}
-
-# ---------------------------------------------------------------------------- #
 # Define "run_analysis()" ----
 # ---------------------------------------------------------------------------- #
 
-# Define function for running analyses and pooling results
+# Define function for running analyses
 
 run_analysis <- function(inits_all, analysis_type, dat_all, analysis_sample, 
                          a_contrast, y_var, total_iterations) {
@@ -496,23 +440,13 @@ run_analysis <- function(inits_all, analysis_type, dat_all, analysis_sample,
     
     names(results_list) <- 1:length(results_list)
     
-    # TODO: Pool results across 500 bootstrap samples for models that converge. For
-    # testing, temporarily pool across models that *didn't* converge.
-    
-    pooled <- pool_results(results_list)
-    
-    
-    
-    
-    
     # Obtain path for saving results
     
     model_results_path_stem <- results_list[[1]]$model_results_path_stem
     
     # Create results object
     
-    results <- list(per_bs_smp = results_list,
-                    pooled = pooled)
+    results <- list(per_bs_smp = results_list)
   } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
     # Specify "jags_dat" and run JAGS model
     
@@ -538,12 +472,6 @@ run_analysis <- function(inits_all, analysis_type, dat_all, analysis_sample,
 # Run analyses ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Revise pooling to accommodate visual inspection of plots
-
-
-
-
-
 # TODO: Test individual efficacy and dropout models for "a1". Test with only
 # 2 bootstrap samples for now (see "run_analysis" above).
 
@@ -561,7 +489,7 @@ results_drp_a1_b <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt",
 
 
 
-# TODO: Test for "a2" model not requiring pooling
+# TODO: Test for "a2" model
 
 results_eff_a2_1_a <- run_analysis(inits_all, "efficacy", dat_all, "c2_4_class_meas_compl", 
                                    "a2_1", "bbsiq_neg_m", 10)
