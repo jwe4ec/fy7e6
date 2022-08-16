@@ -101,7 +101,7 @@ y_var <- parameter_table$y_var[myNum]
 dat <- dat_all[[analysis_sample]]
 inits <- inits_all[[analysis_type]]
 
-total_iterations <- 10 # TODO: Change to 20000 for final run
+total_iterations <- 20000
 
 run_analysis(dat, analysis_type, inits, analysis_sample, a_contrast, y_var, total_iterations)
 
