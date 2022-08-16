@@ -395,8 +395,6 @@ run_analysis <- function(dat, analysis_type, inits, analysis_sample, a_contrast,
   # Save and return results
   
   save(results, file = paste0(model_results_path_stem, "/results.RData"))
-  
-  return(results)
 }
 
 # ---------------------------------------------------------------------------- #
