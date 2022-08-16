@@ -27,7 +27,7 @@ library(groundhog)
 meta.groundhog("2022-01-01")
 groundhog_day <- "2022-01-01"
 
-parallel_pkgs <- c("parallel", "iterators", "foreach", "doParallel")
+parallel_pkgs <- c("iterators", "foreach", "doParallel")
 anlys_pkgs <- c("fastDummies", "rjags")
 
 groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
