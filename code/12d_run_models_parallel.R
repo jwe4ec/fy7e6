@@ -8,29 +8,22 @@
 # ---------------------------------------------------------------------------- #
 
 # This script runs models in parallel via separate Slurm scripts that specify a 
-# job array on the Rivanna supercomputer at the University of Virginia
+# job array on Rivanna. Packages must first be installed via the prior script.
 
 # Before running script, restart R and set working directory to "code" folder
 
 # ---------------------------------------------------------------------------- #
-# Store working directory and load packages ----
+# Load packages ----
 # ---------------------------------------------------------------------------- #
 
-# Store working directory
+# Load custom functions
 
-wd_dir <- getwd()
+source("./12a_define_parallel_analysis_functions.R")
 
-# Load groundhog package, specify groundhog_day, and load packages (Slurm script 
-# tells Rivanna to use R 4.1)
+# Load groundhog and use it to load other packages per groundhog_day defined
+# in load_pkgs_via_groundhog() function (Slurm script specifies R version)
 
-library(groundhog)
-meta.groundhog("2022-01-01")
-groundhog_day <- "2022-01-01"
-
-parallel_pkgs <- c("iterators", "foreach", "doParallel")
-anlys_pkgs <- c("fastDummies", "rjags")
-
-groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
+load_pkgs_via_groundhog()
 
 # Set seed
 
@@ -59,10 +52,6 @@ registerDoParallel(cores = numCores)
 # Prevent job array from simultaneously reading files
 
 Sys.sleep(myNum)
-
-# Load custom functions
-
-source("./12_define_parallel_analysis_functions.R")
 
 # ---------------------------------------------------------------------------- #
 # Import data and initial values ----

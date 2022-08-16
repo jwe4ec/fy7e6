@@ -4,6 +4,26 @@
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
+# Define "load_pkgs_via_groundhog()" ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to load packages via groundhog package. If packages have not
+# been installed yet, groundhog will install them.
+
+load_pkgs_via_groundhog <- function() {
+  library(groundhog)
+  meta.groundhog("2022-01-01")
+  groundhog_day <- "2022-01-01"
+  
+  parallel_pkgs <- c("iterators", "foreach", "doParallel")
+  anlys_pkgs <- c("fastDummies", "rjags")
+  
+  groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
+  
+  cat("\ngroundhog_day =", groundhog_day, "\n\n")
+}
+
+# ---------------------------------------------------------------------------- #
 # Define "impute_mcar_nominal()" ----
 # ---------------------------------------------------------------------------- #
 
