@@ -16,10 +16,7 @@ load_pkgs_via_groundhog <- function() {
   groundhog_day <- "2022-01-01"
   
   parallel_pkgs <- c("iterators", "foreach", "doParallel")
-  
-  # Note: "lifecycle" is installed to avoid errors when installing "fastDummies"
-  
-  anlys_pkgs <- c("lifecycle", "fastDummies", "rjags")
+  anlys_pkgs <- c("fastDummies", "rjags")
   
   groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
   
