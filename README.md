@@ -16,7 +16,7 @@ Scripts 1-10 were run on a Windows 10 Pro laptop (12 GB of RAM; Intel Core i5-43
 
 Scripts 12a-12f were used to run the analysis models in parallel on the [Standard](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of the [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/) supercomputer, managed by [Research Computing](https://www.rc.virginia.edu/) at the University of Virginia. We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) for her consultation.
 
-Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy Eberle and Katie Daniel for a Fall 2020 course project.
+Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy Eberle and [Katie Daniel](https://github.com/KatharineDaniel) for a Fall 2020 course project.
 
 ## TODOs
 
