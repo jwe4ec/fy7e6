@@ -21,8 +21,11 @@
 
 source("./12a_define_parallel_analysis_functions.R")
 
-# Install groundhog and use it to install other packages per groundhog_day defined
-# in load_pkgs_via_groundhog() function (Slurm script specifies R version)
+# Install groundhog (if needed) and use it to install other packages per groundhog_day 
+# defined in load_pkgs_via_groundhog() function (Slurm script specifies R version)
 
-install.packages("groundhog", repos = "https://cran.case.edu")
+if (!require("groundhog", quietly = TRUE)) {
+  install.packages("groundhog", repos = "https://cran.case.edu")
+}
+
 load_pkgs_via_groundhog()
