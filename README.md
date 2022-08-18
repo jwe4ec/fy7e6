@@ -24,4 +24,4 @@ Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy
 - Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
 - Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
 - Run analyses and pool results
-- Document steps for running scripts on Rivanna in README
+- Document steps for running scripts on Rivanna in README (inc. runtimes and storage requirements)
