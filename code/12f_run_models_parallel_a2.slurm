@@ -7,8 +7,7 @@
 #SBATCH --partition=standard
 #SBATCH --account=pactlab
 #SBATCH --output=../jobs/job_%a.out
-##SBATCH --array=13-48,51-56   # runs all "a2" models for final run
-#SBATCH --array=13-14          # runs only two models for testing
+#SBATCH --array=13-48,51-56         # Run all "a2" models
 
 module purge
 module load goolf/7.1.0_3.1.4 R/4.1

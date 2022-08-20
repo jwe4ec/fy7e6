@@ -93,21 +93,3 @@ inits <- inits_all[[analysis_type]]
 total_iterations <- 20000
 
 run_analysis(dat, analysis_type, inits, analysis_sample, a_contrast, y_var, total_iterations)
-
-# TODO: Test efficacy and dropout models for "a1" by running "a1" Slurm script
-
-
-
-
-
-# TODO: Test efficacy and dropout models for "a2_1", "a2_2", and "a2_3" by running
-# "a2" Slurm script
-
-
-
-
-# TODO: Remove unused variables from data (to resolve warnings)
-
-
-
-
