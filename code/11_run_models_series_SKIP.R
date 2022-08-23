@@ -306,15 +306,6 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   
   model_res <- as.mcmc(do.call(rbind, model_samples))
 
-  # Save plots
-
-  pdf(file = paste0(model_results_path_specific, "/plots",
-                    switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
-                    ".pdf"))
-  par(mfrow=c(4,2))
-  plot(model_res)
-  dev.off()
-
   # Save results and diagnostics
   
   sink(file = paste0(model_results_path_specific, "/results_and_dx",
@@ -374,6 +365,15 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   print(paste0("All parameters in (-1.96, 1.96): ", geweke_converge_all))
   
   sink()
+  
+  # Save plots
+  
+  pdf(file = paste0(model_results_path_specific, "/plots",
+                    switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
+                    ".pdf"))
+  par(mfrow=c(4,2))
+  plot(model_res)
+  dev.off()
   
   # Save results in list
   
@@ -484,6 +484,9 @@ results_drp_a1_a <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt",
                                  "a1", "miss_session_train_sum", 10)
 results_drp_a1_b <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt", 
                                  "a1", "miss_session_train_sum", 20000)
+
+results_drp_a1_c <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_s5_train_compl", 
+                                 "a1", "miss_session_train_sum", 10)
 
 
 
