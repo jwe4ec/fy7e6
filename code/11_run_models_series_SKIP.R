@@ -485,9 +485,6 @@ results_drp_a1_a <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt",
 results_drp_a1_b <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_itt", 
                                  "a1", "miss_session_train_sum", 20000)
 
-results_drp_a1_c <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_s5_train_compl", 
-                                 "a1", "miss_session_train_sum", 10)
-
 
 
 
@@ -496,54 +493,6 @@ results_drp_a1_c <- run_analysis(inits_all, "dropout", dat_all, "c1_corr_s5_trai
 
 results_eff_a2_1_a <- run_analysis(inits_all, "efficacy", dat_all, "c2_4_class_meas_compl", 
                                    "a2_1", "bbsiq_neg_m", 10)
-
-
-
-
-
-# Iterate across all samples, contrasts, and outcomes
-
-analysis_samples <- c("c1_corr_itt", "c1_corr_s5_train_compl",
-                      "c2_4_class_meas_compl", "c2_4_s5_train_compl")
-
-a_contrasts <- c("a1", "a2_1", "a2_2", "a2_3")
-
-eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
-                "bbsiq_neg_m", "bbsiq_ben_m", 
-                "oa", "dass21_as_m")
-
-total_iterations <- 10 # TODO: Update after testing
-
-
-
-
-
-n_analysis_samples <- length(analysis_samples)
-n_a_contrasts      <- length(a_contrasts)
-n_eff_y_vars       <- length(eff_y_vars)
-
-# TODO: Parallelize (a) "a1" contrast analyses in 500 bootstrap samples (see if
-# statement on "a1" contrast in "run_analysis()" above) and (b) for loops below
-
-  # Run "efficacy" models
-
-for (i in 1:n_analysis_samples) {
-  for (j in 1:n_a_contrasts) {
-    for (k in 1:n_eff_y_vars) {
-      run_analysis(inits_all, "efficacy", dat_all, analysis_samples[i], 
-                   a_contrasts[j], eff_y_vars[k], total_iterations)
-    }                                       # End for loop on "eff_y_vars"
-  }                                         # End for loop on "a_contrasts"
-}                                           # End for loop on "analysis_samples"
-
-  # Run "dropout" models
-
-for (i in 1:n_analysis_samples) {
-  for (j in 1:n_a_contrasts) {
-    run_analysis(inits_all, "dropout", dat_all, analysis_samples[i], 
-                 a_contrasts[j], "miss_session_train_sum", total_iterations)
-  }                                         # End for loop on "a_contrasts"
-}                                           # End for loop on "analysis_samples"
 
 
 
