@@ -434,7 +434,7 @@ create_parameter_table <- function() {
 
   eff_y_vars <- c("rr_neg_threat_m", "rr_pos_threat_m",
                   "bbsiq_neg_m", "bbsiq_ben_m", 
-                  "oa", "dass21_as_m")
+                  "oa_m", "dass21_as_m")
   drp_y_vars <- "miss_session_train_sum"
 
   # Compute lengths of input elements
