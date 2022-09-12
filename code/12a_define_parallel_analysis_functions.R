@@ -349,7 +349,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   a_contrast = a_contrast,
                   y_var = y_var,
                   model_results_path_stem = model_results_path_stem,
-                  model_results_path_specific = model_results_path_stem,
+                  model_results_path_specific = model_results_path_stem, # TODO: Should be "model_results_path_specific"
                   jags_model = jags_model,
                   total_iterations = total_iterations,
                   burn_iterations = burn_iterations,

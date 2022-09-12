@@ -8,7 +8,7 @@
 # ---------------------------------------------------------------------------- #
 
 # Before running script, restart R (CTRL+SHIFT+F10 on Windows) and set working 
-# directory to "code" folder
+# directory to parent folder
 
 # ---------------------------------------------------------------------------- #
 # Store working directory, check correct R version, load packages ----
@@ -27,6 +27,48 @@ source("./code/01_define_functions.R")
 groundhog_day <- version_control()
 
 # No packages loaded
+
+# ---------------------------------------------------------------------------- #
+# Import trimmed results ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to import "results_trim.RData" for many models at once
+
+import_results <- function(anlys_path_pattern) {
+  res_dir <- "./results/bayesian"
+  
+  res_filenames <- list.files(res_dir, pattern = "results_trim.RData", 
+                              recursive = TRUE, full.names = FALSE)
+  res_filenames <- res_filenames[grep(anlys_path_pattern, res_filenames)]
+  
+  res <- lapply(paste0(res_dir, "/", res_filenames),
+                function(x) { get(load(x, environment())) })
+  
+  if (anlys_path_pattern %in% c("dropout/out/c1_", "efficacy/out/c1_")) {
+    names(res) <- lapply(res, function(x) {
+      paste0(x$per_bs_smp$`1`$analysis_type, "_",
+             x$per_bs_smp$`1`$analysis_sample, "_",
+             x$per_bs_smp$`1`$a_contrast, "_",
+             x$per_bs_smp$`1`$y_var)
+    })
+  } else if (anlys_path_pattern %in% c("dropout/out/c2_4_", "efficacy/out/c2_4_")) {
+    names(res) <- lapply(res, function(x) {
+      paste0(x$analysis_type, "_",
+             x$analysis_sample, "_",
+             x$a_contrast, "_",
+             x$y_var)
+    })
+  }
+  
+  return(res)
+}
+
+# Run function for each analysis type for "a1" ("c1_") and "a2" ("c2_4_") models
+
+res_drp_c1   <- import_results("dropout/out/c1_")
+res_drp_c2_4 <- import_results("dropout/out/c2_4_")
+res_eff_c1   <- import_results("efficacy/out/c1_")
+res_eff_c2_4 <- import_results("efficacy/out/c2_4_")
 
 # ---------------------------------------------------------------------------- #
 # Pool results ----
