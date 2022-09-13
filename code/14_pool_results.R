@@ -71,7 +71,30 @@ res_eff_c1   <- import_results("efficacy/out/c1_")
 res_eff_c2_4 <- import_results("efficacy/out/c2_4_")
 
 # ---------------------------------------------------------------------------- #
-# Pool Geweke's statistic across bootstrap samples ----
+# Extract model info for "a1" models ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to extract model info based on first bootstrap sample
+
+extract_model_info <- function(results_list) {
+  bs_smp_1 <- results_list$per_bs_smp[[1]]
+  
+  model_info_elements <- c("analysis_type", "analysis_sample", "a_contrast",
+                           "y_var", "model_results_path_stem", "total_iterations",
+                           "burn_iterations", "remaining_iterations")
+  
+  results_list$model_info <- bs_smp_1[names(bs_smp_1) %in% model_info_elements]
+  
+  return(results_list)
+}
+
+# Run function for "a1" ("c1") models
+
+res_drp_c1 <- lapply(res_drp_c1, extract_model_info)
+res_eff_c1 <- lapply(res_eff_c1, extract_model_info)
+
+# ---------------------------------------------------------------------------- #
+# Pool Geweke's statistic across bootstrap samples for "a1" models ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to pool Geweke's statistic across bootstrap samples
@@ -131,7 +154,8 @@ pool_geweke <- function(results_list) {
 
   # Combine pooled stats and summary in list
   
-  pooled_geweke <- list(pooled_stats         = pooled_stats,
+  pooled_geweke <- list(model_info           = results_list$model_info,
+                        pooled_stats         = pooled_stats,
                         pooled_stats_summary = pooled_stats_summary)
   
   return(pooled_geweke)
@@ -143,35 +167,56 @@ res_drp_c1_pooled_geweke <- lapply(res_drp_c1, pool_geweke)
 res_eff_c1_pooled_geweke <- lapply(res_eff_c1, pool_geweke)
 
 # ---------------------------------------------------------------------------- #
-# Create summary table of Geweke's statistic by "a1" model ----
+# Create summary table of Geweke's statistic for "a1" models ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: RESOLVE ERROR AND MAYBE FIND MORE EFFICIENT APPROACH. Define function to 
-# create summary table of Geweke's statistic by "a1" model
+# Define function to create summary table of Geweke's statistic by "a1" model
 
 create_geweke_table <- function(pooled_geweke) {
-  df <- data.frame(model            = names(pooled_geweke),
-                   num_converge_all = pooled_geweke[["pooled_stats_summary"]]$num_converge_all,
-                   pct_converge_all = pooled_geweke[["pooled_stats_summary"]]$pct_converge_all,
-                   min              = pooled_geweke[["pooled_stats_summary"]]$min,
-                   max              = pooled_geweke[["pooled_stats_summary"]]$max,
-                   min_num_outrange = pooled_geweke[["pooled_stats_summary"]]$min_num_outrange,
-                   max_num_outrange = pooled_geweke[["pooled_stats_summary"]]$max_num_outrange,
-                   num_infinite     = pooled_geweke[["pooled_stats_summary"]]$num_infinite,
-                   all_finite       = pooled_geweke[["pooled_stats_summary"]]$all_finite)
+  # Extract pooled Geweke's stats summary and model info for each model
+  
+  pooled_geweke_stats_summaries <- lapply(pooled_geweke, function(x) x$pooled_stats_summary)
+  pooled_geweke_model_info      <- lapply(pooled_geweke, function(x) x$model_info)
+  
+  # Convert nested lists to data frames
+  
+  df_stats_summaries <- as.data.frame(do.call(rbind, pooled_geweke_stats_summaries))
+  df_model_info      <- as.data.frame(do.call(rbind, pooled_geweke_model_info))
+  
+  # Round selected stats summary columns
+  
+  df_stats_summaries$min <- lapply(df_stats_summaries$min, round, 2)
+  df_stats_summaries$max <- lapply(df_stats_summaries$max, round, 2)
+  
+  # Remove undesired model info columns
+  
+  df_model_info$model_results_path_stem <- NULL
+  
+  # Combine data frames
+  
+  df <- cbind(df_model_info, df_stats_summaries)
+  
+  # Rename rows
+  
+  row.names(df) <- 1:nrow(df)
   
   return(df)
 }
 
+# Run function for "a1" models
 
-
-
-
-# TODO: Run function for "a1" models
-
+res_drp_c1_geweke_summary_tbl <- create_geweke_table(res_drp_c1_pooled_geweke)
 res_eff_c1_geweke_summary_tbl <- create_geweke_table(res_eff_c1_pooled_geweke)
 
+# Combine tables for "a1" models
 
+res_c1_geweke_summary_tbl <- rbind(res_drp_c1_geweke_summary_tbl, res_eff_c1_geweke_summary_tbl)
+
+# ---------------------------------------------------------------------------- #
+# Create summary table of Geweke's statistic for "a2" models ----
+# ---------------------------------------------------------------------------- #
+
+# TODO
 
 
 
