@@ -26,7 +26,9 @@ source("./code/01_define_functions.R")
 
 groundhog_day <- version_control()
 
-# No packages loaded
+# Load packages
+
+groundhog.library("data.table", groundhog_day)
 
 # ---------------------------------------------------------------------------- #
 # Import trimmed results ----
@@ -66,32 +68,40 @@ import_results <- function(anlys_path_pattern) {
 # Run function for each analysis type for "a1" ("c1_") and "a2" ("c2_4_") models
 
 res_drp_c1   <- import_results("dropout/out/c1_")
-res_drp_c2_4 <- import_results("dropout/out/c2_4_")
 res_eff_c1   <- import_results("efficacy/out/c1_")
+res_drp_c2_4 <- import_results("dropout/out/c2_4_")
 res_eff_c2_4 <- import_results("efficacy/out/c2_4_")
 
 # ---------------------------------------------------------------------------- #
-# Extract model info for "a1" models ----
+# Extract model info ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to extract model info based on first bootstrap sample
+# Define function to extract model info
 
-extract_model_info <- function(results_list) {
-  bs_smp_1 <- results_list$per_bs_smp[[1]]
-  
+extract_model_info <- function(results, a_contrast_type) {
   model_info_elements <- c("analysis_type", "analysis_sample", "a_contrast",
                            "y_var", "model_results_path_stem", "total_iterations",
                            "burn_iterations", "remaining_iterations")
   
-  results_list$model_info <- bs_smp_1[names(bs_smp_1) %in% model_info_elements]
+  if (a_contrast_type == "a1") {
+    # For "a1" models, extract model info based on first bootstrap sample
+    
+    bs_smp_1 <- results$per_bs_smp[[1]]
+    
+    results$model_info <- bs_smp_1[names(bs_smp_1) %in% model_info_elements]
+  } else if (a_contrast_type == "a2") {
+    results$model_info <- results[names(results) %in% model_info_elements]
+  }
   
-  return(results_list)
+  return(results)
 }
 
-# Run function for "a1" ("c1") models
+# Run function
 
-res_drp_c1 <- lapply(res_drp_c1, extract_model_info)
-res_eff_c1 <- lapply(res_eff_c1, extract_model_info)
+res_drp_c1   <- lapply(res_drp_c1,   extract_model_info, "a1")
+res_eff_c1   <- lapply(res_eff_c1,   extract_model_info, "a1")
+res_drp_c2_4 <- lapply(res_drp_c2_4, extract_model_info, "a2")
+res_eff_c2_4 <- lapply(res_eff_c2_4, extract_model_info, "a2")
 
 # ---------------------------------------------------------------------------- #
 # Pool Geweke's statistic across bootstrap samples for "a1" models ----
@@ -99,35 +109,35 @@ res_eff_c1 <- lapply(res_eff_c1, extract_model_info)
 
 # Define function to pool Geweke's statistic across bootstrap samples
 
-pool_geweke <- function(results_list) {
+pool_geweke <- function(results) {
   # Count number of bootstrap samples in which model converged per Geweke's 
   # statistic for all parameters
   
-  results_list_converge_all <- Filter(function(x) x$geweke_converge_all == TRUE, 
-                                      results_list$per_bs_smp)
+  results_converge_all <- Filter(function(x) x$geweke_converge_all == TRUE, 
+                                 results$per_bs_smp)
   
-  num_converge_all <- length(results_list_converge_all)
-  pct_converge_all <- 100*num_converge_all/length(results_list$per_bs_smp)
+  num_converge_all <- length(results_converge_all)
+  pct_converge_all <- 100*num_converge_all/length(results$per_bs_smp)
   
   # Extract Geweke's statistic for each bootstrap sample
   
-  results_list_geweke <- lapply(results_list$per_bs_smp, function(x) x[["geweke"]]$z)
+  results_geweke <- lapply(results$per_bs_smp, function(x) x[["geweke"]]$z)
 
   # Pool Geweke's statistic for each parameter across bootstrap samples by
   # computing its (a) mean, (b) empirical SD, (c) minimum, (d) maximum, (e) 
   # number and (f) percentage of values outside (-1.96, 1.96), and numbers of 
   # (g) infinite and (h) finite values
   
-  pooled_mean         <- apply(simplify2array(results_list_geweke), 1, mean)
-  pooled_emp_sd       <- apply(simplify2array(results_list_geweke), 1, sd)
-  pooled_min          <- apply(simplify2array(results_list_geweke), 1, min)
-  pooled_max          <- apply(simplify2array(results_list_geweke), 1, max)
-  pooled_num_outrange <- apply(simplify2array(results_list_geweke), 1, 
+  pooled_mean         <- apply(simplify2array(results_geweke), 1, mean)
+  pooled_emp_sd       <- apply(simplify2array(results_geweke), 1, sd)
+  pooled_min          <- apply(simplify2array(results_geweke), 1, min)
+  pooled_max          <- apply(simplify2array(results_geweke), 1, max)
+  pooled_num_outrange <- apply(simplify2array(results_geweke), 1, 
                                function(x) sum(x < -1.96 | x > 1.96))
-  pooled_pct_outrange <- 100*pooled_num_outrange/length(results_list_geweke)
-  pooled_num_infinite <- apply(simplify2array(results_list_geweke), 1, 
+  pooled_pct_outrange <- 100*pooled_num_outrange/length(results_geweke)
+  pooled_num_infinite <- apply(simplify2array(results_geweke), 1, 
                                function(x) sum(is.infinite(x)))
-  pooled_num_finite   <- apply(simplify2array(results_list_geweke), 1, 
+  pooled_num_finite   <- apply(simplify2array(results_geweke), 1, 
                                function(x) sum(is.finite(x)))
   
   # Combine pooled statistics in data frame
@@ -152,36 +162,75 @@ pool_geweke <- function(results_list) {
                                num_infinite     = sum(pooled_stats$num_infinite),
                                all_finite       = all(pooled_stats$num_finite == 500))
 
-  # Combine pooled stats and summary in list
+  # Add pooled stats and summary to results
   
-  pooled_geweke <- list(model_info           = results_list$model_info,
-                        pooled_stats         = pooled_stats,
-                        pooled_stats_summary = pooled_stats_summary)
+  results$pooled_geweke_stats         <- pooled_stats
+  results$pooled_geweke_stats_summary <- pooled_stats_summary
   
-  return(pooled_geweke)
+  return(results)
 }
 
-# Run function for "a1" ("c1_") models
+# Run function for "a1" ("c1") models
 
-res_drp_c1_pooled_geweke <- lapply(res_drp_c1, pool_geweke)
-res_eff_c1_pooled_geweke <- lapply(res_eff_c1, pool_geweke)
+res_drp_c1 <- lapply(res_drp_c1, pool_geweke)
+res_eff_c1 <- lapply(res_eff_c1, pool_geweke)
 
 # ---------------------------------------------------------------------------- #
-# Create summary table of Geweke's statistic for "a1" models ----
+# Summarize Geweke's statistic across model parameters for "a2" models ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to create summary table of Geweke's statistic by "a1" model
+# Define function to summarize Geweke's statistic across model parameters
 
-create_geweke_table <- function(pooled_geweke) {
-  # Extract pooled Geweke's stats summary and model info for each model
+summarize_geweke <- function(results) {
+  # Put Geweke stat and whether the value is outside (-1.96, 1.96) in data frame
   
-  pooled_geweke_stats_summaries <- lapply(pooled_geweke, function(x) x$pooled_stats_summary)
-  pooled_geweke_model_info      <- lapply(pooled_geweke, function(x) x$model_info)
+  stats <- data.frame(z        = results$geweke$z,
+                      outrange = !(results$geweke_converge_each))
+  
+  # Summarize stats across model parameters
+  
+  stats_summary <- list(min          = min(stats$z),
+                        max          = max(stats$z),
+                        num_outrange = sum(stats$outrange),
+                        num_infinite = sum(is.infinite(stats$z)),
+                        all_finite   = all(is.finite(stats$z)))
+  
+  # Add stats and summary to results
+  
+  results$geweke_stats <- stats
+  results$geweke_stats_summary <- stats_summary
+
+  return(results)
+}
+
+# Run function for "a2" ("c2_4") models
+
+res_drp_c2_4 <- lapply(res_drp_c2_4, summarize_geweke)
+res_eff_c2_4 <- lapply(res_eff_c2_4, summarize_geweke)
+
+# ---------------------------------------------------------------------------- #
+# Create summary table of Geweke's statistic ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to create summary table of Geweke's statistic
+
+create_geweke_table <- function(results, a_contrast_type) {
+  # Extract model info for each model
+  
+  model_info <- lapply(results, function(x) x$model_info)
+  
+  # Extract Geweke's stats summary for each model
+  
+  if (a_contrast_type == "a1") {
+    geweke_stats_summaries <- lapply(results, function(x) x$pooled_geweke_stats_summary)
+  } else if (a_contrast_type == "a2") {
+    geweke_stats_summaries <- lapply(results, function(x) x$geweke_stats_summary)
+  }
   
   # Convert nested lists to data frames
   
-  df_stats_summaries <- as.data.frame(do.call(rbind, pooled_geweke_stats_summaries))
-  df_model_info      <- as.data.frame(do.call(rbind, pooled_geweke_model_info))
+  df_stats_summaries <- as.data.frame(do.call(rbind, geweke_stats_summaries))
+  df_model_info      <- as.data.frame(do.call(rbind, model_info))
   
   # Round selected stats summary columns
   
@@ -203,20 +252,30 @@ create_geweke_table <- function(pooled_geweke) {
   return(df)
 }
 
-# Run function for "a1" models
+# Run function
 
-res_drp_c1_geweke_summary_tbl <- create_geweke_table(res_drp_c1_pooled_geweke)
-res_eff_c1_geweke_summary_tbl <- create_geweke_table(res_eff_c1_pooled_geweke)
+res_drp_c1_geweke_summary_tbl   <- create_geweke_table(res_drp_c1,   "a1")
+res_eff_c1_geweke_summary_tbl   <- create_geweke_table(res_eff_c1,   "a1")
+res_drp_c2_4_geweke_summary_tbl <- create_geweke_table(res_drp_c2_4, "a2")
+res_eff_c2_4_geweke_summary_tbl <- create_geweke_table(res_eff_c2_4, "a2")
 
-# Combine tables for "a1" models
+# Combine tables for "a1" models and for "a2" models
 
-res_c1_geweke_summary_tbl <- rbind(res_drp_c1_geweke_summary_tbl, res_eff_c1_geweke_summary_tbl)
+res_c1_geweke_summary_tbl   <- rbind(res_drp_c1_geweke_summary_tbl, 
+                                     res_eff_c1_geweke_summary_tbl)
+res_c2_4_geweke_summary_tbl <- rbind(res_drp_c2_4_geweke_summary_tbl, 
+                                     res_eff_c2_4_geweke_summary_tbl)
 
-# ---------------------------------------------------------------------------- #
-# Create summary table of Geweke's statistic for "a2" models ----
-# ---------------------------------------------------------------------------- #
+# Export tables as CSV using "fwrite" (given that columns are lists)
 
-# TODO
+dir.create("./results/bayesian/summary_dx")
+
+fwrite(res_c1_geweke_summary_tbl,
+       "./results/bayesian/summary_dx/res_c1_geweke_summary_tbl.csv",
+       row.names = FALSE)
+fwrite(res_c2_4_geweke_summary_tbl,
+       "./results/bayesian/summary_dx/res_c2_4_geweke_summary_tbl.csv",
+       row.names = FALSE)
 
 
 
