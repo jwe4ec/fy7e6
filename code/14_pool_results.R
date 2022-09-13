@@ -71,6 +71,113 @@ res_eff_c1   <- import_results("efficacy/out/c1_")
 res_eff_c2_4 <- import_results("efficacy/out/c2_4_")
 
 # ---------------------------------------------------------------------------- #
+# Pool Geweke's statistic across bootstrap samples ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to pool Geweke's statistic across bootstrap samples
+
+pool_geweke <- function(results_list) {
+  # Count number of bootstrap samples in which model converged per Geweke's 
+  # statistic for all parameters
+  
+  results_list_converge_all <- Filter(function(x) x$geweke_converge_all == TRUE, 
+                                      results_list$per_bs_smp)
+  
+  num_converge_all <- length(results_list_converge_all)
+  pct_converge_all <- 100*num_converge_all/length(results_list$per_bs_smp)
+  
+  # Extract Geweke's statistic for each bootstrap sample
+  
+  results_list_geweke <- lapply(results_list$per_bs_smp, function(x) x[["geweke"]]$z)
+
+  # Pool Geweke's statistic for each parameter across bootstrap samples by
+  # computing its (a) mean, (b) empirical SD, (c) minimum, (d) maximum, (e) 
+  # number and (f) percentage of values outside (-1.96, 1.96), and numbers of 
+  # (g) infinite and (h) finite values
+  
+  pooled_mean         <- apply(simplify2array(results_list_geweke), 1, mean)
+  pooled_emp_sd       <- apply(simplify2array(results_list_geweke), 1, sd)
+  pooled_min          <- apply(simplify2array(results_list_geweke), 1, min)
+  pooled_max          <- apply(simplify2array(results_list_geweke), 1, max)
+  pooled_num_outrange <- apply(simplify2array(results_list_geweke), 1, 
+                               function(x) sum(x < -1.96 | x > 1.96))
+  pooled_pct_outrange <- 100*pooled_num_outrange/length(results_list_geweke)
+  pooled_num_infinite <- apply(simplify2array(results_list_geweke), 1, 
+                               function(x) sum(is.infinite(x)))
+  pooled_num_finite   <- apply(simplify2array(results_list_geweke), 1, 
+                               function(x) sum(is.finite(x)))
+  
+  # Combine pooled statistics in data frame
+  
+  pooled_stats <- data.frame(mean         = pooled_mean,
+                             emp_sd       = pooled_emp_sd,
+                             min          = pooled_min,
+                             max          = pooled_max,
+                             num_outrange = pooled_num_outrange,
+                             pct_outrange = pooled_pct_outrange,
+                             num_infinite = pooled_num_infinite,
+                             num_finite   = pooled_num_finite)
+  
+  # Summarize pooled stats across model parameters
+  
+  pooled_stats_summary <- list(num_converge_all = num_converge_all,
+                               pct_converge_all = pct_converge_all,
+                               min              = min(pooled_stats$min),
+                               max              = max(pooled_stats$max),
+                               min_num_outrange = min(pooled_stats$num_outrange),
+                               max_num_outrange = max(pooled_stats$num_outrange),
+                               num_infinite     = sum(pooled_stats$num_infinite),
+                               all_finite       = all(pooled_stats$num_finite == 500))
+
+  # Combine pooled stats and summary in list
+  
+  pooled_geweke <- list(pooled_stats         = pooled_stats,
+                        pooled_stats_summary = pooled_stats_summary)
+  
+  return(pooled_geweke)
+}
+
+# Run function for "a1" ("c1_") models
+
+res_drp_c1_pooled_geweke <- lapply(res_drp_c1, pool_geweke)
+res_eff_c1_pooled_geweke <- lapply(res_eff_c1, pool_geweke)
+
+# ---------------------------------------------------------------------------- #
+# Create summary table of Geweke's statistic by "a1" model ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: RESOLVE ERROR AND MAYBE FIND MORE EFFICIENT APPROACH. Define function to 
+# create summary table of Geweke's statistic by "a1" model
+
+create_geweke_table <- function(pooled_geweke) {
+  df <- data.frame(model            = names(pooled_geweke),
+                   num_converge_all = pooled_geweke[["pooled_stats_summary"]]$num_converge_all,
+                   pct_converge_all = pooled_geweke[["pooled_stats_summary"]]$pct_converge_all,
+                   min              = pooled_geweke[["pooled_stats_summary"]]$min,
+                   max              = pooled_geweke[["pooled_stats_summary"]]$max,
+                   min_num_outrange = pooled_geweke[["pooled_stats_summary"]]$min_num_outrange,
+                   max_num_outrange = pooled_geweke[["pooled_stats_summary"]]$max_num_outrange,
+                   num_infinite     = pooled_geweke[["pooled_stats_summary"]]$num_infinite,
+                   all_finite       = pooled_geweke[["pooled_stats_summary"]]$all_finite)
+  
+  return(df)
+}
+
+
+
+
+
+# TODO: Run function for "a1" models
+
+res_eff_c1_geweke_summary_tbl <- create_geweke_table(res_eff_c1_pooled_geweke)
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
 # Pool results ----
 # ---------------------------------------------------------------------------- #
 
