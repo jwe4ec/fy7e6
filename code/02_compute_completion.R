@@ -20,7 +20,7 @@ wd_dir <- getwd()
 
 # Load custom functions
 
-source("./code/1_define_functions.R")
+source("./code/01_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
@@ -670,7 +670,7 @@ completion$session_only_int_diff <- NULL
 
 # TODO: Consider adding table to centralized data cleaning
 
-write.csv(completion, file = "./data/temp/completion.csv")
+write.csv(completion, file = "./data/temp/completion.csv", row.names = FALSE)
 
 
 
