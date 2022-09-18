@@ -263,7 +263,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   dir.create(model_results_path_specific, recursive = TRUE)
   
-  # Save posterior samples, reload them, and create MCMC object
+  # Save posterior samples and create MCMC object
 
   save(model_samples,
        file = paste0(model_results_path_specific, "/model_samples",
@@ -349,7 +349,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   a_contrast = a_contrast,
                   y_var = y_var,
                   model_results_path_stem = model_results_path_stem,
-                  model_results_path_specific = model_results_path_stem, # TODO: Should be "model_results_path_specific"
+                  model_results_path_specific = model_results_path_specific,
                   jags_model = jags_model,
                   total_iterations = total_iterations,
                   burn_iterations = burn_iterations,
@@ -358,7 +358,6 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   burn_in_time = burn_in_time,
                   sampling_time = sampling_time,
                   total_time = total_time,
-                  model_samples = model_samples,
                   model_res = model_res,
                   summary = summary,
                   hpd_interval = hpd_interval,
