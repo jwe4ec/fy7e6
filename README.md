@@ -20,8 +20,8 @@ Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy
 
 ## Results
 
-TODO: Add results to components on OSF project using `osfr` package
-TODO: Describe components on OSF project
+- TODO: Add results to components on OSF project using `osfr` package
+- TODO: Describe components on OSF project
 
 ## TODOs
 
