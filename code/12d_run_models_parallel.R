@@ -90,6 +90,10 @@ y_var <- parameter_table$y_var[myNum]
 dat <- dat_all[[analysis_sample]]
 inits <- inits_all[[analysis_type]]
 
-total_iterations <- 20000
+if (a_contrast == "a1") {
+  total_iterations <- 20000
+} else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
+  total_iterations <- 1000000
+}
 
 run_analysis(dat, analysis_type, inits, analysis_sample, a_contrast, y_var, total_iterations)
