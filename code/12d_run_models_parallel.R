@@ -58,7 +58,10 @@ Sys.sleep(myNum)
 # ---------------------------------------------------------------------------- #
 
 load("../data/final_clean/wd_c1_corr_itt.RData")
+load("../data/final_clean/wd_c1_corr_itt_6800.RData")
+
 load("../data/final_clean/wd_c1_corr_s5_train_compl.RData")
+load("../data/final_clean/wd_c1_corr_s5_train_compl_6800.RData")
 
 load("../data/final_clean/wd_c2_4_class_meas_compl.RData")
 load("../data/final_clean/wd_c2_4_s5_train_compl.RData")
@@ -71,10 +74,12 @@ load("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
 inits_all <- list(efficacy = inits_efficacy,
                   dropout  = inits_dropout)
 
-dat_all <- list(c1_corr_itt            = wd_c1_corr_itt,
-                c1_corr_s5_train_compl = wd_c1_corr_s5_train_compl,
-                c2_4_class_meas_compl  = wd_c2_4_class_meas_compl,
-                c2_4_s5_train_compl    = wd_c2_4_s5_train_compl)
+dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
+                c1_corr_itt_6800            = wd_c1_corr_itt_6800,
+                c1_corr_s5_train_compl      = wd_c1_corr_s5_train_compl,
+                c1_corr_s5_train_compl_6800 = wd_c1_corr_s5_train_compl_6800,
+                c2_4_class_meas_compl       = wd_c2_4_class_meas_compl,
+                c2_4_s5_train_compl         = wd_c2_4_s5_train_compl)
 
 # ---------------------------------------------------------------------------- #
 # Run analyses ----

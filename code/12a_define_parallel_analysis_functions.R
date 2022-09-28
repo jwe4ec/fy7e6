@@ -428,8 +428,8 @@ create_parameter_table <- function() {
   c1_a_contrasts   <- "a1"
   c2_4_a_contrasts <- c("a2_1", "a2_2", "a2_3")
 
-  c1_eff_analysis_samples   <- c("c1_corr_itt", "c1_corr_s5_train_compl")
-  c1_drp_analysis_samples   <- "c1_corr_itt"
+  c1_eff_analysis_samples   <- c("c1_corr_itt_6800", "c1_corr_s5_train_compl_6800")
+  c1_drp_analysis_samples   <- "c1_corr_itt_6800"
   
   c2_4_eff_analysis_samples <- c("c2_4_class_meas_compl", "c2_4_s5_train_compl")
   c2_4_drp_analysis_samples <- "c2_4_class_meas_compl"

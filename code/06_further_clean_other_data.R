@@ -461,21 +461,28 @@ bootstrap <- function(df, n_hr_coach) {
   df_combined <- rbind(df, df_resample)
 }
 
-# Run function 500 times and put resulting data frames in list
+# Run function for number of bootstrap samples and put resulting data frames in list
 
-wd_c1_corr_itt <- replicate(500,
-                            bootstrap(wd_c1_uncorr_itt, n_itt_hr_coach),
-                            simplify = FALSE)
+wd_c1_corr_itt      <- replicate(500,
+                                 bootstrap(wd_c1_uncorr_itt, n_itt_hr_coach),
+                                 simplify = FALSE)
+wd_c1_corr_itt_6800 <- replicate(6800,
+                                 bootstrap(wd_c1_uncorr_itt, n_itt_hr_coach),
+                                 simplify = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Restrict to analysis samples ----
 # ---------------------------------------------------------------------------- #
 
-# Corrected ITT sample for Comparison 1 is "wd_c1_corr_itt"
+# Corrected ITT sample for Comparison 1 is "wd_c1_corr_itt" (for 500 bootstrap
+# samples) or "wd_c1_corr_itt_6800" (for 6800 bootstrap samples)
 
 # Corrected Session 5 training completer sample for Comparison 1
 
-wd_c1_corr_s5_train_compl <- lapply(wd_c1_corr_itt, function(x) {
+wd_c1_corr_s5_train_compl      <- lapply(wd_c1_corr_itt, function(x) {
+  x[x$s5_train_compl_anlys_uncorrected_c1 == 1, ]
+})
+wd_c1_corr_s5_train_compl_6800 <- lapply(wd_c1_corr_itt_6800, function(x) {
   x[x$s5_train_compl_anlys_uncorrected_c1 == 1, ]
 })
 
@@ -523,9 +530,14 @@ wd_c2_4_s5_train_compl <- anlys_df_wd[anlys_df_wd$s5_train_compl_anlys_c2_4 == 1
 unneeded_a2 <- c("a2_1", "a2_2", "a2_3")
 
 wd_c1_corr_itt <-
-  lapply(wd_c1_corr_itt,            function(x) { x[, !(names(x) %in% unneeded_a2)]})
+  lapply(wd_c1_corr_itt,                 function(x) { x[, !(names(x) %in% unneeded_a2)]})
+wd_c1_corr_itt_6800 <-
+  lapply(wd_c1_corr_itt_6800,            function(x) { x[, !(names(x) %in% unneeded_a2)]})
+
 wd_c1_corr_s5_train_compl <-
-  lapply(wd_c1_corr_s5_train_compl, function(x) { x[, !(names(x) %in% unneeded_a2)]})
+  lapply(wd_c1_corr_s5_train_compl,      function(x) { x[, !(names(x) %in% unneeded_a2)]})
+wd_c1_corr_s5_train_compl_6800 <-
+  lapply(wd_c1_corr_s5_train_compl_6800, function(x) { x[, !(names(x) %in% unneeded_a2)]})
 
 wd_c2_4_class_meas_compl$a1 <- NULL
 wd_c2_4_s5_train_compl$a1 <- NULL
@@ -536,8 +548,11 @@ wd_c2_4_s5_train_compl$a1 <- NULL
 
 dir.create("./data/final_clean")
 
-save(wd_c1_corr_itt,            file = "./data/final_clean/wd_c1_corr_itt.RData")
-save(wd_c1_corr_s5_train_compl, file = "./data/final_clean/wd_c1_corr_s5_train_compl.RData")
+save(wd_c1_corr_itt,                 file = "./data/final_clean/wd_c1_corr_itt.RData")
+save(wd_c1_corr_itt_6800,            file = "./data/final_clean/wd_c1_corr_itt_6800.RData")
 
-save(wd_c2_4_class_meas_compl,  file = "./data/final_clean/wd_c2_4_class_meas_compl.RData")
-save(wd_c2_4_s5_train_compl,    file = "./data/final_clean/wd_c2_4_s5_train_compl.RData")
+save(wd_c1_corr_s5_train_compl,      file = "./data/final_clean/wd_c1_corr_s5_train_compl.RData")
+save(wd_c1_corr_s5_train_compl_6800, file = "./data/final_clean/wd_c1_corr_s5_train_compl_6800.RData")
+
+save(wd_c2_4_class_meas_compl,       file = "./data/final_clean/wd_c2_4_class_meas_compl.RData")
+save(wd_c2_4_s5_train_compl,         file = "./data/final_clean/wd_c2_4_s5_train_compl.RData")
