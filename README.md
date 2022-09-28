@@ -18,6 +18,11 @@ Scripts 12a-12f were used to run the analysis models in parallel on the [Standar
 
 Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy Eberle and [Katie Daniel](https://github.com/KatharineDaniel) for a Fall 2020 course project.
 
+## Results
+
+TODO: Add results to components on OSF project using `osfr` package
+TODO: Describe components on OSF project
+
 ## TODOs
 
 - Resolve TODOs in `compute_flow.R`, `further_clean_demog_data.R`, `run_models_parallel.R`
