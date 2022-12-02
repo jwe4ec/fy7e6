@@ -21,6 +21,12 @@ Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy
 ## Results
 
 - TODO: Add results to components on OSF project using `osfr` package
+  - results_bayesian_set1_efficacy_out_a
+  - results_bayesian_set1_efficacy_out_b
+  - results_bayesian_set1_dropout_out
+  - results_bayesian_set2_efficacy_out_a
+  - results_bayesian_set2_efficacy_out_b
+  - results_bayesian_set2_dropout_out
 - TODO: Describe components on OSF project
 
 ## TODOs
