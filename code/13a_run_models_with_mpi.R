@@ -1,30 +1,70 @@
-library(pbdMPI , quiet=TRUE)
+# ---------------------------------------------------------------------------- #
+# Run Models in Parallel with MPI
+# Authors: Jeremy W. Eberle and Jackie Huband
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# Notes ----
+# ---------------------------------------------------------------------------- #
+
+# TODO (revise notes to fit script): This script runs models in parallel via 
+# separate Slurm scripts that specify a job array on Rivanna. Packages must 
+# first be installed via the prior script.
+
+
+
+
+
+# Before running script, restart R and set working directory to "code" folder
+
+# ---------------------------------------------------------------------------- #
+# Load packages ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Use groundhog if possible
+
+library(pbdMPI, quiet = TRUE)
+
+
+
 
 
 # ---------------------------------------------------------------------------- #
 # Obtain command-line argument for the version to run
 # ---------------------------------------------------------------------------- #
+
+# TODO: Review
+
 cmdArgs <- commandArgs(trailingOnly = TRUE)
 myNum <- as.integer(cmdArgs[1])
 
 
+
+
+
 # ---------------------------------------------------------------------------- #
 # Set up the connection for the nodes
-# 
 # ---------------------------------------------------------------------------- #
 
+# TODO: Review
+
 # Initialize connections
+
 init()
+
 # Capture process information
+
 myRank = comm.rank( )
 
 
 
 
-# ---------------------------------------------------------------------------- #
-# Define Parallel Analysis Functions
-# Authors: Jeremy W. Eberle and Jackie Huband
-# ---------------------------------------------------------------------------- #
+
+# TODO (see if analysis functions below can be sourced from separate script)
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Define "load_pkgs_via_groundhog()" ----
@@ -393,12 +433,11 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   return(results)
 }
 
-
 # ---------------------------------------------------------------------------- #
 # Define "create_parameter_table()" ----
 # ---------------------------------------------------------------------------- #
 
-# Create table for nested combinations of model input parameters
+# Define function to create table for nested combinations of model input parameters
 
 create_parameter_table <- function() {
   # Specify input elements
@@ -481,31 +520,41 @@ create_parameter_table <- function() {
   return(all_combos)
 }
 
-# New function to split large data and send it as chunks
-broadcast_large_object <- function(myRank, object_name){
-  if (myRank == 0){
-    
+# ---------------------------------------------------------------------------- #
+# Define "broadcast_large_object()" ----
+# ---------------------------------------------------------------------------- #
+
+# TODO (review): Define function to split large data and send it as chunks
+
+
+
+
+
+broadcast_large_object <- function(myRank, object_name) {
+  if (myRank == 0) {
     chunk_size <- 2000
     N <- length(object_name)
     start_ndx <- seq(1, N, chunk_size)
-    stop_ndx <- c((start_ndx-1)[-1], N)
-    
+    stop_ndx <- c((start_ndx - 1)[-1], N)
   } else {
     start_ndx <- NULL
     stop_ndx <- NULL
   }
+  
   start_ndx <- bcast(start_ndx)
   barrier()
   stop_ndx <- bcast(stop_ndx)
   barrier()
   
-  ## Prepare large data structure for broadcasting
-  for (i in 1:length(start_ndx)){
+  # Prepare large data structure for broadcasting
+  
+  for (i in 1:length(start_ndx)) {
     split <- NULL
-    if(myRank == 0){
+    
+    if(myRank == 0) {
       split <- object_name[start_ndx[i]:stop_ndx[i]]
       split <- bcast(split)
-    } else{
+    } else {
       split <- bcast(split)
       object_name <- c(object_name, split)
     }
@@ -515,13 +564,16 @@ broadcast_large_object <- function(myRank, object_name){
 }
 
 # ---------------------------------------------------------------------------- #
-# Main Code ----
+# TODO (review): Main code ----
 # ---------------------------------------------------------------------------- #
 
 
+
+
+
 # Have the "manager" instance read the data
+
 if (myRank == 0) {
-  
   load("../data/final_clean/wd_c1_corr_itt.RData")
   load("../data/final_clean/wd_c1_corr_itt_6800.RData")
   
@@ -537,8 +589,7 @@ if (myRank == 0) {
   # Store initial values and data in lists
 
   inits_all <- list(efficacy = inits_efficacy,
-                  dropout  = inits_dropout)
-  
+                    dropout  = inits_dropout)
 } else {
    inits_all <- NULL
    wd_c1_corr_itt <- NULL
@@ -549,10 +600,10 @@ if (myRank == 0) {
    wd_c2_4_s5_train_compl <- NULL
 }
 
-
 # Have the "manager" broadcast the data to the workers
-# Note:  The barrier() function ensures that each worker has received its data
-#        before the manager sends the next item
+# Note: The barrier() function ensures that each worker has received its data
+#       before the manager sends the next item
+
 inits_all <- bcast(inits_all)
 barrier()
 wd_c1_corr_itt <- bcast(wd_c1_corr_itt)
@@ -560,10 +611,11 @@ barrier()
 wd_c2_4_class_meas_compl <- bcast(wd_c2_4_class_meas_compl)
 barrier()
 wd_c2_4_s5_train_compl <- bcast(wd_c2_4_s5_train_compl)
+
 # Use customized function to broadcast large data sets
+
 wd_c1_corr_itt_6800 <- broadcast_large_object(myRank, wd_c1_corr_itt_6800)
 wd_c1_corr_s5_train_compl_6800 <- broadcast_large_object(myRank, wd_c1_corr_s5_train_compl_6800)
-
 
 dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
                 c1_corr_itt_6800            = wd_c1_corr_itt_6800,
@@ -572,11 +624,13 @@ dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
                 c2_4_class_meas_compl       = wd_c2_4_class_meas_compl,
                 c2_4_s5_train_compl         = wd_c2_4_s5_train_compl)
 
+# ---------------------------------------------------------------------------- #
+# TODO (review): Run analyses ----
+# ---------------------------------------------------------------------------- #
 
 
-# ---------------------------------------------------------------------------- #
-# Run analyses ----
-# ---------------------------------------------------------------------------- #
+
+
 
 parameter_table <- create_parameter_table()
 
@@ -594,50 +648,47 @@ if (a_contrast == "a1") {
   total_iterations <- 1000000
 }
 
-
 # Run analysis based on "a_contrast"
 
-workerNum <- myRank + 1  #Prevents using 0
+workerNum <- myRank + 1  # Prevents using 0
 if (a_contrast == "a1") {
-    # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
+  # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
 
-    jags_dat <- specify_jags_dat(dat[[myNum]], a_contrast, y_var)
-    results_list <- run_jags_model(analysis_type, workerNum, analysis_sample,
-                     jags_dat, inits,
-                     a_contrast, y_var, total_iterations)
+  jags_dat <- specify_jags_dat(dat[[myNum]], a_contrast, y_var)
+  results_list <- run_jags_model(analysis_type, workerNum, analysis_sample,
+                                 jags_dat, inits,
+                                 a_contrast, y_var, total_iterations)
 
-    names(results_list) <- 1:length(results_list)
+  names(results_list) <- 1:length(results_list)
 
-    # Obtain path for saving results
+  # Obtain path for saving results
 
-    model_results_path_stem <- results_list[[1]]$model_results_path_stem
+  model_results_path_stem <- results_list[[1]]$model_results_path_stem
 
-    # Create results object
+  # Create results object
 
-    results <- list(per_bs_smp = results_list)
-  } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
-    # Specify "jags_dat" and run JAGS model
+  results <- list(per_bs_smp = results_list)
+} else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
+  # Specify "jags_dat" and run JAGS model
 
-    jags_dat <- specify_jags_dat(dat, a_contrast, y_var)
+  jags_dat <- specify_jags_dat(dat, a_contrast, y_var)
 
-    results <- run_jags_model(analysis_type, NULL, analysis_sample,
-                              jags_dat, inits,
-                              a_contrast, y_var, total_iterations)
+  results <- run_jags_model(analysis_type, NULL, analysis_sample,
+                            jags_dat, inits,
+                            a_contrast, y_var, total_iterations)
 
-    # Obtain path for saving results
+  # Obtain path for saving results
 
-    model_results_path_stem <- results$model_results_path_stem
-  }
+  model_results_path_stem <- results$model_results_path_stem
+}
 
-  # Save and return results
+# Save and return results
 
-  save(results, file = paste0(model_results_path_stem, "/results.RData"))
-
+save(results, file = paste0(model_results_path_stem, "/results.RData"))
 
 barrier()
 comm.print("All done")
 
-
-
 # Terminate connections
+
 finalize()
