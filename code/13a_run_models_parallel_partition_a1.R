@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Run Models in Parallel with MPI
+# Run "a1" Contrast Models in Parallel on Parallel Partition
 # Authors: Jeremy W. Eberle and Jackie Huband
 # ---------------------------------------------------------------------------- #
 
@@ -7,9 +7,14 @@
 # Notes ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (revise notes to fit script): This script runs models in parallel via 
-# separate Slurm scripts that specify a job array on Rivanna. Packages must 
-# first be installed via the prior script.
+# This script runs "a1" contrast models that require multiple nodes due to a large
+# number of bootstrap samples in parallel via a separate Slurm script that specifies 
+# a job on Rivanna's parallel partition (multiple nodes with multiple cores/node).
+# "a2" contrast models, which involve no bootstrapping and thus use only one node,
+# are run on the standard partition (see separate script).
+
+# TODO (check this): Packages (e.g., groundhog) must first be installed via a 
+# prior script.
 
 
 
@@ -21,7 +26,7 @@
 # Load packages ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Use groundhog if possible
+# TODO: Use "load_pkgs_via_groundhog()" function to load packages if possible
 
 library(pbdMPI, quiet = TRUE)
 
@@ -30,44 +35,57 @@ library(pbdMPI, quiet = TRUE)
 
 
 # ---------------------------------------------------------------------------- #
-# Obtain command-line argument for the version to run
+# Obtain row of "parameter_table" to run
 # ---------------------------------------------------------------------------- #
 
-# TODO: Review
+# Obtain "myNum" from command line (passed there by Slurm script, which obtains
+# it from "i" of Bash script used to run Slurm script) to be used as index into 
+# "parameter_table" created below
 
 cmdArgs <- commandArgs(trailingOnly = TRUE)
 myNum <- as.integer(cmdArgs[1])
 
-
-
-
-
 # ---------------------------------------------------------------------------- #
-# Set up the connection for the nodes
+# Set up connections among nodes
 # ---------------------------------------------------------------------------- #
-
-# TODO: Review
 
 # Initialize connections
 
 init()
 
-# Capture process information
+# Capture process information. "myRank" is an integer assigned to each core
+# ranging from 0 (for manager core) to "ntasks" (in Slurm script) - 1
 
-myRank = comm.rank( )
-
-
-
-
-
-# TODO (see if analysis functions below can be sourced from separate script)
-
-
-
-
+myRank <- comm.rank()
 
 # ---------------------------------------------------------------------------- #
-# Define "load_pkgs_via_groundhog()" ----
+# Define parallel analysis functions ----
+# ---------------------------------------------------------------------------- #
+
+# We cannot source custom functions defined in a separate script when using the 
+# parallel partition; functions must be defined in the present script. Functions
+# below are identical to those of "12a_define_parallel_analysis_functions.R" used
+# for models run on the standard partition, with three exceptions:
+
+# First, Script 12a's "run_analysis()" function is no longer defined below; it's
+# contents, revised, appear outside any function in Section "Run Analyses" below.
+
+# Second, a new function "broadcast_large_object()", which is needed only when 
+# running models on the parallel partition, is defined below.
+
+# TODO (is this needed?): Third, "library(fastDummies)" and "library(rjags)" have 
+# been added to the "dummy_code()" and "run_jags_model()" functions below.
+
+
+
+
+
+# Note: Some of these functions refer to "a2" contrasts, but this script is not
+# used for running "a2" models. Nevertheless, we retain the code relevant to "a2"
+# models so that these functions remain nearly identical to those in Script 12a.
+
+# ---------------------------------------------------------------------------- #
+# 1. Define "load_pkgs_via_groundhog()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to load packages via groundhog package. If packages have not
@@ -87,7 +105,7 @@ load_pkgs_via_groundhog <- function() {
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "impute_mcar_nominal()" ----
+# 2. Define "impute_mcar_nominal()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to impute missing values for nominal variables we assume are
@@ -124,7 +142,7 @@ impute_mcar_nominal <- function(df, mcar_nominal_vars) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "dummy_code()" ----
+# 3. Define "dummy_code()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to dummy code certain nominal variables. Make the most frequent
@@ -145,7 +163,7 @@ dummy_code <- function(df, nominal_vars) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "specify_jags_dat()" ----
+# 4. Define "specify_jags_dat()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to specify JAGS data for time-varying efficacy (non-OASIS = 4
@@ -271,7 +289,7 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "run_jags_model()" ----
+# 5. Define "run_jags_model()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to run JAGS model
@@ -434,7 +452,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "create_parameter_table()" ----
+# 6. Define "create_parameter_table()" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to create table for nested combinations of model input parameters
@@ -521,16 +539,15 @@ create_parameter_table <- function() {
 }
 
 # ---------------------------------------------------------------------------- #
-# Define "broadcast_large_object()" ----
+# 7. Define "broadcast_large_object()" ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (review): Define function to split large data and send it as chunks
-
-
-
-
+# Define function for manager core (where "myRank" is 0) to split large data list
+# into chunks and broadcast the chunks to other cores (note: "_ndx" is "index")
 
 broadcast_large_object <- function(myRank, object_name) {
+  # Have manager core compute indices for splitting data list into chunks
+  
   if (myRank == 0) {
     chunk_size <- 2000
     N <- length(object_name)
@@ -541,21 +558,36 @@ broadcast_large_object <- function(myRank, object_name) {
     stop_ndx <- NULL
   }
   
+  # Have manager broadcast indices to all cores, using "barrier()" to delay the
+  # next broadcast until all cores have received the prior broadcasted object
+  
   start_ndx <- bcast(start_ndx)
   barrier()
   stop_ndx <- bcast(stop_ndx)
   barrier()
   
-  # Prepare large data structure for broadcasting
+  # Have manager split data list into chunks, broadcast chunks to all cores, and
+  # have each core combine chunks to reform data list
   
   for (i in 1:length(start_ndx)) {
     split <- NULL
     
     if(myRank == 0) {
       split <- object_name[start_ndx[i]:stop_ndx[i]]
-      split <- bcast(split)
+      split <- bcast(split)   # TODO: Not sure why "barrier()" is not used here
+      
+      
+      
+      
+      
     } else {
-      split <- bcast(split)
+      split <- bcast(split)   # TODO: Is this line needed given that "bcast()"
+                              # only broadcasts from cores where "myRank" is 0?
+      
+      
+      
+      
+      
       object_name <- c(object_name, split)
     }
   }
@@ -564,14 +596,11 @@ broadcast_large_object <- function(myRank, object_name) {
 }
 
 # ---------------------------------------------------------------------------- #
-# TODO (review): Main code ----
+# Import and broadcast data and initial values ----
 # ---------------------------------------------------------------------------- #
 
-
-
-
-
-# Have the "manager" instance read the data
+# Have manager core (where "myRank" is 0) import data and initial values and have
+# all other cores ensure that names for broadcasted objects are available
 
 if (myRank == 0) {
   load("../data/final_clean/wd_c1_corr_itt.RData")
@@ -586,36 +615,42 @@ if (myRank == 0) {
   load("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
   load("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
   
-  # Store initial values and data in lists
+  # Store initial values in list
 
   inits_all <- list(efficacy = inits_efficacy,
                     dropout  = inits_dropout)
 } else {
-   inits_all <- NULL
-   wd_c1_corr_itt <- NULL
-   wd_c1_corr_itt_6800 <- NULL
-   wd_c1_corr_s5_train_compl <- NULL
-   wd_c1_corr_s5_train_compl_6800 <- NULL
-   wd_c2_4_class_meas_compl <- NULL
-   wd_c2_4_s5_train_compl <- NULL
+  inits_all <- NULL
+  wd_c1_corr_itt <- NULL
+  wd_c1_corr_itt_6800 <- NULL
+  wd_c1_corr_s5_train_compl <- NULL
+  wd_c1_corr_s5_train_compl_6800 <- NULL
+  wd_c2_4_class_meas_compl <- NULL
+  wd_c2_4_s5_train_compl <- NULL
 }
 
-# Have the "manager" broadcast the data to the workers
-# Note: The barrier() function ensures that each worker has received its data
-#       before the manager sends the next item
+# Have manager core broadcast data and initial values to all cores, using "barrier()" 
+# to delay the next broadcast until all cores have received the prior broadcasted object.
+# Use broadcast_large_object() function to broadcast large data lists. Note: "bcast()"
+# broadcasts from manager core (where "myRank" is 0) by default.
 
-inits_all <- bcast(inits_all)
+inits_all                <- bcast(inits_all)
 barrier()
-wd_c1_corr_itt <- bcast(wd_c1_corr_itt)
+wd_c1_corr_itt           <- bcast(wd_c1_corr_itt)
 barrier()
 wd_c2_4_class_meas_compl <- bcast(wd_c2_4_class_meas_compl)
 barrier()
-wd_c2_4_s5_train_compl <- bcast(wd_c2_4_s5_train_compl)
+wd_c2_4_s5_train_compl   <- bcast(wd_c2_4_s5_train_compl) # TODO: Not sure why "barrier()"
+                                                          # is not used here
 
-# Use customized function to broadcast large data sets
 
-wd_c1_corr_itt_6800 <- broadcast_large_object(myRank, wd_c1_corr_itt_6800)
+
+
+
+wd_c1_corr_itt_6800            <- broadcast_large_object(myRank, wd_c1_corr_itt_6800)
 wd_c1_corr_s5_train_compl_6800 <- broadcast_large_object(myRank, wd_c1_corr_s5_train_compl_6800)
+
+# Store data in list
 
 dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
                 c1_corr_itt_6800            = wd_c1_corr_itt_6800,
@@ -625,12 +660,10 @@ dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
                 c2_4_s5_train_compl         = wd_c2_4_s5_train_compl)
 
 # ---------------------------------------------------------------------------- #
-# TODO (review): Run analyses ----
+# Run "a1" contrast analyses ----
 # ---------------------------------------------------------------------------- #
 
-
-
-
+# Create parameter table and select values for given row based on "myNum"
 
 parameter_table <- create_parameter_table()
 
@@ -642,20 +675,39 @@ y_var <- parameter_table$y_var[myNum]
 dat <- dat_all[[analysis_sample]]
 inits <- inits_all[[analysis_type]]
 
+# Set total number of MCMC iterations
+
 if (a_contrast == "a1") {
   total_iterations <- 20000
 } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
   total_iterations <- 1000000
 }
 
-# Run analysis based on "a_contrast"
+# Run analysis based on "a_contrast". "workerNum" (starting at 1) is the bootstrap 
+# sample that a given core (indexed by "myRank", starting at 0) analyzes. Manager 
+# core, where "myRank" is 0, analyzes the first sample, where "workerNum" is 1.
 
-workerNum <- myRank + 1  # Prevents using 0
+workerNum <- myRank + 1
+
 if (a_contrast == "a1") {
   # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
-
-  jags_dat <- specify_jags_dat(dat[[myNum]], a_contrast, y_var)
-  results_list <- run_jags_model(analysis_type, workerNum, analysis_sample,
+  
+  # **************************************************************************** #
+  # TODO (Jackie): Add a loop specifying a range of bootstrap samples for a given 
+  # core to analyze. Each core will analyze multiple bootstrap samples, as we need
+  # to analyze 6800 bootstrap samples with no more than 1000 cores (due to the limit
+  # on the number of cores per job on the parallel partition). For example, if we
+  # specify 340 cores ("ntasks") in the Slurm script, each core will need to analyze
+  # 6800/340 = 20 bootstrap samples.
+  # **************************************************************************** #
+  
+  
+  
+  
+  
+  jags_dat <- specify_jags_dat(dat[[workerNum]], a_contrast, y_var)
+  
+  results_list <- run_jags_model(analysis_type, bs_sample = workerNum, analysis_sample,
                                  jags_dat, inits,
                                  a_contrast, y_var, total_iterations)
 
@@ -669,20 +721,34 @@ if (a_contrast == "a1") {
 
   results <- list(per_bs_smp = results_list)
 } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
-  # Specify "jags_dat" and run JAGS model
-
-  jags_dat <- specify_jags_dat(dat, a_contrast, y_var)
-
-  results <- run_jags_model(analysis_type, NULL, analysis_sample,
-                            jags_dat, inits,
-                            a_contrast, y_var, total_iterations)
-
-  # Obtain path for saving results
-
-  model_results_path_stem <- results$model_results_path_stem
+  
+  # TODO: Is it OK to have an error message here? Or is there a better approach?
+  
+  
+  
+  
+  
+  stop('This script is only for running "a1" contrast models that require multiple
+       nodes on the parallel partition due to a large number of bootstrap samples.
+       "a2" contrast models, which involve no bootstrapping, cannot be run on the
+       parallel partition because they require only one node; rather, they are
+       run on the standard partition (see separate script).')
 }
 
-# Save and return results
+# **************************************************************************** #
+# TODO (Jackie): Have each core send the nested list "results_list" for the set of
+# bootstrap samples it analyzed to the manager. (Each element of "results_list" is
+# itself a list of results for a given bootstrap sample. For example, if each core
+# analyzes 20 bootstrap samples, the length of that core's "results_list" will be
+# 20.) Then have the manager combine the "results_list"s from all of the cores into 
+# one final "results" list that can be saved below.
+# **************************************************************************** #
+
+
+
+
+
+# Save results
 
 save(results, file = paste0(model_results_path_stem, "/results.RData"))
 

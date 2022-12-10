@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Run Models in Parallel
+# Run Models in Parallel on Standard Partition
 # Authors: Jeremy W. Eberle and Jackie Huband
 # ---------------------------------------------------------------------------- #
 
@@ -8,7 +8,8 @@
 # ---------------------------------------------------------------------------- #
 
 # This script runs models in parallel via separate Slurm scripts that specify a 
-# job array on Rivanna. Packages must first be installed via the prior script.
+# job array on Rivanna's standard partition (i.e., one node with multiple cores).
+# Packages must first be installed via the prior script.
 
 # Before running script, restart R and set working directory to "code" folder
 
