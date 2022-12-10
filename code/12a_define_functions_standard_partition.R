@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Define Parallel Analysis Functions
+# Define Parallel Analysis Functions for Standard Partition
 # Authors: Jeremy W. Eberle and Jackie Huband
 # ---------------------------------------------------------------------------- #
 
