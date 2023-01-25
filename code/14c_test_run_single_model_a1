@@ -9,4 +9,3 @@ for (( c=101; c<=6800; c+=100 )) do
    eval $cmd
    echo $cmd
 done
-
