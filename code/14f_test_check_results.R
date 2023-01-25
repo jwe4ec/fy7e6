@@ -22,5 +22,5 @@ print(length(combined_list))
 
 # Check for any missing bootstrap values
 combined_list <- sort(as.integer(combined_list))
-full_list <- 1:6800
+full_list <- 1:2000
 print(setdiff(full_list, combined_list))

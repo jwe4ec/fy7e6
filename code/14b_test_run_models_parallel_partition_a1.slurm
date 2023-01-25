@@ -21,7 +21,7 @@ module load jags
 myNum=$1                    # Defined by "param_row" of separate Bash script, which
                             # for a given row of "parameter_table" submits separate 
                             # jobs for each set of 100 bootstrap samples (for a total
-                            # of 6800 bootstrap samples). Each job is delayed by a set
+                            # of 2000 bootstrap samples). Each job is delayed by a set
                             # amount of time so the prior job can finish running. User
                             # should provide only indices for "a1" models (1-12, 49) 
                             # for "param_row" when running separate Bash script.

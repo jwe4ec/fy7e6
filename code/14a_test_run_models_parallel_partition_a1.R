@@ -104,7 +104,10 @@ barrier()
 # or plots of the MCMC object "model_res". We also no longer include the model 
 # ("jags_model") or "model_res" in the returned list of results ("results").
 
-# TODO (is this needed?): 4. "library(fastDummies)" and "library(rjags)" have 
+# 4. In "create_parameter_table()", for "a1" analyses we use 2000 bootstrap samples
+# instead of 6800 bootstrap samples.
+
+# TODO (is this needed?): 5. "library(fastDummies)" and "library(rjags)" have 
 # been added to the "dummy_code()" and "run_jags_model()" functions below.
 
 
@@ -480,8 +483,8 @@ create_parameter_table <- function() {
   c1_a_contrasts   <- "a1"
   c2_4_a_contrasts <- c("a2_1", "a2_2", "a2_3")
 
-  c1_eff_analysis_samples   <- c("c1_corr_itt_6800", "c1_corr_s5_train_compl_6800")
-  c1_drp_analysis_samples   <- "c1_corr_itt_6800"
+  c1_eff_analysis_samples   <- c("c1_corr_itt_2000", "c1_corr_s5_train_compl_2000")
+  c1_drp_analysis_samples   <- "c1_corr_itt_2000"
 
   c2_4_eff_analysis_samples <- c("c2_4_class_meas_compl", "c2_4_s5_train_compl")
   c2_4_drp_analysis_samples <- "c2_4_class_meas_compl"
@@ -566,7 +569,7 @@ broadcast_large_object <- function(myRank, object_name) {
   # Have manager core compute indices for splitting data list into chunks
   
   if (myRank == 0) {
-    chunk_size <- 2000
+    chunk_size <- 2000      # TODO: Update given only 2000 bootstrap samples now
     N <- length(object_name)
     start_ndx <- seq(1, N, chunk_size)
     stop_ndx <- c((start_ndx - 1)[-1], N)
@@ -621,10 +624,10 @@ broadcast_large_object <- function(myRank, object_name) {
 
 if (myRank == 0) {
   load("../data/final_clean/wd_c1_corr_itt.RData")
-  load("../data/final_clean/wd_c1_corr_itt_6800.RData")
+  load("../data/final_clean/wd_c1_corr_itt_2000.RData")
   
   load("../data/final_clean/wd_c1_corr_s5_train_compl.RData")
-  load("../data/final_clean/wd_c1_corr_s5_train_compl_6800.RData")
+  load("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData")
   
   load("../data/final_clean/wd_c2_4_class_meas_compl.RData")
   load("../data/final_clean/wd_c2_4_s5_train_compl.RData")
@@ -639,9 +642,9 @@ if (myRank == 0) {
 } else {
   inits_all <- NULL
   wd_c1_corr_itt <- NULL
-  wd_c1_corr_itt_6800 <- NULL
+  wd_c1_corr_itt_2000 <- NULL
   wd_c1_corr_s5_train_compl <- NULL
-  wd_c1_corr_s5_train_compl_6800 <- NULL
+  wd_c1_corr_s5_train_compl_2000 <- NULL
   wd_c2_4_class_meas_compl <- NULL
   wd_c2_4_s5_train_compl <- NULL
 }
@@ -664,15 +667,15 @@ wd_c2_4_s5_train_compl   <- bcast(wd_c2_4_s5_train_compl) # TODO: Not sure why "
 
 
 
-wd_c1_corr_itt_6800            <- broadcast_large_object(myRank, wd_c1_corr_itt_6800)
-wd_c1_corr_s5_train_compl_6800 <- broadcast_large_object(myRank, wd_c1_corr_s5_train_compl_6800)
+wd_c1_corr_itt_2000            <- broadcast_large_object(myRank, wd_c1_corr_itt_2000)
+wd_c1_corr_s5_train_compl_2000 <- broadcast_large_object(myRank, wd_c1_corr_s5_train_compl_2000)
 
 # Store data in list
 
 dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
-                c1_corr_itt_6800            = wd_c1_corr_itt_6800,
+                c1_corr_itt_2000            = wd_c1_corr_itt_2000,
                 c1_corr_s5_train_compl      = wd_c1_corr_s5_train_compl,
-                c1_corr_s5_train_compl_6800 = wd_c1_corr_s5_train_compl_6800,
+                c1_corr_s5_train_compl_2000 = wd_c1_corr_s5_train_compl_2000,
                 c2_4_class_meas_compl       = wd_c2_4_class_meas_compl,
                 c2_4_s5_train_compl         = wd_c2_4_s5_train_compl)
 

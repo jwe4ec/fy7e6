@@ -2,7 +2,7 @@ param_row=2
 #sbatch 14b_test_run_models_parallel_partition_a1.slurm $param_row 1 100
 
 minutes=90
-for (( c=101; c<=6800; c+=100 )) do
+for (( c=101; c<=2000; c+=100 )) do
    minutes=$(( minutes+100 ))
    bs_stop=$(( c+99 ))
    cmd="sbatch --begin=now+${minutes}minutes 14b_test_run_models_parallel_partition_a1.slurm $param_row $c $bs_stop"
