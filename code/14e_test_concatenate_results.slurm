@@ -11,4 +11,4 @@ module purge
 module load goolf/7.1.0_3.1.4 R/4.1.1
 module load jags
 
-Rscript 14c_concatenate_results.R
+Rscript 14d_test_concatenate_results.R

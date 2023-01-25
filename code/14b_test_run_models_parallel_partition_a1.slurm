@@ -20,4 +20,4 @@ myNum=$1                   # Updated by separate Bash script
 bootstrap_start=$2
 bootstrap_stop=$3
 echo $myNum
-srun Rscript 14a_test_file.R  $myNum $bootstrap_start $bootstrap_stop
+srun Rscript 14a_test_run_models_parallel_partition_a1.R  $myNum $bootstrap_start $bootstrap_stop
