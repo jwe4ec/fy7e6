@@ -1,3 +1,10 @@
+# TODO: Is this script needed? Except for the section "Check for any missing
+# bootstrap values", it seems redundant with "14d_test_concatenate_results.R"
+
+
+
+
+
 # Get a list of the output files
 files <- list.files("./test_results", pattern=".RData", full.names=TRUE)
 cat("\nNumber of files: ", length(files), "\n")
@@ -11,12 +18,9 @@ for (myfile in files){
    rm(results_list)
 }
 
-
 print(length(combined_list))
 
 # Check for any missing bootstrap values
 combined_list <- sort(as.integer(combined_list))
 full_list <- 1:6800
 print(setdiff(full_list, combined_list))
-
-

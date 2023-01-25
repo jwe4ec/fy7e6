@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH -n 1
+#SBATCH -n 1                  # TODO: Same as "--ntasks=1"?
 #SBATCH --time=01:00:00
 #SBATCH --partition=standard
 #SBATCH --account=pactlab
-#SBATCH --output=concat.out # Updated by separate Bash script
+#SBATCH --output=concat.out
 #SBATCH --mem=34000
 
 module purge
