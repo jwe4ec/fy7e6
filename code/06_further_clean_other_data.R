@@ -469,13 +469,17 @@ wd_c1_corr_itt      <- replicate(500,
 wd_c1_corr_itt_6800 <- replicate(6800,
                                  bootstrap(wd_c1_uncorr_itt, n_itt_hr_coach),
                                  simplify = FALSE)
+wd_c1_corr_itt_2000 <- replicate(2000,
+                                 bootstrap(wd_c1_uncorr_itt, n_itt_hr_coach),
+                                 simplify = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Restrict to analysis samples ----
 # ---------------------------------------------------------------------------- #
 
 # Corrected ITT sample for Comparison 1 is "wd_c1_corr_itt" (for 500 bootstrap
-# samples) or "wd_c1_corr_itt_6800" (for 6800 bootstrap samples)
+# samples), "wd_c1_corr_itt_6800" (for 6800 bootstrap samples), or "wd_c1_corr_itt_2000"
+# (for 2000 bootstrap samples)
 
 # Corrected Session 5 training completer sample for Comparison 1
 
@@ -483,6 +487,9 @@ wd_c1_corr_s5_train_compl      <- lapply(wd_c1_corr_itt, function(x) {
   x[x$s5_train_compl_anlys_uncorrected_c1 == 1, ]
 })
 wd_c1_corr_s5_train_compl_6800 <- lapply(wd_c1_corr_itt_6800, function(x) {
+  x[x$s5_train_compl_anlys_uncorrected_c1 == 1, ]
+})
+wd_c1_corr_s5_train_compl_2000 <- lapply(wd_c1_corr_itt_2000, function(x) {
   x[x$s5_train_compl_anlys_uncorrected_c1 == 1, ]
 })
 
@@ -533,11 +540,15 @@ wd_c1_corr_itt <-
   lapply(wd_c1_corr_itt,                 function(x) { x[, !(names(x) %in% unneeded_a2)]})
 wd_c1_corr_itt_6800 <-
   lapply(wd_c1_corr_itt_6800,            function(x) { x[, !(names(x) %in% unneeded_a2)]})
+wd_c1_corr_itt_2000 <-
+  lapply(wd_c1_corr_itt_2000,            function(x) { x[, !(names(x) %in% unneeded_a2)]})
 
 wd_c1_corr_s5_train_compl <-
   lapply(wd_c1_corr_s5_train_compl,      function(x) { x[, !(names(x) %in% unneeded_a2)]})
 wd_c1_corr_s5_train_compl_6800 <-
   lapply(wd_c1_corr_s5_train_compl_6800, function(x) { x[, !(names(x) %in% unneeded_a2)]})
+wd_c1_corr_s5_train_compl_2000 <-
+  lapply(wd_c1_corr_s5_train_compl_2000, function(x) { x[, !(names(x) %in% unneeded_a2)]})
 
 wd_c2_4_class_meas_compl$a1 <- NULL
 wd_c2_4_s5_train_compl$a1 <- NULL
@@ -550,9 +561,11 @@ dir.create("./data/final_clean")
 
 save(wd_c1_corr_itt,                 file = "./data/final_clean/wd_c1_corr_itt.RData")
 save(wd_c1_corr_itt_6800,            file = "./data/final_clean/wd_c1_corr_itt_6800.RData")
+save(wd_c1_corr_itt_2000,            file = "./data/final_clean/wd_c1_corr_itt_2000.RData")
 
 save(wd_c1_corr_s5_train_compl,      file = "./data/final_clean/wd_c1_corr_s5_train_compl.RData")
 save(wd_c1_corr_s5_train_compl_6800, file = "./data/final_clean/wd_c1_corr_s5_train_compl_6800.RData")
+save(wd_c1_corr_s5_train_compl_2000, file = "./data/final_clean/wd_c1_corr_s5_train_compl_2000.RData")
 
 save(wd_c2_4_class_meas_compl,       file = "./data/final_clean/wd_c2_4_class_meas_compl.RData")
 save(wd_c2_4_s5_train_compl,         file = "./data/final_clean/wd_c2_4_s5_train_compl.RData")
