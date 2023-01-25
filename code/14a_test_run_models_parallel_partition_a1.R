@@ -621,13 +621,11 @@ broadcast_large_object <- function(myRank, object_name) {
 
 # Have manager core (where "myRank" is 0) import data and initial values and have
 # all other cores ensure that names for broadcasted objects are available. (Note:
-# Only data for "a1" models are loaded; we no longer load data for "a2" models.)
+# Only data based on 2000 bootstrap samples for "a1" models are loaded; we no longer 
+# load data based on 500 bootstrap samples for "a1" models or data for "a2" models.)
 
 if (myRank == 0) {
-  load("../data/final_clean/wd_c1_corr_itt.RData")
   load("../data/final_clean/wd_c1_corr_itt_2000.RData")
-  
-  load("../data/final_clean/wd_c1_corr_s5_train_compl.RData")
   load("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData")
   
   load("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
@@ -639,9 +637,7 @@ if (myRank == 0) {
                     dropout  = inits_dropout)
 } else {
   inits_all <- NULL
-  wd_c1_corr_itt <- NULL
   wd_c1_corr_itt_2000 <- NULL
-  wd_c1_corr_s5_train_compl <- NULL
   wd_c1_corr_s5_train_compl_2000 <- NULL
 }
 
@@ -650,22 +646,15 @@ if (myRank == 0) {
 # Use broadcast_large_object() function to broadcast large data lists. Note: "bcast()"
 # broadcasts from manager core (where "myRank" is 0) by default.
 
-inits_all                <- bcast(inits_all)
-barrier()
-wd_c1_corr_itt           <- bcast(wd_c1_corr_itt) # TODO: Do we need "barrier()" here?
-
-
-
-
+inits_all <- bcast(inits_all)
+barrier()                      # TODO: Correct to have barrier() here?
 
 wd_c1_corr_itt_2000            <- broadcast_large_object(myRank, wd_c1_corr_itt_2000)
 wd_c1_corr_s5_train_compl_2000 <- broadcast_large_object(myRank, wd_c1_corr_s5_train_compl_2000)
 
 # Store data in list
 
-dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
-                c1_corr_itt_2000            = wd_c1_corr_itt_2000,
-                c1_corr_s5_train_compl      = wd_c1_corr_s5_train_compl,
+dat_all <- list(c1_corr_itt_2000            = wd_c1_corr_itt_2000,
                 c1_corr_s5_train_compl_2000 = wd_c1_corr_s5_train_compl_2000)
 
 # ---------------------------------------------------------------------------- #
