@@ -620,7 +620,8 @@ broadcast_large_object <- function(myRank, object_name) {
 # ---------------------------------------------------------------------------- #
 
 # Have manager core (where "myRank" is 0) import data and initial values and have
-# all other cores ensure that names for broadcasted objects are available
+# all other cores ensure that names for broadcasted objects are available. (Note:
+# Only data for "a1" models are loaded; we no longer load data for "a2" models.)
 
 if (myRank == 0) {
   load("../data/final_clean/wd_c1_corr_itt.RData")
@@ -628,9 +629,6 @@ if (myRank == 0) {
   
   load("../data/final_clean/wd_c1_corr_s5_train_compl.RData")
   load("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData")
-  
-  load("../data/final_clean/wd_c2_4_class_meas_compl.RData")
-  load("../data/final_clean/wd_c2_4_s5_train_compl.RData")
   
   load("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
   load("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
@@ -645,8 +643,6 @@ if (myRank == 0) {
   wd_c1_corr_itt_2000 <- NULL
   wd_c1_corr_s5_train_compl <- NULL
   wd_c1_corr_s5_train_compl_2000 <- NULL
-  wd_c2_4_class_meas_compl <- NULL
-  wd_c2_4_s5_train_compl <- NULL
 }
 
 # Have manager core broadcast data and initial values to all cores, using "barrier()" 
@@ -656,12 +652,7 @@ if (myRank == 0) {
 
 inits_all                <- bcast(inits_all)
 barrier()
-wd_c1_corr_itt           <- bcast(wd_c1_corr_itt)
-barrier()
-wd_c2_4_class_meas_compl <- bcast(wd_c2_4_class_meas_compl)
-barrier()
-wd_c2_4_s5_train_compl   <- bcast(wd_c2_4_s5_train_compl) # TODO: Not sure why "barrier()"
-                                                          # is not used here
+wd_c1_corr_itt           <- bcast(wd_c1_corr_itt) # TODO: Do we need "barrier()" here?
 
 
 
@@ -675,9 +666,7 @@ wd_c1_corr_s5_train_compl_2000 <- broadcast_large_object(myRank, wd_c1_corr_s5_t
 dat_all <- list(c1_corr_itt                 = wd_c1_corr_itt,
                 c1_corr_itt_2000            = wd_c1_corr_itt_2000,
                 c1_corr_s5_train_compl      = wd_c1_corr_s5_train_compl,
-                c1_corr_s5_train_compl_2000 = wd_c1_corr_s5_train_compl_2000,
-                c2_4_class_meas_compl       = wd_c2_4_class_meas_compl,
-                c2_4_s5_train_compl         = wd_c2_4_s5_train_compl)
+                c1_corr_s5_train_compl_2000 = wd_c1_corr_s5_train_compl_2000)
 
 # ---------------------------------------------------------------------------- #
 # Run "a1" contrast analyses ----
