@@ -94,13 +94,17 @@ barrier()
 # below are identical to those of "12a_define_functions_standard_partition.R" used
 # for models run on the standard partition, with three exceptions:
 
-# First, Script 12a's "run_analysis()" function is no longer defined below; its
+# 1. Script 12a's "run_analysis()" function is no longer defined below; its
 # contents, revised, appear outside any function in Section "Run Analyses" below.
 
-# Second, a new function "broadcast_large_object()", which is needed only when 
+# 2. A new function "broadcast_large_object()", which is needed only when 
 # running models on the parallel partition, is defined below.
 
-# TODO (is this needed?): Third, "library(fastDummies)" and "library(rjags)" have 
+# 3. In "run_jags_model()", we no longer save posterior samples ("model_samples") 
+# or plots of the MCMC object "model_res". We also no longer include the model 
+# ("jags_model") or "model_res" in the returned list of results ("results").
+
+# TODO (is this needed?): 4. "library(fastDummies)" and "library(rjags)" have 
 # been added to the "dummy_code()" and "run_jags_model()" functions below.
 
 
@@ -375,12 +379,7 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   dir.create(model_results_path_specific, recursive = TRUE)
 
-  # Save posterior samples and create MCMC object
-
-  save(model_samples,
-       file = paste0(model_results_path_specific, "/model_samples",
-                     switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
-                     ".RData"))
+  # Create MCMC object
 
   model_res <- as.mcmc(do.call(rbind, model_samples))
 
@@ -444,15 +443,6 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   sink()
 
-  # Save plots
-
-  pdf(file = paste0(model_results_path_specific, "/plots",
-                    switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
-                    ".pdf"))
-  par(mfrow=c(4,2))
-  plot(model_res)
-  dev.off()
-
   # Save results in list
 
   results <- list(analysis_type = analysis_type,
@@ -462,7 +452,6 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   y_var = y_var,
                   model_results_path_stem = model_results_path_stem,
                   model_results_path_specific = model_results_path_specific,
-                  jags_model = jags_model,
                   total_iterations = total_iterations,
                   burn_iterations = burn_iterations,
                   remaining_iterations = remaining_iterations,
@@ -470,7 +459,6 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
                   burn_in_time = burn_in_time,
                   sampling_time = sampling_time,
                   total_time = total_time,
-                  model_res = model_res,
                   summary = summary,
                   hpd_interval = hpd_interval,
                   geweke = geweke,
