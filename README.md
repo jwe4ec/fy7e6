@@ -26,6 +26,8 @@ Scripts 13a-13d will be used to run the "a1" models with 6,800 bootstrap samples
   - When running one model at a time, be sure to allow a delay (e.g., 15 min) before submitting the next model to avoid multiple jobs trying to access the same files at once and to ensure computing resources are available.
 - Alternatively, in theory all "a1" jobs can be submitted at once using `13d_run_many_models_a1.sh`, which automatically implements a delay between jobs, but as of 12/20/2022, this script still has problems.
 
+Scripts 14a-14f are updated versions of 13a-13d. In the updated scripts, each worker analyzes multiple bootstrap samples, given that we need to analyze 6,800 bootstrap samples with no more than 1,000 cores (limit of the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition). Scripts 14a-14c run the models on separate sets of bootstrap samples and output results for smaller subsets of bootstrap samples, and Scripts 14d-14e concatenate the results across all subsets into one list for the model.
+
 Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy Eberle and [Katie Daniel](https://github.com/KatharineDaniel) for a Fall 2020 course project.
 
 ## Results
