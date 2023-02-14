@@ -13,9 +13,26 @@
 # "a2" contrast models, which involve no bootstrapping and thus use only one node,
 # are run on the standard partition (see separate script).
 
+# TODO (check this): Packages (e.g., groundhog) must first be installed via a 
+# prior script.
+
+
+
 
 
 # Before running script, restart R and set working directory to "code" folder
+
+# ---------------------------------------------------------------------------- #
+# Load packages ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Use "load_pkgs_via_groundhog()" function to load packages if possible
+
+#library(pbdMPI, quiet = TRUE)
+library(foreach)
+
+
+
 
 
 # ---------------------------------------------------------------------------- #
@@ -30,10 +47,32 @@ cmdArgs <- commandArgs(trailingOnly = TRUE)
 myNum <- as.integer(cmdArgs[1])
 bs_sample_num <- as.integer(cmdArgs[2])
 
+# ---------------------------------------------------------------------------- #
+# Set up connections among nodes
+# ---------------------------------------------------------------------------- #
+
+# Initialize connections
+
+#init()
+
+# Capture process information. "myRank" is an integer assigned to each core
+# ranging from 0 (for manager core) to comm.size() - 1
+
+#myRank <- comm.rank()
+#numProcs <- comm.size()  # TODO: Do we expect this to be 50 workers or 500 cores?
+                         # I think it's 50 workers but am still confused about the 
+                         # difference in meaning between "worker" and "core".
+
+# Define an index for each worker that starts with 1 (instead of 0)
+
+#workerNum <- myRank + 1
 
 # ---------------------------------------------------------------------------- #
 # If needed, create directory for output files
 # ---------------------------------------------------------------------------- #
+
+# TODO (perhaps revise directory location): Have the manager core (where "myRank"
+# is 0) create directory for output indexed by row of "parameter_table"
 
 out_path <- paste0("./test_results_", myNum)
 
@@ -41,13 +80,15 @@ if (!dir.exists(out_path)) {
     dir.create(out_path)
 }
 
+#barrier()
+
 # ---------------------------------------------------------------------------- #
 # Define parallel analysis functions ----
 # ---------------------------------------------------------------------------- #
 
 # We cannot source custom functions defined in a separate script when using the 
 # parallel partition; functions must be defined in the present script. Functions
-# below are identical to those of "12a_define_functions_standard_partition.R" used
+# below are identical to those of "12a_define_functions_std_partition.R" used
 # for models run on the standard partition, with three exceptions:
 
 # 1. Script 12a's "run_analysis()" function is no longer defined below; its
@@ -86,12 +127,12 @@ load_pkgs_via_groundhog <- function() {
   meta.groundhog("2022-01-01")
   groundhog_day <- "2022-01-01"
 
-  #parallel_pkgs <- c("iterators", "foreach", "doParallel")
+  parallel_pkgs <- c("iterators", "foreach", "doParallel")
   anlys_pkgs <- c("fastDummies", "rjags")
 
   groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
 
-  cat("\ngroundhog_day =", groundhog_day, "\n\n")
+  comm.cat("\ngroundhog_day =", groundhog_day, "\n\n")
 }
 
 # ---------------------------------------------------------------------------- #
@@ -515,34 +556,111 @@ create_parameter_table <- function() {
   return(all_combos)
 }
 
+# ---------------------------------------------------------------------------- #
+# 7. Define "broadcast_large_object()" ----
+# ---------------------------------------------------------------------------- #
+
+# Define function for manager core (where "myRank" is 0) to split large data list
+# into chunks and broadcast the chunks to other cores (note: "_ndx" is "index")
+
+#broadcast_large_object <- function(myRank, object_name) {
+#  # Have manager core compute indices for splitting data list into chunks
+#  
+#  if (myRank == 0) {
+#    chunk_size <- 2000      # TODO: Update given only 2000 bootstrap samples now
+#    N <- length(object_name)
+#    start_ndx <- seq(1, N, chunk_size)
+#    stop_ndx <- c((start_ndx - 1)[-1], N)
+#  } else {
+#    start_ndx <- NULL
+#    stop_ndx <- NULL
+#  }
+#  
+#  # Have manager broadcast indices to all cores, using "barrier()" to delay the
+#  # next broadcast until all cores have received the prior broadcasted object
+#  
+#  start_ndx <- bcast(start_ndx)
+#  barrier()
+#  stop_ndx <- bcast(stop_ndx)
+#  barrier()
+#  
+#  # Have manager split data list into chunks, broadcast chunks to all cores, and
+#  # have each core combine chunks to reform data list
+#  
+#  for (i in 1:length(start_ndx)) {
+#    split <- NULL
+#    
+#    if(myRank == 0) {
+#      split <- object_name[start_ndx[i]:stop_ndx[i]]
+#      split <- bcast(split)   # TODO: Not sure why "barrier()" is not used here
+#      
+#      
+#      
+#     
+##      
+#    } else {
+#      split <- bcast(split)   # TODO: Is this line needed given that "bcast()"
+#                              # only broadcasts from cores where "myRank" is 0?
+#      
+#      
+#      
+#      
+#      
+#      object_name <- c(object_name, split)
+#    }
+#  }
+#  
+#  return(object_name)
+#}
 
 # ---------------------------------------------------------------------------- #
-# Read the data, using filenames for the giving bootstrap number
+# Import and broadcast data and initial values ----
 # ---------------------------------------------------------------------------- #
 
-#(Note:
+# Have manager core (where "myRank" is 0) import data and initial values and have
+# all other cores ensure that names for broadcasted objects are available. (Note:
 # Only data based on 2000 bootstrap samples for "a1" models are loaded; we no longer 
 # load data based on 500 bootstrap samples for "a1" models or data for "a2" models.)
 
-filename <- paste0("../data/final_clean/wd_c1_corr_itt_2000.RData_",bs_sample_num)
-load(filename)
-
-filename <- paste0("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData_", bs_sample_num)
-load(filename)
+#if (myRank == 0) {
+  filename <- paste0("../data/final_clean/wd_c1_corr_itt_2000.RData_",bs_sample_num)
+  #load("../data/final_clean/wd_c1_corr_itt_2000.RData")
+  load(filename)
+  filename <- paste0("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData_", bs_sample_num)
+  #load("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData")
+  load(filename)
   
-filename <- paste0("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData_", bs_sample_num)
-load(filename)
+  filename <- paste0("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData_", bs_sample_num)
+  #load("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData")
+  load(filename)
 
-filename <- paste0("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData_", bs_sample_num)
-load(filename)
+  filename <- paste0("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData_", bs_sample_num)
+  #load("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData")
+  load(filename)
   
-# Store initial values in list
+  # Store initial values in list
 
-inits_all <- list(efficacy = inits_efficacy,
+  inits_all <- list(efficacy = inits_efficacy,
                     dropout  = inits_dropout)
+#} else {
+#  inits_all <- NULL
+#  wd_c1_corr_itt_2000 <- NULL
+#  wd_c1_corr_s5_train_compl_2000 <- NULL
+#}
 
+# Have manager core broadcast data and initial values to all cores, using "barrier()" 
+# to delay the next broadcast until all cores have received the prior broadcasted object.
+# Use broadcast_large_object() function to broadcast large data lists. Note: "bcast()"
+# broadcasts from manager core (where "myRank" is 0) by default.
+
+#inits_all <- bcast(inits_all)
+#barrier()                      # TODO: Correct to have barrier() here?
+
+#wd_c1_corr_itt_2000            <- broadcast_large_object(myRank, wd_c1_corr_itt_2000)
+#wd_c1_corr_s5_train_compl_2000 <- broadcast_large_object(myRank, wd_c1_corr_s5_train_compl_2000)
 
 # Store data in list
+
 dat_all <- list(c1_corr_itt_2000            = wd_c1_corr_itt_2000,
                 c1_corr_s5_train_compl_2000 = wd_c1_corr_s5_train_compl_2000)
 
@@ -575,15 +693,24 @@ if (a_contrast == "a1") {
 # to the limit on the number of cores per job on Rivanna's parallel partition)
 
 if (a_contrast == "a1") {
+  # Specify which bootstrap samples a given worker will analyze
   
+  #bootstrap_vector <- boot_start:boot_stop
+  #chunks <- split(bootstrap_vector, 
+  #                cut(seq_along(bootstrap_vector), numProcs, labels = FALSE))
+  #myChunk <- chunks[[workerNum]]
+
   # Specify "jags_dat" and run JAGS model for each bootstrap sample in parallel
 
-  jags_dat <- specify_jags_dat(dat[[bs_sample_num]], a_contrast, y_var)
+  #results_list <- foreach(bs_sample_num = myChunk) %do% {
+      jags_dat <- specify_jags_dat(dat[[bs_sample_num]], a_contrast, y_var)
 
-  results_list <- list(num=run_jags_model(analysis_type, bs_sample = bs_sample_num, analysis_sample,
+      results_list <- list(num=run_jags_model(analysis_type, bs_sample = bs_sample_num, analysis_sample,
                      jags_dat, inits,
                      a_contrast, y_var, total_iterations) )
+  #}
   
+
 
   names(results_list) <- bs_sample_num
 
@@ -603,11 +730,12 @@ if (a_contrast == "a1") {
   
   # ************************************************************************** #
   
-  # Save results list from a given array task. The names of the list elements are the 
+  # Save results list from a given worker. The names of the list elements are the 
   # bootstrap samples analyzed by the worker. The file name distinguishes results 
   # lists generated by the workers for different sets of bootstrap samples. These
   # results lists are concatenated in a separate script.
   
+  #resultsListNum <- workerNum + as.integer((boot_start - 1)/2)
   outfile <- paste0(out_path, "/results_", bs_sample_num, ".RData")
   save(results_list, file = outfile)
 
@@ -622,4 +750,9 @@ if (a_contrast == "a1") {
        run on the standard partition (see separate script).')
 }
 
+#barrier()
+#print("All done")
 cat("\nAll Done\n")
+# Terminate connections
+
+#finalize()

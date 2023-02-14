@@ -19,7 +19,7 @@
 
 # Load custom functions
 
-source("./12a_define_functions_standard_partition.R")
+source("./12a_define_functions_std_partition.R")
 
 # Install groundhog (if needed) and use it to install other packages per groundhog_day 
 # defined in load_pkgs_via_groundhog() function (Slurm script specifies R version)

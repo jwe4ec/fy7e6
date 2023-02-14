@@ -91,7 +91,7 @@ barrier()
 
 # We cannot source custom functions defined in a separate script when using the 
 # parallel partition; functions must be defined in the present script. Functions
-# below are identical to those of "12a_define_functions_standard_partition.R" used
+# below are identical to those of "12a_define_functions_std_partition.R" used
 # for models run on the standard partition, with three exceptions:
 
 # 1. Script 12a's "run_analysis()" function is no longer defined below; its
