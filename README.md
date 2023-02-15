@@ -15,20 +15,31 @@ The imported data are considered intermediately cleaned because further analysis
 Scripts 1-10 were run on a Windows 10 Pro laptop (12 GB of RAM; Intel Core i5-4300U CPU @ 1.90GHz, 2494 Mhz, 2 cores, 4 logical processors). Script 11 was used for testing the analysis models (in series).
 
 Scripts 12a-12f were used to run the "a1" and "a2" analysis models in parallel on the [Standard](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of the [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/) supercomputer, which uses multiple cores on one node.
-- "a1" models are run via `sbatch 12e_run_models_standard_partition_a1.slurm` on Rivanna's command line, which uses a job array to submit jobs for desired models based on their row numbers in `parameter_table`.
-  - Initial models used 500 bootstrap samples with 20,000 total MCMC iterations. When we tried using 6,800 bootstrap samples with 20,000 iterations, all jobs timed out. Thus, we will run these models on the Parallel partition (below).
-- "a2" models are run via `sbatch 12f_run_models_standard_partition_a2.slurm` on Rivanna's command line, which also uses a job array.
+- "a1" models are run via `sbatch 12e_run_models_std_partition_a1.slurm` on Rivanna's command line, which uses a job array to submit jobs for all desired models at once based on their row numbers in `parameter_table`. Each job in the array runs one model, and analyses for a given model are run across bootstrap samples in parallel using a `foreach() %dopar%` command in the `run_analysis()` function.
+  - Initial models used 500 bootstrap samples with 20,000 total MCMC iterations. When we tried using 6,800 bootstrap samples with 20,000 iterations, all jobs timed out. Thus, we tried to run these models on the Parallel partition (see below), but we still faced long run times due to Rivanna's resource limitations, even after reducing to 2,000 bootstrap samples. We ultimately used Scripts 13a-13d below to run these models for 2,000 bootstrap samples with 20,000 iterations on the Standard partition using a large job array.
+- "a2" models are run via `sbatch 12f_run_models_std_partition_a2.slurm` on Rivanna's command line, which also uses a job array in which each job in the array runs one model.
   - Initial models used 20,000 total MCMC iterations. Final models used 1,000,000 total MCMC iterations.
 
-Scripts 13a-13d will be used to run the "a1" models with 6,800 bootstrap samples in parallel on the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/), which uses multiple cores across multiple nodes. Nodes communicate with one another using Message Passing Interface (MPI).
-- "a1" models are run via `13c_run_single_model_a1.sh i` on Rivanna's command line, where `i` is the row number of `parameter_table` for the desired model ("a1" models have row numbers 1-12 and 49).
+Scripts 13a-13d were used to run the "a1" analysis models in parallel on the Standard Partition with 2,000 bootstrap samples.
+- The models are run via `sbatch 13b_run_models_std_partition_lg_array_a1.slurm` on Rivanna's command line, which uses a large job array to submit jobs for a single desired model based on its row number in `parameter_table`. Each job in the array analyzes one bootstrap sample. A separate job array must be run for each desired model. Once all job arrays have run, results across bootstrap samples for each model are then concatenated by running `sbatch 13d_concatenate_results.slurm`, which is a job array in which each job handles one model.
+
+### `parallel_partition` Folder
+
+We attempted to run "a1" models in parallel on the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/), which uses multiple cores across multiple nodes (nodes communicate with one another using Message Passing Interface [MPI]). However, we faced long run times and abandoned this approach. These scripts may contain unresolved issues and incomplete/inaccurate comments.
+
+Scripts 13a-13d in this folder were used to try running the "a1" models using 6,800 bootstrap samples with 20,000 iterations.
+- A single desired model is run via `13c_run_single_model_a1.sh i` on Rivanna's command line, where `i` is the row number of `parameter_table` for the desired model.
   - This script uses `i` to update the name of the job outfile and to define `myNum` in `13b_run_models_parallel_partition_a1.slurm`. It then submits the Slurm script, which passes `myNum` to `13a_run_models_parallel_partition_a1.R`.
   - When running one model at a time, be sure to allow a delay (e.g., 15 min) before submitting the next model to avoid multiple jobs trying to access the same files at once and to ensure computing resources are available.
 - Alternatively, in theory all "a1" jobs can be submitted at once using `13d_run_many_models_a1.sh`, which automatically implements a delay between jobs, but as of 12/20/2022, this script still has problems.
 
-Scripts 14a-14f are updated versions of 13a-13d. We analyze 2,000 bootstrap samples (instead of 6,800) given long run times when trying to analyze 6,800 bootstrap samples (e.g., taking several days to run only one model and needing to run each model in series). In the updated scripts, each worker analyzes multiple bootstrap samples, given that we need to analyze 2,000 bootstrap samples with no more than 1,000 cores (limit of the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition). Scripts 14a-14c run the models on separate sets of bootstrap samples and output results for smaller subsets of bootstrap samples, and Scripts 14d-14e concatenate the results across all subsets into one list for the model. Script 14f may be redundant with Script 14e.
+Scripts 14a-14f are updated versions of 13a-13d. We tried to analyze 2,000 bootstrap samples (instead of 6,800) given long run times when trying to analyze 6,800 bootstrap samples (e.g., taking several days to run only one model and needing to run each model in series). In the updated scripts, each worker analyzes multiple bootstrap samples, given that we need to analyze 2,000 bootstrap samples with no more than 1,000 cores (limit of the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition). Scripts 14a-14c run the models on separate sets of bootstrap samples and output results for smaller subsets of bootstrap samples, and Scripts 14d-14e concatenate the results across all subsets into one list for the model. Script 14f may be redundant with Script 14e.
 
-Scripts in the `psyc_5705_anlys` folder were used for initial analyses by Jeremy Eberle and [Katie Daniel](https://github.com/KatharineDaniel) for a Fall 2020 course project.
+Script 15a is an updated version of 14a. The run times were improved a little but still too long given Rivanna's resource limitations.
+
+### `psyc_5705_anlys` Folder
+
+Scripts in this folder were used for initial analyses by Jeremy Eberle and [Katie Daniel](https://github.com/KatharineDaniel) for a Fall 2020 course project.
 
 ## Results
 
