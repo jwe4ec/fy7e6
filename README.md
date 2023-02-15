@@ -25,17 +25,19 @@ Scripts 13a-13d were used to run the "a1" analysis models in parallel on the Sta
 
 ### `parallel_partition` Folder
 
-We attempted to run "a1" models in parallel on the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/), which uses multiple cores across multiple nodes (nodes communicate with one another using Message Passing Interface [MPI]). However, we faced long run times and abandoned this approach. These scripts may contain unresolved issues and incomplete/inaccurate comments.
+We tried to run "a1" models in parallel on the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/), which uses multiple cores across multiple nodes (nodes communicate with one another using Message Passing Interface). However, we abandoned this approach due to long run times; these scripts may have unresolved issues and inaccurate comments.
 
-Scripts 13a-13d in this folder were used to try running the "a1" models using 6,800 bootstrap samples with 20,000 iterations.
+Scripts 13a-13d were used to try running the "a1" models using 6,800 bootstrap samples with 20,000 iterations.
 - A single desired model is run via `13c_run_single_model_a1.sh i` on Rivanna's CLI, where `i` is the row number of `parameter_table` for the desired model.
   - This script uses `i` to update the name of the job outfile and to define `myNum` in `13b_run_models_parallel_partition_a1.slurm`. It then submits the Slurm script, which passes `myNum` to `13a_run_models_parallel_partition_a1.R`.
-  - When running one model at a time, be sure to allow a delay (e.g., 15 min) before submitting the next model to avoid multiple jobs trying to access the same files at once and to ensure computing resources are available.
+  - When running one model at a time, allow a delay (e.g., 15 min) before submitting the next model to avoid multiple jobs trying to access the same files at once and to ensure computing resources are available.
 - Alternatively, in theory all "a1" jobs can be submitted at once using `13d_run_many_models_a1.sh`, which automatically implements a delay between jobs, but as of 12/20/2022, this script still has problems.
 
-Scripts 14a-14f are updated versions of 13a-13d. We tried to analyze 2,000 bootstrap samples (instead of 6,800) given long run times when trying to analyze 6,800 bootstrap samples (e.g., taking several days to run only one model and needing to run each model in series). In the updated scripts, each worker analyzes multiple bootstrap samples, given that we need to analyze 2,000 bootstrap samples with no more than 1,000 cores (limit of the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition). Scripts 14a-14c run the models on separate sets of bootstrap samples and output results for smaller subsets of bootstrap samples, and Scripts 14d-14e concatenate the results across all subsets into one list for the model. Script 14f may be redundant with Script 14e.
+Scripts 14a-14f are updated versions of 13a-13d. We tried to analyze 2,000 bootstrap samples (instead of 6,800) given long run times when trying to analyze 6,800 (e.g., taking several days to run only one model and needing to run each model in series). In the updated scripts, each worker analyzes multiple bootstrap samples, given that we need to analyze 2,000 bootstrap samples with no more than 1,000 cores (limit of the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition).
+- Scripts 14a-14c run the models on separate sets of bootstrap samples and output results for smaller subsets of bootstrap samples.
+- Scripts 14d-14e concatenate the results across all subsets into one list for the model. Script 14f may be redundant with Script 14e.
 
-Script 15a is an updated version of 14a. The run times were improved a little but still too long given Rivanna's resource limitations.
+Script 15a is an updated version of 14a. The run times were improved but still too long due to Rivanna's limitations.
 
 ### `psyc_5705_anlys` Folder
 
