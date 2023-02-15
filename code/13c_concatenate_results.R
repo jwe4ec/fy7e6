@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Concatenate Results for "a1" Contrast Models Run in Parallel on Parallel Partition
+# Concatenate Results for "a1" Contrast Models Run in Large Job Array
 # Authors: Jackie Huband and Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -13,19 +13,17 @@
 # Before running script, restart R and set working directory to "code" folder
 
 # ---------------------------------------------------------------------------- #
-# Check number of "results_list" files for a model
+# TODO (check this): Check number of "results_list" files for a model
 # ---------------------------------------------------------------------------- #
 
-test_num <- as.integer(commandArgs(trailingOnly=TRUE))
+test_num <- as.integer(commandArgs(trailingOnly = TRUE))
 results_path <- paste0("../a1_outputs/test_results_", test_num)
 cat("\nProcessing files in ", results_path, "\n")
-if (file.exists(results_path)){
-
-   files <- list.files(results_path, pattern = ".RData", full.names = TRUE)
-
+if (file.exists(results_path)) {
+  files <- list.files(results_path, pattern = ".RData", full.names = TRUE)
 
    # ---------------------------------------------------------------------------- #
-   # Concatenate "results_list" files into one list for the model
+   # TODO (check this): Concatenate "results_list" files into one list for the model
    # ---------------------------------------------------------------------------- #
 
    combined_list <- NULL
@@ -39,15 +37,15 @@ if (file.exists(results_path)){
    print(length(combined_list))
  
    # ---------------------------------------------------------------------------- #
-   # Complete work that was in the original code
+   # TODO (check this): Complete work that was in the original code
    # ---------------------------------------------------------------------------- #
+   
    model_results_path_stem <- combined_list[[1]]$model_results_path_stem
 
    # Create results object
 
    results <- list(per_bs_smp = combined_list)
   
-
    outfile <- paste0("results_", test_num, ".RData")
    save(results, file = outfile)
 }
