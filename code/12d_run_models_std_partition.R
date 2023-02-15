@@ -31,19 +31,19 @@ load_pkgs_via_groundhog()
 set.seed(1234)
 
 # ---------------------------------------------------------------------------- #
-# Set up cores for parallel code ----
+# Set up cores for parallel analysis ----
 # ---------------------------------------------------------------------------- #
 
 # Obtain command-line arguments provided by Slurm script
 
 cmdArgs <- commandArgs(trailingOnly = TRUE)
 
-# Identify job array run number for index into parameter table
+# Identify which model to run (job array run number indexes into parameter table)
 
 myNum <- as.integer(cmdArgs[1])
 cat("\nmyNum =", myNum, "\n")
 
-# Set up cores for parallel code (one core is reserved for manager)
+# Set up cores for parallel analysis (one core is reserved for manager)
 
 numCores <- as.integer(cmdArgs[2]) - 1
 cat("numCores =", numCores, "\n\n")
