@@ -64,7 +64,7 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 - Revise Scripts 14a-14d for reproducibility (e.g., fix file paths, confirm package versions)
 - Remove selected results to decrease file size
-  - Remove all `model_samples_*.RData` and `plots_*.pdf` for `a1` models with 500 bootstrap samples
+  - Remove remaining `model_samples_*.RData` and `plots_*.pdf` for `a1` models with 500 bootstrap samples (see Script 13)
   - Then consider removing more (e.g., `results.RData` files before trimming)
 - Consider transferring individual results from `scratch` directory before Script 14c was run
 - Resolve TODOs in `compute_flow.R`, `further_clean_demog_data.R`, `run_models_parallel.R`
