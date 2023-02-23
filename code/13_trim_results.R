@@ -36,7 +36,53 @@ groundhog_day <- version_control()
 # models from "scratch/" directory on Rivanna to local computer
 
 # ---------------------------------------------------------------------------- #
-# Trim results ----
+# Remove selected results files ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to remove all `model_samples_*.RData` and `plots_*.pdf` files
+# for `a1` models as we assessed convergence based solely on Geweke's statistic
+
+rm_files <- function(anlys_path_pattern, file_pattern) {
+  res_dir_short <- "results/bayesian"
+  res_dir       <- paste0("./", res_dir_short)
+  
+  # Use results directory with "./" for "list.files()"
+  
+  rm_filenames <- list.files(res_dir, pattern = file_pattern,
+                             recursive = TRUE, full.names = FALSE)
+  rm_filenames <- rm_filenames[grep(anlys_path_pattern, rm_filenames)]
+  
+  n_rm_filenames <- length(rm_filenames)
+  
+  cat("Number of files with pattern", file_pattern, "found: ", n_rm_filenames, "\n\n")
+  print(rm_filenames)
+  
+  # Use results directory without "./" for "file.exists()"
+  
+  rm_filepaths <- paste0(res_dir_short, "/", rm_filenames)
+  
+  for (i in 1:length(rm_filepaths)) {
+    if (file.exists(rm_filepaths[i])) {
+      file.remove(rm_filepaths[i])
+    }
+  }
+  
+}
+
+# TODO (not all relevant efficacy files are being removed) Run function for each 
+# analysis type for "a1" ("c1_") models (one file pattern at a time)
+
+rm_files("dropout/out/c1_",  "model_samples_")
+rm_files("dropout/out/c1_",  "plots_")
+rm_files("efficacy/out/c1_", "model_samples_")
+rm_files("efficacy/out/c1_", "plots_")
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Trim results from "results.RData" ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to remove "jags_model", "model_samples", and "model_res" from 
