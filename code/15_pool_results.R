@@ -31,17 +31,33 @@ groundhog_day <- version_control()
 groundhog.library("data.table", groundhog_day)
 
 # ---------------------------------------------------------------------------- #
-# Import trimmed results ----
+# Import results ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to import "results_trim.RData" for many models at once
+# Define function to import results for many models at once
 
-import_results <- function(anlys_path_pattern) {
+import_results <- function(anlys_path_pattern, c2_4_iter_path_pattern) {
   res_dir <- "./results/bayesian"
   
-  res_filenames <- list.files(res_dir, pattern = "results_trim.RData", 
+  if (anlys_path_pattern %in% c("dropout/out/c1_500", "efficacy/out/c1_500")) {
+    file_pattern <- "results_trim.RData"
+  } else if (anlys_path_pattern %in% c("dropout/out/c1_2000", "efficacy/out/c1_2000")) {
+    file_pattern <- "results_"
+  } else if (anlys_path_pattern %in% c("dropout/out/c2_4_", "efficacy/out/c2_4_")) {
+    if (c2_4_iter_path_pattern %in% "burn_10000_total_20000") {
+      file_pattern <- "results_trim.RData"
+    } else if (c2_4_iter_path_pattern == "burn_500000_total_1000000") {
+      file_pattern <- "results.RData"
+    }
+  }
+
+  res_filenames <- list.files(res_dir, pattern = file_pattern, 
                               recursive = TRUE, full.names = FALSE)
-  res_filenames <- res_filenames[grep(anlys_path_pattern, res_filenames)]
+  res_filenames <- res_filenames[grepl(anlys_path_pattern, res_filenames)]
+
+  if (!is.null(c2_4_iter_path_pattern)) {
+    res_filenames <- res_filenames[grepl(c2_4_iter_path_pattern, res_filenames)]
+  }
   
   res <- lapply(paste0(res_dir, "/", res_filenames),
                 function(x) { get(load(x, environment())) })
@@ -67,10 +83,24 @@ import_results <- function(anlys_path_pattern) {
 
 # Run function for each analysis type for "a1" ("c1_") and "a2" ("c2_4_") models
 
-res_drp_c1   <- import_results("dropout/out/c1_")
-res_eff_c1   <- import_results("efficacy/out/c1_")
-res_drp_c2_4 <- import_results("dropout/out/c2_4_")
-res_eff_c2_4 <- import_results("efficacy/out/c2_4_")
+res_drp_c1_500bs         <- import_results("dropout/out/c1_500",   NULL)
+res_eff_c1_500bs         <- import_results("efficacy/out/c1_500",  NULL)
+res_drp_c2_4_20000iter   <- import_results("dropout/out/c2_4_",    "burn_10000_total_20000")
+res_eff_c2_4_20000iter   <- import_results("efficacy/out/c2_4_",   "burn_10000_total_20000")
+
+res_drp_c1_2000bs        <- import_results("dropout/out/c1_2000",  NULL)
+res_eff_c1_2000bs        <- import_results("efficacy/out/c1_2000", NULL)
+res_drp_c2_4_1000000iter <- import_results("dropout/out/c2_4_",    "burn_500000_total_1000000")
+res_eff_c2_4_1000000iter <- import_results("efficacy/out/c2_4_",   "burn_500000_total_1000000")
+
+# TODO: Troubleshoot why "res" lists for "c1" are not loading with names
+
+load("./results/bayesian/dropout/out/c1_500/c1_corr_itt_a1_miss_session_train_sum/burn_10000_total_20000/results_trim.RData")
+results_trim
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Extract model info ----
