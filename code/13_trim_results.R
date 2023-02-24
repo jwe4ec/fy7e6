@@ -55,7 +55,10 @@ rm_files <- function(anlys_path_pattern, file_pattern) {
   n_rm_filenames <- length(rm_filenames)
   
   cat("Number of files with pattern", file_pattern, "found: ", n_rm_filenames, "\n\n")
-  print(rm_filenames)
+  
+  if (length(rm_filenames) != 0) {
+    print(rm_filenames)
+  }
   
   # Use results directory without "./" for "file.exists()"
   
@@ -70,12 +73,13 @@ rm_files <- function(anlys_path_pattern, file_pattern) {
 }
 
 # TODO (not all relevant efficacy files are being removed) Run function for each 
-# analysis type for "a1" ("c1_") models (one file pattern at a time)
+# analysis type for "a1" ("c1_") models (one file pattern at a time; these objects
+# were saved only for models based on 500 bootstrap samples)
 
-rm_files("dropout/out/c1_",  "model_samples_")
-rm_files("dropout/out/c1_",  "plots_")
-rm_files("efficacy/out/c1_", "model_samples_")
-rm_files("efficacy/out/c1_", "plots_")
+rm_files("dropout/out/c1_500",  "model_samples_")
+rm_files("dropout/out/c1_500",  "plots_")
+rm_files("efficacy/out/c1_500", "model_samples_")
+rm_files("efficacy/out/c1_500", "plots_")
 
 
 
@@ -96,6 +100,13 @@ trim_results <- function(anlys_path_pattern) {
                               recursive = TRUE, full.names = FALSE)
   res_filenames <- res_filenames[grep(anlys_path_pattern, res_filenames)]
   
+  # Restrict to "a1" models based on 500 bootstrap samples and "a2" models based 
+  # on 20,000 iterations
+  
+  res_filenames <- res_filenames[grepl("c1_500", res_filenames) |
+                                   (grepl("c2_4_", res_filenames) &
+                                      grepl("burn_10000_total_20000", res_filenames))]
+  
   objects_to_remove <- c("jags_model", "model_samples", "model_res")
   
   for (i in 1:length(res_filenames)) {
@@ -105,7 +116,7 @@ trim_results <- function(anlys_path_pattern) {
     
     results_trim <- results
     
-    if (anlys_path_pattern %in% c("dropout/out/c1_", "efficacy/out/c1_")) {
+    if (anlys_path_pattern %in% c("dropout/out/c1_500", "efficacy/out/c1_500")) {
       for (j in 1:length(results_trim$per_bs_smp)) {
         cat("On sample", j, "\n")
         
@@ -126,9 +137,11 @@ trim_results <- function(anlys_path_pattern) {
   }
 }
 
-# Run function for each analysis type for "a1" ("c1_") and "a2" ("c2_4_") models
+# Run function for each analysis type for "a1" ("c1_"; these objects were saved 
+# only for models based on 500 bootstrap samples) and "a2" ("c2_4_"; these objects
+# were saved only for models based on 20,000 iterations) models
 
-trim_results("dropout/out/c1_")
+trim_results("dropout/out/c1_500")
 trim_results("dropout/out/c2_4_")
-trim_results("efficacy/out/c1_")
+trim_results("efficacy/out/c1_500")
 trim_results("efficacy/out/c2_4_")
