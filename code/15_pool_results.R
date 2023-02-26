@@ -62,7 +62,8 @@ import_results <- function(anlys_path_pattern, c2_4_iter_path_pattern) {
   res <- lapply(paste0(res_dir, "/", res_filenames),
                 function(x) { get(load(x, environment())) })
   
-  if (anlys_path_pattern %in% c("dropout/out/c1_", "efficacy/out/c1_")) {
+  if (anlys_path_pattern %in% c("dropout/out/c1_500",  "efficacy/out/c1_500",
+                                "dropout/out/c1_2000", "efficacy/out/c1_2000")) {
     names(res) <- lapply(res, function(x) {
       paste0(x$per_bs_smp$`1`$analysis_type, "_",
              x$per_bs_smp$`1`$analysis_sample, "_",
@@ -93,14 +94,9 @@ res_eff_c1_2000bs        <- import_results("efficacy/out/c1_2000", NULL)
 res_drp_c2_4_1000000iter <- import_results("dropout/out/c2_4_",    "burn_500000_total_1000000")
 res_eff_c2_4_1000000iter <- import_results("efficacy/out/c2_4_",   "burn_500000_total_1000000")
 
-# TODO: Troubleshoot why "res" lists for "c1" are not loading with names
+# Alphabetize "a1" model results based on 2000 bootstrap samples for consistency
 
-load("./results/bayesian/dropout/out/c1_500/c1_corr_itt_a1_miss_session_train_sum/burn_10000_total_20000/results_trim.RData")
-results_trim
-
-
-
-
+res_eff_c1_2000bs <- res_eff_c1_2000bs[order(names(res_eff_c1_2000bs))]
 
 # ---------------------------------------------------------------------------- #
 # Extract model info ----
@@ -119,8 +115,12 @@ extract_model_info <- function(results, a_contrast_type) {
     bs_smp_1 <- results$per_bs_smp[[1]]
     
     results$model_info <- bs_smp_1[names(bs_smp_1) %in% model_info_elements]
+  
+    results$model_info$n_bs_smp <- length(results$per_bs_smp)
   } else if (a_contrast_type == "a2") {
     results$model_info <- results[names(results) %in% model_info_elements]
+    
+    results$model_info$n_bs_smp <- NA
   }
   
   return(results)
@@ -128,10 +128,15 @@ extract_model_info <- function(results, a_contrast_type) {
 
 # Run function
 
-res_drp_c1   <- lapply(res_drp_c1,   extract_model_info, "a1")
-res_eff_c1   <- lapply(res_eff_c1,   extract_model_info, "a1")
-res_drp_c2_4 <- lapply(res_drp_c2_4, extract_model_info, "a2")
-res_eff_c2_4 <- lapply(res_eff_c2_4, extract_model_info, "a2")
+res_drp_c1_500bs          <- lapply(res_drp_c1_500bs,         extract_model_info, "a1")
+res_eff_c1_500bs          <- lapply(res_eff_c1_500bs,         extract_model_info, "a1")
+res_drp_c2_4_20000iter    <- lapply(res_drp_c2_4_20000iter,   extract_model_info, "a2")
+res_eff_c2_4_20000iter    <- lapply(res_eff_c2_4_20000iter,   extract_model_info, "a2")
+
+res_drp_c1_2000bs         <- lapply(res_drp_c1_2000bs,        extract_model_info, "a1")
+res_eff_c1_2000bs         <- lapply(res_eff_c1_2000bs,        extract_model_info, "a1")
+res_drp_c2_4_1000000iter  <- lapply(res_drp_c2_4_1000000iter, extract_model_info, "a2")
+res_eff_c2_4_1000000iter  <- lapply(res_eff_c2_4_1000000iter, extract_model_info, "a2")
 
 # ---------------------------------------------------------------------------- #
 # Pool Geweke's statistic across bootstrap samples for "a1" models ----
@@ -143,11 +148,13 @@ pool_geweke <- function(results) {
   # Count number of bootstrap samples in which model converged per Geweke's 
   # statistic for all parameters
   
+  n_bs_samples <- length(results$per_bs_smp)
+  
   results_converge_all <- Filter(function(x) x$geweke_converge_all == TRUE, 
                                  results$per_bs_smp)
   
   num_converge_all <- length(results_converge_all)
-  pct_converge_all <- 100*num_converge_all/length(results$per_bs_smp)
+  pct_converge_all <- 100*num_converge_all/n_bs_samples
   
   # Extract Geweke's statistic for each bootstrap sample
   
@@ -190,7 +197,7 @@ pool_geweke <- function(results) {
                                min_num_outrange = min(pooled_stats$num_outrange),
                                max_num_outrange = max(pooled_stats$num_outrange),
                                num_infinite     = sum(pooled_stats$num_infinite),
-                               all_finite       = all(pooled_stats$num_finite == 500))
+                               all_finite       = all(pooled_stats$num_finite == n_bs_samples))
 
   # Add pooled stats and summary to results
   
@@ -202,8 +209,11 @@ pool_geweke <- function(results) {
 
 # Run function for "a1" ("c1") models
 
-res_drp_c1 <- lapply(res_drp_c1, pool_geweke)
-res_eff_c1 <- lapply(res_eff_c1, pool_geweke)
+res_drp_c1_500bs  <- lapply(res_drp_c1_500bs,  pool_geweke)
+res_eff_c1_500bs  <- lapply(res_eff_c1_500bs,  pool_geweke)
+
+res_drp_c1_2000bs <- lapply(res_drp_c1_2000bs, pool_geweke)
+res_eff_c1_2000bs <- lapply(res_eff_c1_2000bs, pool_geweke)
 
 # ---------------------------------------------------------------------------- #
 # Summarize Geweke's statistic across model parameters for "a2" models ----
@@ -235,8 +245,11 @@ summarize_geweke <- function(results) {
 
 # Run function for "a2" ("c2_4") models
 
-res_drp_c2_4 <- lapply(res_drp_c2_4, summarize_geweke)
-res_eff_c2_4 <- lapply(res_eff_c2_4, summarize_geweke)
+res_drp_c2_4_20000iter   <- lapply(res_drp_c2_4_20000iter,   summarize_geweke)
+res_eff_c2_4_20000iter   <- lapply(res_eff_c2_4_20000iter,   summarize_geweke)
+
+res_drp_c2_4_1000000iter <- lapply(res_drp_c2_4_1000000iter, summarize_geweke)
+res_eff_c2_4_1000000iter <- lapply(res_eff_c2_4_1000000iter, summarize_geweke)
 
 # ---------------------------------------------------------------------------- #
 # Create summary table of Geweke's statistic ----
@@ -284,32 +297,45 @@ create_geweke_table <- function(results, a_contrast_type) {
 
 # Run function
 
-res_drp_c1_geweke_summary_tbl   <- create_geweke_table(res_drp_c1,   "a1")
-res_eff_c1_geweke_summary_tbl   <- create_geweke_table(res_eff_c1,   "a1")
-res_drp_c2_4_geweke_summary_tbl <- create_geweke_table(res_drp_c2_4, "a2")
-res_eff_c2_4_geweke_summary_tbl <- create_geweke_table(res_eff_c2_4, "a2")
+res_drp_c1_500bs_geweke_summary_tbl         <- create_geweke_table(res_drp_c1_500bs,  "a1")
+res_eff_c1_500bs_geweke_summary_tbl         <- create_geweke_table(res_eff_c1_500bs,  "a1")
+res_drp_c1_2000bs_geweke_summary_tbl        <- create_geweke_table(res_drp_c1_2000bs, "a1")
+res_eff_c1_2000bs_geweke_summary_tbl        <- create_geweke_table(res_eff_c1_2000bs, "a1")
+
+res_drp_c2_4_20000iter_geweke_summary_tbl   <- create_geweke_table(res_drp_c2_4_20000iter,   "a2")
+res_eff_c2_4_20000iter_geweke_summary_tbl   <- create_geweke_table(res_eff_c2_4_20000iter,   "a2")
+res_drp_c2_4_1000000iter_geweke_summary_tbl <- create_geweke_table(res_drp_c2_4_1000000iter, "a2")
+res_eff_c2_4_1000000iter_geweke_summary_tbl <- create_geweke_table(res_eff_c2_4_1000000iter, "a2")
 
 # Combine tables for "a1" models and for "a2" models
 
-res_c1_geweke_summary_tbl   <- rbind(res_drp_c1_geweke_summary_tbl, 
-                                     res_eff_c1_geweke_summary_tbl)
-res_c2_4_geweke_summary_tbl <- rbind(res_drp_c2_4_geweke_summary_tbl, 
-                                     res_eff_c2_4_geweke_summary_tbl)
+res_c1_500bs_geweke_summary_tbl         <- rbind(res_drp_c1_500bs_geweke_summary_tbl, 
+                                                 res_eff_c1_500bs_geweke_summary_tbl)
+res_c2_4_20000iter_geweke_summary_tbl   <- rbind(res_drp_c2_4_20000iter_geweke_summary_tbl, 
+                                                 res_eff_c2_4_20000iter_geweke_summary_tbl)
+
+res_c1_2000bs_geweke_summary_tbl        <- rbind(res_drp_c1_2000bs_geweke_summary_tbl, 
+                                                 res_eff_c1_2000bs_geweke_summary_tbl)
+res_c2_4_1000000iter_geweke_summary_tbl <- rbind(res_drp_c2_4_1000000iter_geweke_summary_tbl, 
+                                                 res_eff_c2_4_1000000iter_geweke_summary_tbl)
 
 # Export tables as CSV using "fwrite" (given that columns are lists)
 
 dir.create("./results/bayesian/summary_dx")
 
-fwrite(res_c1_geweke_summary_tbl,
-       "./results/bayesian/summary_dx/res_c1_geweke_summary_tbl.csv",
+fwrite(res_c1_500bs_geweke_summary_tbl,
+       "./results/bayesian/summary_dx/res_c1_500bs_geweke_summary_tbl.csv",
        row.names = FALSE)
-fwrite(res_c2_4_geweke_summary_tbl,
-       "./results/bayesian/summary_dx/res_c2_4_geweke_summary_tbl.csv",
+fwrite(res_c2_4_20000iter_geweke_summary_tbl,
+       "./results/bayesian/summary_dx/res_c2_4_20000iter_geweke_summary_tbl.csv",
        row.names = FALSE)
 
-
-
-
+fwrite(res_c1_2000bs_geweke_summary_tbl,
+       "./results/bayesian/summary_dx/res_c1_2000bs_geweke_summary_tbl.csv",
+       row.names = FALSE)
+fwrite(res_c2_4_1000000iter_geweke_summary_tbl,
+       "./results/bayesian/summary_dx/res_c2_4_1000000iter_geweke_summary_tbl.csv",
+       row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Pool results ----
