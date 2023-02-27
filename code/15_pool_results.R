@@ -338,71 +338,71 @@ fwrite(res_c2_4_1000000iter_geweke_summary_tbl,
        row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
-# Pool results ----
+# Pool results across bootstrap samples for "a1" models ----
 # ---------------------------------------------------------------------------- #
-
-# TODO (draw from previous code below)
-
-
-
-
 
 # Define function to pool results across bootstrap samples for converged models
 
-pool_results <- function(results_list) {
-  # Restrict to converged models (models in which all parameters pass Geweke's test)
+pool_results <- function(results) {
+  # Restrict to bootstrap samples in which model converged per Geweke's statistic
+  # for all parameters
   
-  # TODO: For testing, temporarily pool across models that *didn't* converge
+  results_converge_all <- Filter(function(x) x$geweke_converge_all == TRUE, 
+                                 results$per_bs_smp)
   
-  
-  
-  
-  
-  results_list_converged <- Filter(function(x) x$geweke_converge_all == FALSE, results_list)
-  
-  number_converged <- length(results_list_converged)
+  num_converge_all <- length(results_converge_all)
   
   # Extract means and SDs of estimated parameters for each model
   
-  results_list_converged_stats <- lapply(results_list_converged, function(x) x[["summary"]]$statistics)
+  results_conv_stats <- lapply(results_converge_all, function(x) x[["summary"]]$statistics)
   
-  results_list_converged_stats_mean <- lapply(results_list_converged_stats, function(x) x[, "Mean"])
-  results_list_converged_stats_sd   <- lapply(results_list_converged_stats, function(x) x[, "SD"])
+  results_conv_stats_mean <- lapply(results_conv_stats, function(x) x[, "Mean"])
+  results_conv_stats_sd   <- lapply(results_conv_stats, function(x) x[, "SD"])
   
-  # Pool results across models by computing (a) average of estimated means, (b) 
-  # percentile bootstrap 95% CIs for average of estimated means (2.5th and 97.5th
-  # percentiles of estimated means), (c) empirical SD (SD of estimated means), and 
-  # (d) average SD (mean of estimated SDs)
+  # Pool results for each parameter across bootstrap samples by computing (a) average 
+  # of estimated means, (b) percentile bootstrap 95% CIs for average of estimated means 
+  # (2.5th and 97.5th percentiles of estimated means), (c) empirical SD (SD of estimated 
+  # means), and (d) average SD (mean of estimated SDs)
   
-  pooled_mean   <- apply(simplify2array(results_list_converged_stats_mean), 1, mean)
-  pooled_pctl_bs_ci_ll <- apply(simplify2array(results_list_converged_stats_mean), 1, 
+  pooled_mean          <- apply(simplify2array(results_conv_stats_mean), 1, mean)
+  pooled_pctl_bs_ci_ll <- apply(simplify2array(results_conv_stats_mean), 1, 
                                 quantile, probs = .025)
-  pooled_pctl_bs_ci_ul <- apply(simplify2array(results_list_converged_stats_mean), 1, 
+  pooled_pctl_bs_ci_ul <- apply(simplify2array(results_conv_stats_mean), 1, 
                                 quantile, probs = .975)
-  pooled_emp_sd <- apply(simplify2array(results_list_converged_stats_mean), 1, sd)
+  pooled_emp_sd        <- apply(simplify2array(results_conv_stats_mean), 1, sd)
   
-  pooled_avg_sd <- apply(simplify2array(results_list_converged_stats_sd), 1, mean)
+  pooled_avg_sd        <- apply(simplify2array(results_conv_stats_sd), 1, mean)
   
-  # Combine pooled results in data frame
+  # Combine pooled statistics in data frame
   
-  pooled_results <- data.frame(mean = pooled_mean,
-                               pctl_bs_ci_ll = pooled_pctl_bs_ci_ll,
-                               pctl_bs_ci_ul = pooled_pctl_bs_ci_ul,
-                               emp_sd = pooled_emp_sd,
-                               avg_sd = pooled_avg_sd)
+  pooled_stats <- data.frame(num_converge_all = num_converge_all,
+                             mean             = pooled_mean,
+                             pctl_bs_ci_ll    = pooled_pctl_bs_ci_ll,
+                             pctl_bs_ci_ul    = pooled_pctl_bs_ci_ul,
+                             emp_sd           = pooled_emp_sd,
+                             avg_sd           = pooled_avg_sd)
   
-  # Combine number of converged models and pooled results in list
+  # Add pooled stats to results
   
-  pooled <- list(number_converged = number_converged,
-                 results = pooled_results)
+  results$pooled_conv_stats <- pooled_stats
   
-  return(pooled)
+  return(results)
 }
 
+# Run function for "a1" ("c1") models
 
+res_drp_c1_2000bs <- lapply(res_drp_c1_2000bs, pool_results)
+res_eff_c1_2000bs <- lapply(res_eff_c1_2000bs, pool_results)
 
+# ---------------------------------------------------------------------------- #
+# Save results ----
+# ---------------------------------------------------------------------------- #
 
-# TODO: Pool results across 500 bootstrap samples for models that converge. For
-# testing, temporarily pool across models that *didn't* converge.
+pooled_path <- "./results/bayesian/pooled/"
 
-pooled <- pool_results(results_list)
+dir.create(pooled_path)
+
+save(res_drp_c1_2000bs,        file = paste0(pooled_path, "res_drp_c1_2000bs.RData"))
+save(res_eff_c1_2000bs,        file = paste0(pooled_path, "res_eff_c1_2000bs.RData"))
+save(res_drp_c2_4_1000000iter, file = paste0(pooled_path, "res_drp_c2_4_1000000iter.RData"))
+save(res_eff_c2_4_1000000iter, file = paste0(pooled_path, "res_eff_c2_4_1000000iter.RData"))
