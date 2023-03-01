@@ -1,0 +1,28 @@
+param,model,label
+beta[1],substantive mixture model (count model),Intercept
+beta[2],substantive mixture model (count model),Coeff. of a[i]
+beta[3],substantive mixture model (count model),Coeff. of income_ctr[i]
+beta[4],substantive mixture model (count model),Coeff. of age_ctr[i]
+beta[5],substantive mixture model (count model),Coeff. of a[i]*income_ctr[i]
+beta[6],substantive mixture model (count model),Coeff. of a[i]*age_ctr[i]
+beta[7],substantive mixture model (count model),Coeff. of income_ctr[i]*age_ctr[i]
+beta[8],substantive mixture model (count model),Coeff. of a[i]*income_ctr[i]*age_ctr[i]
+beta[9],substantive mixture model (zero-inflation model),Intercept
+beta[10],substantive mixture model (zero-inflation model),Coeff. of a[i]
+beta[11],substantive mixture model (zero-inflation model),Coeff. of income_ctr[i]
+beta[12],substantive mixture model (zero-inflation model),Coeff. of age_ctr[i]
+beta[13],substantive mixture model (zero-inflation model),Coeff. of a[i]*income_ctr[i]
+beta[14],substantive mixture model (zero-inflation model),Coeff. of a[i]*age_ctr[i]
+beta[15],substantive mixture model (zero-inflation model),Coeff. of income_ctr[i]*age_ctr[i]
+beta[16],substantive mixture model (zero-inflation model),Coeff. of a[i]*income_ctr[i]*age_ctr[i]
+gamma[1],selection model for missing income[i],Intercept
+gamma[2],selection model for missing income[i],Coeff. of empl_Student[i]
+gamma[3],selection model for missing income[i],Coeff. of empl_Other_or_Unknown[i]
+gamma[4],selection model for missing income[i],Coeff. of mrtl_Single_or_Dating[i]
+gamma[5],selection model for missing income[i],Coeff. of mrtl_Sep_Div_or_Wid[i]
+gamma[6],selection model for missing income[i],Coeff. of mrtl_Other[i]
+gamma[7],selection model for missing income[i],Coeff. of confident_online_ctr[i]
+gamma[8],selection model for missing income[i],Coeff. of important_ctr[i]
+para[1],substantive mixture model (count model),2*beta[2] (contrast difference)
+para[2],substantive mixture model (zero-inflation model),2*beta[10] (contrast difference)
+para[3],substantive mixture model (zero-inflation model),exp(para[2]) (odds ratio for contrast difference)

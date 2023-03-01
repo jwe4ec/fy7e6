@@ -1,0 +1,51 @@
+param,model,label
+beta[1],substantive multilevel model,Intercept
+beta[2],substantive multilevel model,Coeff. of a[i]
+beta[3],substantive multilevel model,Coeff. of income_ctr[i]
+beta[4],substantive multilevel model,Coeff. of age_ctr[i]
+beta[5],substantive multilevel model,Coeff. of a[i]*income_ctr[i]
+beta[6],substantive multilevel model,Coeff. of a[i]*age_ctr[i]
+beta[7],substantive multilevel model,Coeff. of income_ctr[i]*age_ctr[i]
+beta[8],substantive multilevel model,Coeff. of a[i]*income_ctr[i]*age_ctr[i]
+beta[9],substantive multilevel model,Coeff. of t1[j]
+beta[10],substantive multilevel model,Coeff. of a[i]*t1[j]
+beta[11],substantive multilevel model,Coeff. of income_ctr[i]*t1[j]
+beta[12],substantive multilevel model,Coeff. of age_ctr[i]*t1[j]
+beta[13],substantive multilevel model,Coeff. of a[i]*income_ctr[i]*t1[j]
+beta[14],substantive multilevel model,Coeff. of a[i]*age_ctr[i]*t1[j]
+beta[15],substantive multilevel model,Coeff. of income_ctr[i]*age_ctr[i]*t1[j]
+beta[16],substantive multilevel model,Coeff. of a[i]*income_ctr[i]*age_ctr[i]*t1[j]
+beta[17],substantive multilevel model,Coeff. of t2[j]
+beta[18],substantive multilevel model,Coeff. of a[i]*t2[j]
+beta[19],substantive multilevel model,Coeff. of income_ctr[i]*t2[j]
+beta[20],substantive multilevel model,Coeff. of age_ctr[i]*t2[j]
+beta[21],substantive multilevel model,Coeff. of a[i]*income_ctr[i]*t2[j]
+beta[22],substantive multilevel model,Coeff. of a[i]*age_ctr[i]*t2[j]
+beta[23],substantive multilevel model,Coeff. of income_ctr[i]*age_ctr[i]*t2[j]
+beta[24],substantive multilevel model,Coeff. of a[i]*income_ctr[i]*age_ctr[i]*t2[j]
+gamma[1],"selection model for missing y[i, j]",Intercept
+gamma[2],"selection model for missing y[i, j]",Coeff. of gndr_Male[i]
+gamma[3],"selection model for missing y[i, j]",Coeff. of gndr_Trans_or_Other[i]
+gamma[4],"selection model for missing y[i, j]",Coeff. of dvce_multiple_types[i]
+gamma[5],selection model for missing income[i],Intercept
+gamma[6],selection model for missing income[i],Coeff. of empl_Student[i]
+gamma[7],selection model for missing income[i],Coeff. of empl_Other_or_Unknown[i]
+gamma[8],selection model for missing income[i],Coeff. of mrtl_Single_or_Dating[i]
+gamma[9],selection model for missing income[i],Coeff. of mrtl_Sep_Div_or_Wid[i]
+gamma[10],selection model for missing income[i],Coeff. of mrtl_Other[i]
+gamma[11],selection model for missing income[i],Coeff. of confident_online_ctr[i]
+gamma[12],selection model for missing income[i],Coeff. of important_ctr[i]
+para[1],substantive multilevel model,2*beta[2] + 10*beta[10] (contrast difference at Session 5)
+para[2],substantive multilevel model,2*beta[2] + 10*beta[10] + 2*beta[18] (contrast difference at follow-up)
+para[3],substantive multilevel model,2*beta[10] (contrast difference in t1 slope)
+para[4],substantive multilevel model,2*beta[18] (contrast difference in t2 slope)
+para[5],substantive multilevel model,sig_RI (variance of random intercept)
+para[6],substantive multilevel model,sig_RS1 (variance of random slope for t1)
+para[7],substantive multilevel model,sig_RS2 (variance of random slope for t2)
+para[8],substantive multilevel model,cov_1_2 (covariance of random intercept and random slope for t1)
+para[9],substantive multilevel model,cov_1_3 (covariance of random intercept and random slope for t2)
+para[10],substantive multilevel model,cov_2_3 (covariance of random slope for t1 and random slope for t2)
+para[11],substantive multilevel model,rho_1_2 (correlation of random intercept and random slope for t1)
+para[12],substantive multilevel model,rho_1_3 (correlation of random intercept and random slope for t2)
+para[13],substantive multilevel model,rho_2_3 (correlation of random slope for t1 and random slope for t2)
+para[14],substantive multilevel model,sig_e2 (residual variance)
