@@ -46,6 +46,29 @@ version_control <- function() {
 }
 
 # ---------------------------------------------------------------------------- #
+# Define version_control_tables() ----
+# ---------------------------------------------------------------------------- #
+
+# Define function like version_control() above but using later "groundhog_day" so
+# latest "flextable" package can be used to create tables (issues in old versions)
+
+version_control_tables <- function() {
+  script_R_version <- "R version 4.1.2 (2021-11-01)"
+  current_R_version <- R.Version()$version.string
+  
+  if(current_R_version != script_R_version) {
+    warning(paste0("This script is based on ", script_R_version,
+                   ". You are running ", current_R_version, "."))
+  }
+  
+  library(groundhog)
+  meta.groundhog("2022-01-01")
+  groundhog_day <- "2023-03-01"
+  
+  return(groundhog_day)
+}
+
+# ---------------------------------------------------------------------------- #
 # Define convert_POSIXct() ----
 # ---------------------------------------------------------------------------- #
 

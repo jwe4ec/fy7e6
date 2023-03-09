@@ -24,12 +24,12 @@ source("./code/01_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control()
+groundhog_day <- version_control_tables()
 
 # Load packages
 
-pkgs <- c("flextable", "officer")
-groundhog.library(pkgs, groundhog_day)
+pkgs <- c("flextable", "officer", "ftExtra")
+groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
 # ---------------------------------------------------------------------------- #
 # Import results and parameter labels ----
@@ -94,13 +94,13 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
   
   # Round selected columns
   
-  if (a_contrast_type == "a1") {
-    target_cols <- c("mean", "pctl_bs_ci_ll", "pctl_bs_ci_ul", "emp_sd", "avg_sd")
-  } else if (a_contrast_type == "a2") {
-    target_cols <- c("mean", "emp_sd", "hpd_ci_ll", "hpd_ci_ul", "geweke_z")
-  }
-  
-  full_tbl[, target_cols] <- round(full_tbl[, target_cols], 2)
+  # if (a_contrast_type == "a1") {
+  #   target_cols <- c("mean", "pctl_bs_ci_ll", "pctl_bs_ci_ul", "emp_sd", "avg_sd")
+  # } else if (a_contrast_type == "a2") {
+  #   target_cols <- c("mean", "emp_sd", "hpd_ci_ll", "hpd_ci_ul", "geweke_z")
+  # }
+  # 
+  # full_tbl[, target_cols] <- round(full_tbl[, target_cols], 2)
 
   # Format CIs
   
@@ -258,7 +258,8 @@ summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_eff_c2_4_1000000iter, "e
 # Format summary tables ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (add header and footer): Define a function to format summary tables
+# TODO (consistent CI digits, add to footer, remove contrast column for "a1" table, 
+# add table number): Define a function to format summary tables
 
 
 
@@ -274,18 +275,25 @@ target_cols <- c("y_var", "a_contrast", "param", "mean", "emp_sd", "avg_sd", "pc
 
 summ_tbl_eff_a1_itt_ft <- flextable(data = summ_tbl_eff_a1_itt[, target_cols]) |>
   set_table_properties(align = "left") |>
+  set_caption(as_paragraph(as_i("Stage 1 Efficacy Results for Intent-To-Treat Sample")),
+              align_with_table = FALSE) |>
   align(align = "center", part = "header") |>
   align(align = "center", part = "body") |>
-  align(j = 1:3, align = "left", part = "body") |>
+  align(j = c("y_var", "a_contrast", "param"), align = "left", part = "body") |>
+  merge_v(j = c("y_var", "a_contrast")) |>
+  valign(j = c("y_var", "a_contrast"), valign = "top", part = "body") |>
+  fix_border_issues() |>
   bold(which(summ_tbl_eff_a1_itt$sig == 1), "pctl_bs_ci") |>
-  labelizor(part = "header",
-            labels = c("y_var"           = "Outcome",
-                       "a_contrast"      = "Contrast",
-                       "param"           = "Estimand",
-                       "mean"            = "Empirical M",
-                       "emp_sd"          = "Empirical SD",
-                       "avg_sd"          = "Average SD",
-                       "pctl_bs_ci"      = "95% CI")) |>
+  set_header_labels(y_var                = "Outcome",
+                    a_contrast           = "Contrast",
+                    param                = "Difference",
+                    pctl_bs_ci           = "95% CI") |>
+  compose(j = "mean", part = "header",
+          value = as_paragraph("Empirical ", as_i("M"))) |>
+  compose(j = "emp_sd", part = "header",
+          value = as_paragraph("Empirical ", as_i("SD"))) |>
+  compose(j = "avg_sd", part = "header",
+          value = as_paragraph("Average ",   as_i("SD"))) |>
   labelizor(part = "body",
             labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
                        "rr_neg_threat_m" = "Negative Bias (RR)",
@@ -297,10 +305,14 @@ summ_tbl_eff_a1_itt_ft <- flextable(data = summ_tbl_eff_a1_itt[, target_cols]) |
                        "a2_1"            = "CBM-I HR Coaching vs. No Coaching",
                        "a2_2"            = "CBM-I HR Coaching vs. CBM-I LR",
                        "a2_3"            = "CBM-I HR No Coaching vs. CBM-I LR",
-                       "para[3]"         = "Slope difference during TX",
-                       "para[1]"         = "Mean difference at Session 5",
-                       "para[4]"         = "Slope difference during FU",
-                       "para[2]"         = "Mean difference at FU")) |>
+                       "para[3]"         = "Slope during TX",
+                       "para[1]"         = "Mean at Session 5",
+                       "para[4]"         = "Slope during FU",
+                       "para[2]"         = "Mean at FU")) |>
+  colformat_double() |>                                             # TODO: Deal with digits
+  add_footer_lines(as_paragraph(as_i("Note."),
+  " Significant effects are in boldface. CI = confidence interval (percentile); TX = treatment; FU = follow-up. RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales.")) |>
+  align(align = "left", part = "footer") |>
   autofit()
 
 sect_properties <- prop_section(page_size = page_size(orient = "landscape",
