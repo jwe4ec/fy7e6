@@ -92,16 +92,17 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
                              full_tbl$hpd_ci_ul < 0, 1, 0)
   }
   
-  # Round selected columns
+  # Round selected columns and ensure two decimal digits are printed
   
-  # if (a_contrast_type == "a1") {
-  #   target_cols <- c("mean", "pctl_bs_ci_ll", "pctl_bs_ci_ul", "emp_sd", "avg_sd")
-  # } else if (a_contrast_type == "a2") {
-  #   target_cols <- c("mean", "emp_sd", "hpd_ci_ll", "hpd_ci_ul", "geweke_z")
-  # }
-  # 
-  # full_tbl[, target_cols] <- round(full_tbl[, target_cols], 2)
+  if (a_contrast_type == "a1") {
+    target_cols <- c("mean", "pctl_bs_ci_ll", "pctl_bs_ci_ul", "emp_sd", "avg_sd")
+  } else if (a_contrast_type == "a2") {
+    target_cols <- c("mean", "emp_sd", "hpd_ci_ll", "hpd_ci_ul", "geweke_z")
+  }
 
+  full_tbl[, target_cols] <- format(round(full_tbl[, target_cols], 2), 
+                                    nsmall = 2, trim = TRUE)
+  
   # Format CIs
   
   if (a_contrast_type == "a1") {
@@ -151,8 +152,28 @@ res_drp_c2_4_1000000iter <- lapply(res_drp_c2_4_1000000iter, create_full_tbl, dr
 res_eff_c2_4_1000000iter <- lapply(res_eff_c2_4_1000000iter, create_full_tbl, eff_param_labels, "a2")
 
 # ---------------------------------------------------------------------------- #
-# Write full tables ----
+# Set "flextable" defaults ----
 # ---------------------------------------------------------------------------- #
+
+# Set defaults for "flextable" package (mimic those of MS Word)
+
+set_flextable_defaults(font.size = 12, font.family = "Times New Roman", font.color = "black", 
+                       border.width = 0.5, border.color = "black",
+                       padding.bottom = 0, padding.top = 0, 
+                       padding.left = 0.08, padding.right = 0.08,
+                       line_spacing = 1)
+
+# ---------------------------------------------------------------------------- #
+# Format and write full tables ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Define function to format full tables
+
+
+
+
+
+# TODO: Write full tables
 
 write_full_tbl <- function(results, out_path) {
   # Extract model info and full table
@@ -167,6 +188,8 @@ write_full_tbl <- function(results, out_path) {
   full_tbl <- full_tbl[, !(names(full_tbl) %in% rm_cols)]
   
   # TODO: Write to one PDF with multiple pages (for now export to CSV)
+  
+  
   
   
   
@@ -255,78 +278,265 @@ summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_eff_c2_4_1000000iter, "e
 summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_eff_c2_4_1000000iter, "efficacy", "c2_4_s5_train_compl")
 
 # ---------------------------------------------------------------------------- #
-# Format summary tables ----
+# Format efficacy summary tables ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (consistent CI digits, add to footer, remove contrast column for "a1" table, 
-# add table number): Define a function to format summary tables
+# TODO (finalize labels and footer): Define function to format efficacy summary tables
 
 
 
 
 
-set_flextable_defaults(font.size = 12, font.family = "Times New Roman", font.color = "black", 
-                       border.width = 0.5, border.color = "black",
-                       padding.bottom = 0, padding.top = 0, 
-                       padding.left = 0.08, padding.right = 0.08,
-                       line_spacing = 1)
+format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
+  if (a_contrast_type == "a1") {
+    target_cols <- c("y_var", "param", "mean", "emp_sd", "avg_sd", "pctl_bs_ci")
+    left_align_body_cols <- c("y_var", "param")
+    merge_v_cols         <- "y_var"
+    col_to_bold          <- "pctl_bs_ci"
+  } else if (a_contrast_type == "a2") {
+    target_cols <- c("y_var", "a_contrast", "param", "mean", "emp_sd", "hpd_ci")
+    left_align_body_cols <- c("y_var", "a_contrast", "param")
+    merge_v_cols         <- c("y_var", "a_contrast")
+    col_to_bold          <- "hpd_ci"
+  }
+  
+  summ_tbl_ft <- flextable(data = summ_tbl[, target_cols]) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)),
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    merge_v(j = merge_v_cols, part = "body") |>
+    valign(j = merge_v_cols, valign = "top", part = "body") |>
+    fix_border_issues(part = "body") |>
+    
+    bold(which(summ_tbl$sig == 1), col_to_bold) |>
+    
+    set_header_labels(y_var                = "Outcome",
+                      param                = "Estimand") |>
+    compose(j = "mean", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"))) |>
+    compose(j = "emp_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("SD"))) |>
+    
+    labelizor(part = "body",
+              labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
+                         "rr_neg_threat_m" = "Negative Bias (RR)",
+                         "bbsiq_ben_m"     = "Benign Bias (BBSIQ)",
+                         "bbsiq_neg_m"     = "Negative Bias (BBSIQ)",
+                         "oa_m"            = "Anxiety (OASIS)",
+                         "dass21_as_m"     = "Anxiety (DASS-21-AS)",
+                         "para[3]"         = "Slope during TX",
+                         "para[1]"         = "Mean at Session 5",
+                         "para[4]"         = "Slope during FU",
+                         "para[2]"         = "Mean at FU"))
+    
+  if (a_contrast_type == "a1") {
+    summ_tbl_ft <- summ_tbl_ft |>
+      set_header_labels(pctl_bs_ci         = "95% PB CI") |>
+      compose(j = "avg_sd", part = "header",
+              value = as_paragraph("Avg. ", as_i("SD")))
+  } else if (a_contrast_type == "a2") {
+    summ_tbl_ft <- summ_tbl_ft |>
+      set_header_labels(a_contrast         = "Contrast",
+                        hpd_ci             = "95% HPD CI") |>
+    
+      labelizor(part = "body",
+                labels = c("a2_1"          = "CBM-I HR Coaching vs. No Coaching",
+                           "a2_2"          = "CBM-I HR Coaching vs. CBM-I LR",
+                           "a2_3"          = "CBM-I HR No Coaching vs. CBM-I LR"))
+  }
+  
+  summ_tbl_ft <- summ_tbl_ft |>
+    add_footer_lines(as_paragraph(as_i("Note."), gen_note)) |>
+    
+    autofit()
+  
+  return(summ_tbl_ft)
+}
 
-target_cols <- c("y_var", "a_contrast", "param", "mean", "emp_sd", "avg_sd", "pctl_bs_ci")
+# Define general notes
 
-summ_tbl_eff_a1_itt_ft <- flextable(data = summ_tbl_eff_a1_itt[, target_cols]) |>
-  set_table_properties(align = "left") |>
-  set_caption(as_paragraph(as_i("Stage 1 Efficacy Results for Intent-To-Treat Sample")),
-              align_with_table = FALSE) |>
-  align(align = "center", part = "header") |>
-  align(align = "center", part = "body") |>
-  align(j = c("y_var", "a_contrast", "param"), align = "left", part = "body") |>
-  merge_v(j = c("y_var", "a_contrast")) |>
-  valign(j = c("y_var", "a_contrast"), valign = "top", part = "body") |>
-  fix_border_issues() |>
-  bold(which(summ_tbl_eff_a1_itt$sig == 1), "pctl_bs_ci") |>
-  set_header_labels(y_var                = "Outcome",
-                    a_contrast           = "Contrast",
-                    param                = "Difference",
-                    pctl_bs_ci           = "95% CI") |>
-  compose(j = "mean", part = "header",
-          value = as_paragraph("Empirical ", as_i("M"))) |>
-  compose(j = "emp_sd", part = "header",
-          value = as_paragraph("Empirical ", as_i("SD"))) |>
-  compose(j = "avg_sd", part = "header",
-          value = as_paragraph("Average ",   as_i("SD"))) |>
-  labelizor(part = "body",
-            labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
-                       "rr_neg_threat_m" = "Negative Bias (RR)",
-                       "bbsiq_ben_m"     = "Benign Bias (BBSIQ)",
-                       "bbsiq_neg_m"     = "Negative Bias (BBSIQ)",
-                       "oa_m"            = "Anxiety (OASIS)",
-                       "dass21_as_m"     = "Anxiety (DASS-21-AS)",
-                       "a1"              = "CBM-I vs. Psychoed.",
-                       "a2_1"            = "CBM-I HR Coaching vs. No Coaching",
-                       "a2_2"            = "CBM-I HR Coaching vs. CBM-I LR",
-                       "a2_3"            = "CBM-I HR No Coaching vs. CBM-I LR",
-                       "para[3]"         = "Slope during TX",
-                       "para[1]"         = "Mean at Session 5",
-                       "para[4]"         = "Slope during FU",
-                       "para[2]"         = "Mean at FU")) |>
-  colformat_double() |>                                             # TODO: Deal with digits
-  add_footer_lines(as_paragraph(as_i("Note."),
-  " Significant effects are in boldface. CI = confidence interval (percentile); TX = treatment; FU = follow-up. RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales.")) |>
-  align(align = "left", part = "footer") |>
-  autofit()
+gen_note_a1 <- " Significant differences between contrast levels are in boldface. Separate models were fit for each outcome. The latter level of the contrast is the reference group. CBM-I = cognitive bias modification for interpretation; PB CI = percentile bootstrap confidence interval; TX = treatment; FU = follow-up. RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
+gen_note_a2 <- " Significant differences between contrast levels are in boldface. Separate models were fit for each outcome and contrast. The latter level of the contrast is the reference group. CBM-I = cognitive bias modification for interpretation; HPD CI = Highest Posterior Density Credible Interval; TX = treatment; FU = follow-up; HR = High Risk; LR = Low Risk. RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
 
-sect_properties <- prop_section(page_size = page_size(orient = "landscape",
-                                                      width = 8.5, height = 11),
-                                type = "continuous")
-my_rtf <- rtf_doc(def_sec = sect_properties)
-my_rtf <- rtf_add(my_rtf, summ_tbl_eff_a1_itt_ft)
+# Run function
+
+summ_tbl_eff_a1_itt_ft              <- format_summ_tbl_eff(summ_tbl_eff_a1_itt,              "a1", gen_note_a1,
+  "Stage 1 (CBM-I vs. Psychoed.) Efficacy Results for Intent-To-Treat Sample")
+summ_tbl_eff_a1_s5_train_compl_ft   <- format_summ_tbl_eff(summ_tbl_eff_a1_s5_train_compl,   "a1", gen_note_a1,
+  "Stage 1 (CBM-I vs. Psychoed.) Efficacy Results for Session 5 Training Completer Sample")
+
+summ_tbl_eff_a2_class_meas_compl_ft <- format_summ_tbl_eff(summ_tbl_eff_a2_class_meas_compl, "a2", gen_note_a2,
+  "Stage 2 Efficacy Results for Classification Measure Completer Sample")
+summ_tbl_eff_a2_s5_train_compl_ft   <- format_summ_tbl_eff(summ_tbl_eff_a2_s5_train_compl,   "a2", gen_note_a2,
+  "Stage 2 Efficacy Results for Session 5 Training Completer Sample")
+
+# ---------------------------------------------------------------------------- #
+# Format dropout summary table ----
+# ---------------------------------------------------------------------------- #
+
+# Combine dropout summary tables
+
+summ_tbl_drp <- merge(summ_tbl_drp_a1_itt, summ_tbl_drp_a2_class_meas_compl, 
+                      all = TRUE, sort = FALSE)
+
+# TODO (finalize labels and footer): Define function to format dropout summary table
+
+
+
+
+
+format_summ_tbl_drp <- function(summ_tbl, gen_note, title) {
+  target_cols <- c("analysis_sample", "a_contrast", "param", "mean", "emp_sd", 
+                   "avg_sd", "pctl_bs_ci", "hpd_ci")
+  left_align_body_cols <- c("analysis_sample", "a_contrast", "param")
+  merge_v_cols         <- c("analysis_sample", "a_contrast")
+  cols_to_bold         <- c("pctl_bs_ci", "hpd_ci")
+
+  summ_tbl_ft <- flextable(data = summ_tbl[, target_cols]) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)),
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    merge_v(j = merge_v_cols, part = "body") |>
+    valign(j = merge_v_cols, valign = "top", part = "body") |>
+    fix_border_issues(part = "body") |>
+    
+    bold(which(summ_tbl$sig == 1), cols_to_bold) |>
+    
+    set_header_labels(analysis_sample            = "Sample",
+                      a_contrast                 = "Contrast",
+                      param                      = "Estimand",
+                      pctl_bs_ci                 = "95% PB CI",
+                      hpd_ci                     = "95% HPD CI") |>
+    compose(j = "mean", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"))) |>
+    compose(j = "emp_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("SD"))) |>
+    compose(j = "avg_sd", part = "header",
+            value = as_paragraph("Avg. ", as_i("SD"))) |>
+    
+    labelizor(part = "body",
+              labels = c("c1_corr_itt_2000"      = "ITT",
+                         "c2_4_class_meas_compl" = "CMC",
+                         "a1"                    = "CBM-I vs. Psychoeducation",
+                         "a2_1"                  = "CBM-I HR Coaching vs. No Coaching",
+                         "a2_2"                  = "CBM-I HR Coaching vs. CBM-I LR",
+                         "a2_3"                  = "CBM-I HR No Coaching vs. CBM-I LR",
+                         "para[3]"               = "Zero-inflation odds ratio",
+                         "para[1]"               = "Count model difference")) |>
+  
+    add_footer_lines(as_paragraph(as_i("Note."), gen_note)) |>
+    
+    autofit()
+  
+  return(summ_tbl_ft)
+}
+
+# Define general note
+
+gen_note <- " Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. CBM-I = cognitive bias modification for interpretation; PB CI = percentile bootstrap confidence interval; HPD CI = Highest Posterior Density Credible Interval; TX = treatment; FU = follow-up; HR = High Risk; LR = Low Risk."
+
+# Run function
+
+summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note,
+  "Stages 1-2 Dropout Results for Intent-To-Treat (ITT) and Classification Measure Completer (CMC) Samples")
+
+# ---------------------------------------------------------------------------- #
+# Write summary tables to MS Word ----
+# ---------------------------------------------------------------------------- #
+
+# Write summary tables (note: "flextable" seems to have a bug in which blank 
+# page is at end of doc)
+
+summ_tbls <- list(summ_tbl_eff_a1_itt_ft,
+                  summ_tbl_eff_a2_class_meas_compl_ft,
+                  summ_tbl_drp_ft,
+                  summ_tbl_eff_a1_s5_train_compl_ft,
+                  summ_tbl_eff_a2_s5_train_compl_ft)
+
+summ_tbl_orientations <- c("p", "l", "l", "p", "l")
+summ_tbl_numbers <- c("1", "2", "3", "S8", "S10")
+
+psect_prop <- prop_section(page_size(orient = "portrait", width = 8.5, height = 11),
+                           type = "nextPage")
+lsect_prop <- prop_section(page_size(orient = "landscape", width = 8.5, height = 11),
+                           type = "nextPage")
+text_prop <- fp_text_lite(color = "black", font.size = 12, font.family = "Times New Roman")
+
+doc <- read_docx()
+doc <- body_set_default_section(doc, psect_prop)
+
+for (i in 1:length(summ_tbls)) {
+  doc <- body_add_fpar(doc, fpar(ftext(paste0("Table ", summ_tbl_numbers[[i]]),
+                                       prop = update(text_prop, bold = TRUE))))
+  doc <- body_add_par(doc, "")
+  
+  doc <- body_add_flextable(doc, summ_tbls[[i]], align = "left")
+  
+  if (summ_tbl_orientations[[i]] == "p") {
+    doc <- body_end_block_section(doc, block_section(psect_prop))
+  } else if (summ_tbl_orientations[[i]] == "l") {
+    doc <- body_end_block_section(doc, block_section(lsect_prop))
+  }
+}
 
 summ_tbl_path <- "./results/bayesian/tables/summ/"
 
 dir.create(summ_tbl_path, recursive = TRUE)
 
-print(my_rtf, target = paste0(summ_tbl_path, "summ_tbl_eff_a1_itt_ft.rtf"))
+print(doc, target = paste0(summ_tbl_path, "summ_tbls.docx"))
 
 
 
 
+
+# ---------------------------------------------------------------------------- #
+# DEPRECATED: Write summary tables to RTF ----
+# ---------------------------------------------------------------------------- #
+
+# Note: Code to export to RTF had issues with bottom border of header in tables 
+# that spanned multiple pages (which could not then be edited in MS Word). The
+# flextable captions were also not being exported, requiring a manual solution.
+# The code is retained in case RTF export is improved in the future.
+
+# summ_tbl_titles <- 
+#   c("Stage 1 (CBM-I vs. Psychoed.) Efficacy Results for Intent-To-Treat Sample",
+#     "Stage 1 (CBM-I vs. Psychoed.) Efficacy Results for Session 5 Training Completer Sample",
+#     "Stage 2 Efficacy Results for Classification Measure Completer Sample",
+#     "Stage 2 Efficacy Results for Session 5 Training Completer Sample")
+# 
+# my_rtf <- rtf_doc(def_sec = psect_prop)
+# 
+# for (i in 1:length(summ_tbls)) {
+#   my_rtf <- rtf_add(my_rtf, fpar(ftext(paste0("Table ", summ_tbl_numbers[[i]]),
+#                                        prop = update(text_prop, bold = TRUE))))
+#   my_rtf <- rtf_add(my_rtf, "")
+#   my_rtf <- rtf_add(my_rtf, fpar(ftext(summ_tbl_titles[[i]],
+#                                        prop = update(text_prop, italic = TRUE))))
+#   my_rtf <- rtf_add(my_rtf, summ_tbls[[i]])
+#   
+#   if (i < length(summ_tbls)) {
+#     if (summ_tbl_orientations[[i + 1]] == "p") {
+#       my_rtf <- rtf_add(my_rtf, block_section(psect_prop))
+#     } else if (summ_tbl_orientations[[i + 1]] == "l") {
+#       my_rtf <- rtf_add(my_rtf, block_section(lsect_prop))
+#     }
+#   }
+# }
+# 
+# print(my_rtf, target = paste0(summ_tbl_path, "summ_tbls.rtf"))
