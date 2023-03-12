@@ -136,23 +136,32 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
                              "hpd_ci", "geweke_z", "sig")]
   }
   
-  # Add to list
+  # Create trimmed results list
   
-  results$full_tbl <- full_tbl
+  results_trim <- list(model_info = results$model_info,
+                       full_tbl   = full_tbl)
   
-  return(results)
+  return(results_trim)
 }
 
 # Run function
 
-res_drp_c1_2000bs <- lapply(res_drp_c1_2000bs, create_full_tbl, drp_param_labels, "a1")
-res_eff_c1_2000bs <- lapply(res_eff_c1_2000bs, create_full_tbl, eff_param_labels, "a1")
+res_trm_drp_c1_2000bs <- lapply(res_drp_c1_2000bs, create_full_tbl, drp_param_labels, "a1")
+res_trm_eff_c1_2000bs <- lapply(res_eff_c1_2000bs, create_full_tbl, eff_param_labels, "a1")
 
-res_drp_c2_4_1000000iter <- lapply(res_drp_c2_4_1000000iter, create_full_tbl, drp_param_labels, "a2")
-res_eff_c2_4_1000000iter <- lapply(res_eff_c2_4_1000000iter, create_full_tbl, eff_param_labels, "a2")
+res_trm_drp_c2_4_1000000iter <- lapply(res_drp_c2_4_1000000iter, create_full_tbl, drp_param_labels, "a2")
+res_trm_eff_c2_4_1000000iter <- lapply(res_eff_c2_4_1000000iter, create_full_tbl, eff_param_labels, "a2")
+
+# Remove large results objects from environment
+
+rm(res_drp_c1_2000bs)
+rm(res_eff_c1_2000bs)
+
+rm(res_drp_c2_4_1000000iter)
+rm(res_eff_c2_4_1000000iter)
 
 # ---------------------------------------------------------------------------- #
-# Set "flextable" defaults ----
+# Set "flextable" defaults and define section and text properties ----
 # ---------------------------------------------------------------------------- #
 
 # Set defaults for "flextable" package (mimic those of MS Word)
@@ -163,57 +172,245 @@ set_flextable_defaults(font.size = 12, font.family = "Times New Roman", font.col
                        padding.left = 0.08, padding.right = 0.08,
                        line_spacing = 1)
 
+# Define section and text properties
+
+psect_prop <- prop_section(page_size(orient = "portrait", width = 8.5, height = 11),
+                           type = "nextPage")
+lsect_prop <- prop_section(page_size(orient = "landscape", width = 8.5, height = 11),
+                           type = "nextPage")
+text_prop <- fp_text_lite(color = "black", font.size = 12, font.family = "Times New Roman")
+
 # ---------------------------------------------------------------------------- #
-# Format and write full tables ----
+# Format full tables ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Define function to format full tables
+# Define function to format full tables
 
-
-
-
-
-# TODO: Write full tables
-
-write_full_tbl <- function(results, out_path) {
+format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
   # Extract model info and full table
   
-  model_info <- results$model_info
-  full_tbl   <- results$full_tbl
+  analysis_type   <- results_trim$model_info$analysis_type
+  analysis_sample <- results_trim$model_info$analysis_sample
+  y_var           <- results_trim$model_info$y_var
+  a_contrast      <- results_trim$model_info$a_contrast
   
-  # Remove columns
+  full_tbl <- results_trim$full_tbl
   
-  rm_cols <- c("analysis_type", "analysis_sample", "y_var", "a_contrast")
+  # Create labels for title
   
-  full_tbl <- full_tbl[, !(names(full_tbl) %in% rm_cols)]
+  if (analysis_type == "efficacy") {
+    analysis_type_label <- "Efficacy"
+  } else if (analysis_type == "dropout") {
+    analysis_type_label <- "Dropout"
+  }
   
-  # TODO: Write to one PDF with multiple pages (for now export to CSV)
+  if (a_contrast_type == "a1") {
+    stage_number <- "1"
+  } else if (a_contrast_type == "a2") {
+    stage_number <- "2"
+  }
   
+  if (analysis_sample == "c1_corr_itt_2000") {
+    analysis_sample_label <- "Intent-To-Treat"
+  } else if (analysis_sample == "c2_4_class_meas_compl") {
+    analysis_sample_label <- "Classif. Measure Compl."
+  } else if (analysis_sample %in% c("c1_corr_s5_train_compl_2000", "c2_4_s5_train_compl")) {
+    analysis_sample_label <- "Session 5 Training Compl."
+  }
   
+  if (y_var == "rr_pos_threat_m") {
+    y_var_label <- "Positive Bias (RR)"
+  } else if (y_var == "rr_neg_threat_m") {
+    y_var_label <- "Negative Bias (RR)"
+  } else if (y_var == "bbsiq_ben_m") {
+    y_var_label <- "Benign Bias (BBSIQ)"
+  } else if (y_var == "bbsiq_neg_m") {
+    y_var_label <- "Negative Bias (BBSIQ)"
+  } else if (y_var == "oa_m") {
+    y_var_label <- "Anxiety (OASIS)"
+  } else if (y_var == "dass21_as_m") {
+    y_var_label <- "Anxiety (DASS-21-AS)"
+  }
   
+  if (a_contrast == "a1") {
+    a_contrast_label <- "CBM-I vs. Psychoed."
+  } else if (a_contrast == "a2_1") {
+    a_contrast_label <- "CBM-I HR Coaching vs. No Coaching"
+  } else if (a_contrast == "a2_2") {
+    a_contrast_label <- "CBM-I HR Coaching vs. CBM-I LR"
+  } else if (a_contrast == "a2_3") {
+    a_contrast_label <- "CBM-I HR No Coaching vs. CBM-I LR"
+  }
   
+  # Create title
   
-  model_name <- paste0(model_info$analysis_type, "_",
-                       model_info$analysis_sample, "_",
-                       model_info$y_var, "_",
-                       model_info$a_contrast)
+  if (analysis_type == "efficacy") {
+    title <- paste0("Stage ", stage_number, " (", a_contrast_label, ") ",
+                    analysis_type_label, " Results for ", y_var_label, 
+                    " for ", analysis_sample_label, " Sample")
+  } else if (analysis_type == "dropout") {
+    title <- paste0("Stage ", stage_number, " (", a_contrast_label, ") ",
+                    analysis_type_label, " Results for ", 
+                    analysis_sample_label, " Sample")
+  }
   
-  write.csv(full_tbl, paste0(out_path, model_name, ".csv"), row.names = FALSE)
+  # Format table
   
-  return("Done")
+  left_align_body_cols <- c("param", "label")
+
+  if (a_contrast_type == "a1") {
+    target_cols <- c("model", "param", "label", "mean", "emp_sd", "avg_sd",
+                     "pctl_bs_ci", "num_converge_all")
+    col_to_bold <- "pctl_bs_ci"
+  } else if (a_contrast_type == "a2") {
+    target_cols <- c("model", "param", "label", "mean", "emp_sd",
+                     "hpd_ci", "geweke_z")
+    col_to_bold <- "hpd_ci"
+  }
+  
+  # Restructure data as grouped data for table spanners based on "model"
+  
+  full_tbl <- as_grouped_data(full_tbl[, target_cols], groups = "model",
+                              columns = target_cols[!(target_cols %in% "model")])
+  
+  # Create flextable
+  
+  full_tbl_ft <- as_flextable(full_tbl) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    align(j = 1, i = ~ !is.na(model), align = "center", part = "body") |>
+    hline(j = 1, i = ~ !is.na(model), part = "body") |>
+    bold(j = 1,  i = ~ !is.na(model), part = "body") |>
+  
+    bold(which(full_tbl$sig == 1), col_to_bold) |>
+    
+    set_header_labels(param                = "Parameter",
+                      label                = "Description") |>
+    compose(j = "mean", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"))) |>
+    compose(j = "emp_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("SD"))) |>
+    
+    add_footer_lines(gen_note)
+  
+  if (a_contrast_type == "a1") {
+    full_tbl_ft <- full_tbl_ft |>
+      set_header_labels(pctl_bs_ci         = "95% PB CI",
+                        num_converge_all   = "No. Samples") |>
+      compose(j = "avg_sd", part = "header",
+              value = as_paragraph("Avg. ", as_i("SD")))
+  } else if (a_contrast_type == "a2") {
+    full_tbl_ft <- full_tbl_ft |>
+      set_header_labels(hpd_ci             = "95% HPD CI") |>
+      compose(j = "geweke_z", part = "header",
+              value = as_paragraph("Geweke's ", as_i("z")))
+  }
+  
+  full_tbl_ft <- full_tbl_ft |>
+    autofit()
+  
+  # Add to list
+  
+  results_trim$full_tbl_ft <- full_tbl_ft
+  
+  return(results_trim)
 }
+
+# Define general notes
+
+full_a1_base_str <- "*Note.* Significant parameters are in boldface (only %s were interpreted). The latter level of the contrast is the reference group. Results were pooled across (No. Samples) bootstrap samples (out of 2,000) in which all parameters converged (Geweke's *z* in [-1.96, 1.96]). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval"
+
+gen_note_drp_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] and para[3]"), 
+  "; OR = odds ratio."))
+gen_note_eff_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] through para[4]"), 
+  "; S5 = Session 5; FU = follow-up; RI = random intercept; RS = random slope."))
+
+full_a2_base_str <- "*Note.* Significant parameters are in boldface (only %s were interpreted). The latter level of the contrast is the reference group. The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; HPD CI = Highest Posterior Density Credible Interval"
+
+gen_note_drp_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] and para[3]"),
+  "; OR = odds ratio."))
+gen_note_eff_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] through para[4]"),
+  "; S5 = Session 5; FU = follow-up; RI = random intercept; RS = random slope."))
 
 # Run function
 
-full_results_tbl_path <- "./results/bayesian/tables/full/"
+res_trm_drp_c1_2000bs <- lapply(res_trm_drp_c1_2000bs, format_full_tbl, "a1", gen_note_drp_a1)
+res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, format_full_tbl, "a1", gen_note_eff_a1)
 
-dir.create(full_results_tbl_path, recursive = TRUE)
+res_trm_drp_c2_4_1000000iter <- lapply(res_trm_drp_c2_4_1000000iter, format_full_tbl, "a2", gen_note_drp_a2)
+res_trm_eff_c2_4_1000000iter <- lapply(res_trm_eff_c2_4_1000000iter, format_full_tbl, "a2", gen_note_eff_a2)
 
-lapply(res_drp_c1_2000bs, write_full_tbl, full_results_tbl_path)
-lapply(res_eff_c1_2000bs, write_full_tbl, full_results_tbl_path)
+# ---------------------------------------------------------------------------- #
+# Write full tables to MS Word ----
+# ---------------------------------------------------------------------------- #
 
-lapply(res_drp_c2_4_1000000iter, write_full_tbl, full_results_tbl_path)
-lapply(res_eff_c2_4_1000000iter, write_full_tbl, full_results_tbl_path)
+# Write full tables (note: for some reason a blank page shows at end of doc)
+
+# Order list so full tables match the order of summary tables below
+
+analysis_type_order   <- c("efficacy", "dropout")
+analysis_sample_order <- c("c1_corr_itt_2000", "c2_4_class_meas_compl", 
+                           "c1_corr_s5_train_compl_2000", "c2_4_s5_train_compl")
+y_var_order           <- c("rr_pos_threat_m", "rr_neg_threat_m", "bbsiq_ben_m",
+                           "bbsiq_neg_m", "oa_m", "dass21_as_m")
+a_contrast_order      <- c("a1", "a2_1", "a2_2", "a2_3")
+
+res_trm_all <- c(res_trm_eff_c1_2000bs,
+                 res_trm_eff_c2_4_1000000iter,
+                 res_trm_drp_c1_2000bs,
+                 res_trm_drp_c2_4_1000000iter)
+
+res_trm_all <- res_trm_all[order(sapply(res_trm_all, function(x) match(x$model_info$analysis_type,
+                                                                       analysis_type_order)),
+                                 sapply(res_trm_all, function(x) match(x$model_info$analysis_sample,
+                                                                       analysis_sample_order)),
+                                 sapply(res_trm_all, function(x) match(x$model_info$y_var,
+                                                                       y_var_order)),
+                                 sapply(res_trm_all, function(x) match(x$model_info$a_contrast,
+                                                                       a_contrast_order)))]
+
+full_tbl_ft_list <- lapply(res_trm_all, function(x) x$full_tbl_ft)
+
+# Write tables
+
+full_tbl_orientations <- rep("l", length(full_tbl_ft_list))
+full_tbl_numbers <- paste0("SB", 1:length(full_tbl_ft_list))
+
+doc <- read_docx()
+doc <- body_set_default_section(doc, psect_prop)
+
+# TODO: Fix TOC (see https://github.com/davidgohel/flextable/discussions/519)
+
+doc <- body_add_toc(doc, style = "heading 1")
+
+
+
+
+
+for (i in 1:length(full_tbl_ft_list)) {
+  doc <- body_add_fpar(doc, fpar(ftext(paste0("Table ", full_tbl_numbers[[i]]),
+                                       prop = update(text_prop, bold = TRUE))))
+  doc <- body_add_par(doc, "")
+  
+  doc <- body_add_flextable(doc, full_tbl_ft_list[[i]], align = "left")
+
+  doc <- body_end_block_section(doc, block_section(lsect_prop))
+}
+
+full_tbl_path <- "./results/bayesian/tables/full/"
+
+dir.create(full_tbl_path, recursive = TRUE)
+
+print(doc, target = paste0(full_tbl_path, "full_tbls.docx"))
 
 # ---------------------------------------------------------------------------- #
 # Create summary tables ----
@@ -221,10 +418,10 @@ lapply(res_eff_c2_4_1000000iter, write_full_tbl, full_results_tbl_path)
 
 # Define function to create summary table
 
-create_summ_tbl <- function(results_list, analysis_type, analysis_sample) {
+create_summ_tbl <- function(results_trim_list, analysis_type, analysis_sample) {
   # Put all results in one data frame
   
-  full_tbl_list <- lapply(results_list, function(x) x$full_tbl)
+  full_tbl_list <- lapply(results_trim_list, function(x) x$full_tbl)
   
   summ_tbl <- do.call(rbind, full_tbl_list)
   row.names(summ_tbl) <- 1:nrow(summ_tbl)
@@ -269,23 +466,19 @@ create_summ_tbl <- function(results_list, analysis_type, analysis_sample) {
 
 # Run function
 
-summ_tbl_drp_a1_itt              <- create_summ_tbl(res_drp_c1_2000bs, "dropout",  "c1_corr_itt_2000")
-summ_tbl_eff_a1_itt              <- create_summ_tbl(res_eff_c1_2000bs, "efficacy", "c1_corr_itt_2000")
-summ_tbl_eff_a1_s5_train_compl   <- create_summ_tbl(res_eff_c1_2000bs, "efficacy", "c1_corr_s5_train_compl_2000")
+summ_tbl_drp_a1_itt              <- create_summ_tbl(res_trm_drp_c1_2000bs, "dropout",  "c1_corr_itt_2000")
+summ_tbl_eff_a1_itt              <- create_summ_tbl(res_trm_eff_c1_2000bs, "efficacy", "c1_corr_itt_2000")
+summ_tbl_eff_a1_s5_train_compl   <- create_summ_tbl(res_trm_eff_c1_2000bs, "efficacy", "c1_corr_s5_train_compl_2000")
 
-summ_tbl_drp_a2_class_meas_compl <- create_summ_tbl(res_drp_c2_4_1000000iter, "dropout",  "c2_4_class_meas_compl")
-summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_eff_c2_4_1000000iter, "efficacy", "c2_4_class_meas_compl")
-summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_eff_c2_4_1000000iter, "efficacy", "c2_4_s5_train_compl")
+summ_tbl_drp_a2_class_meas_compl <- create_summ_tbl(res_trm_drp_c2_4_1000000iter, "dropout",  "c2_4_class_meas_compl")
+summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "c2_4_class_meas_compl")
+summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "c2_4_s5_train_compl")
 
 # ---------------------------------------------------------------------------- #
 # Format efficacy summary tables ----
 # ---------------------------------------------------------------------------- #
 
-# TODO (finalize labels and footer): Define function to format efficacy summary tables
-
-
-
-
+# Define function to format efficacy summary tables
 
 format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
   if (a_contrast_type == "a1") {
@@ -299,6 +492,8 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
     merge_v_cols         <- c("y_var", "a_contrast")
     col_to_bold          <- "hpd_ci"
   }
+  
+  # Create flextable
   
   summ_tbl_ft <- flextable(data = summ_tbl[, target_cols]) |>
     set_table_properties(align = "left") |>
@@ -354,7 +549,7 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
   }
   
   summ_tbl_ft <- summ_tbl_ft |>
-    add_footer_lines(as_paragraph(as_i("Note."), gen_note)) |>
+    add_footer_lines(gen_note) |>
     
     autofit()
   
@@ -363,8 +558,15 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
 
 # Define general notes
 
-gen_note_a1 <- " Significant differences between contrast levels are in boldface. Separate models were fit for each outcome. The latter level of the contrast is the reference group. CBM-I = cognitive bias modification for interpretation; PB CI = percentile bootstrap confidence interval; TX = treatment; FU = follow-up. RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
-gen_note_a2 <- " Significant differences between contrast levels are in boldface. Separate models were fit for each outcome and contrast. The latter level of the contrast is the reference group. CBM-I = cognitive bias modification for interpretation; HPD CI = Highest Posterior Density Credible Interval; TX = treatment; FU = follow-up; HR = High Risk; LR = Low Risk. RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
+summ_base_str <- "*Note.* Significant differences between contrast levels are in boldface. Separate models were fit for each %s. The latter level of the contrast is the reference group.%s CBM-I = cognitive bias modification for interpretation; %s; TX = treatment; FU = follow-up; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
+
+gen_note_a1 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome", 
+  " Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations).",
+  "Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval")))
+
+gen_note_a2 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome and contrast",
+  " Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations).",
+  "HPD CI = Highest Posterior Density Credible Interval")))
 
 # Run function
 
@@ -387,18 +589,16 @@ summ_tbl_eff_a2_s5_train_compl_ft   <- format_summ_tbl_eff(summ_tbl_eff_a2_s5_tr
 summ_tbl_drp <- merge(summ_tbl_drp_a1_itt, summ_tbl_drp_a2_class_meas_compl, 
                       all = TRUE, sort = FALSE)
 
-# TODO (finalize labels and footer): Define function to format dropout summary table
+# Define function to format dropout summary table
 
-
-
-
-
-format_summ_tbl_drp <- function(summ_tbl, gen_note, title) {
+format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
   target_cols <- c("analysis_sample", "a_contrast", "param", "mean", "emp_sd", 
                    "avg_sd", "pctl_bs_ci", "hpd_ci")
   left_align_body_cols <- c("analysis_sample", "a_contrast", "param")
   merge_v_cols         <- c("analysis_sample", "a_contrast")
   cols_to_bold         <- c("pctl_bs_ci", "hpd_ci")
+  
+  # Create flextable
 
   summ_tbl_ft <- flextable(data = summ_tbl[, target_cols]) |>
     set_table_properties(align = "left") |>
@@ -437,23 +637,32 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, title) {
                          "a2_1"                  = "CBM-I HR Coaching vs. No Coaching",
                          "a2_2"                  = "CBM-I HR Coaching vs. CBM-I LR",
                          "a2_3"                  = "CBM-I HR No Coaching vs. CBM-I LR",
-                         "para[3]"               = "Zero-inflation odds ratio",
-                         "para[1]"               = "Count model difference")) |>
-  
-    add_footer_lines(as_paragraph(as_i("Note."), gen_note)) |>
+                         "para[3]"               = "> 0 incompl. sessions (OR)",
+                         "para[1]"               = "No. incomplete sessions")) |>
     
+    add_footer_lines(gen_note) |>
+    
+    footnote(i = c(1, 3), j = 1,
+             value = as_paragraph_md(c(footnotes$ITT_a, footnotes$CMC_b)),
+             ref_symbols = c(" a", " b"),
+             part = "body") |>
+  
     autofit()
   
   return(summ_tbl_ft)
 }
 
-# Define general note
+# Define general note (note: as_paragraph_md() seems to strip text of leading
+# space; thus, the footnote values lack the leading space)
 
-gen_note <- " Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. CBM-I = cognitive bias modification for interpretation; PB CI = percentile bootstrap confidence interval; HPD CI = Highest Posterior Density Credible Interval; TX = treatment; FU = follow-up; HR = High Risk; LR = Low Risk."
+footnotes <- list(ITT_a = " For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
+                  CMC_b = " For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
+
+gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have > 0 incomplete sessions; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have > 0 incomplete sessions. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; OR = odds ratio.")
 
 # Run function
 
-summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note,
+summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note, footnotes,
   "Stages 1-2 Dropout Results for Intent-To-Treat (ITT) and Classification Measure Completer (CMC) Samples")
 
 # ---------------------------------------------------------------------------- #
@@ -471,12 +680,6 @@ summ_tbls <- list(summ_tbl_eff_a1_itt_ft,
 
 summ_tbl_orientations <- c("p", "l", "l", "p", "l")
 summ_tbl_numbers <- c("1", "2", "3", "S8", "S10")
-
-psect_prop <- prop_section(page_size(orient = "portrait", width = 8.5, height = 11),
-                           type = "nextPage")
-lsect_prop <- prop_section(page_size(orient = "landscape", width = 8.5, height = 11),
-                           type = "nextPage")
-text_prop <- fp_text_lite(color = "black", font.size = 12, font.family = "Times New Roman")
 
 doc <- read_docx()
 doc <- body_set_default_section(doc, psect_prop)
@@ -501,9 +704,47 @@ dir.create(summ_tbl_path, recursive = TRUE)
 
 print(doc, target = paste0(summ_tbl_path, "summ_tbls.docx"))
 
+# ---------------------------------------------------------------------------- #
+# DEPRECATED: Write full tables to CSV ----
+# ---------------------------------------------------------------------------- #
 
+# Write full tables to CSV files
 
-
+# write_full_tbl <- function(results, out_path) {
+#   # Extract model info and full table
+#   
+#   model_info <- results$model_info
+#   full_tbl   <- results$full_tbl
+#   
+#   # Remove columns
+#   
+#   rm_cols <- c("analysis_type", "analysis_sample", "y_var", "a_contrast")
+#   
+#   full_tbl <- full_tbl[, !(names(full_tbl) %in% rm_cols)]
+#   
+#   # Write to CSV files
+#   
+#   model_name <- paste0(model_info$analysis_type, "_",
+#                        model_info$analysis_sample, "_",
+#                        model_info$y_var, "_",
+#                        model_info$a_contrast)
+#   
+#   write.csv(full_tbl, paste0(out_path, model_name, ".csv"), row.names = FALSE)
+#   
+#   return("Done")
+# }
+# 
+# # Run function
+# 
+# full_results_tbl_path <- "./results/bayesian/tables/full/"
+# 
+# dir.create(full_results_tbl_path, recursive = TRUE)
+# 
+# lapply(res_drp_c1_2000bs, write_full_tbl, full_results_tbl_path)
+# lapply(res_eff_c1_2000bs, write_full_tbl, full_results_tbl_path)
+# 
+# lapply(res_drp_c2_4_1000000iter, write_full_tbl, full_results_tbl_path)
+# lapply(res_eff_c2_4_1000000iter, write_full_tbl, full_results_tbl_path)
 
 # ---------------------------------------------------------------------------- #
 # DEPRECATED: Write summary tables to RTF ----

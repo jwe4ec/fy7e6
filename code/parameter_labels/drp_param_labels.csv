@@ -23,6 +23,6 @@ gamma[5],selection model for missing income[i],Coeff. of mrtl_Sep_Div_or_Wid[i]
 gamma[6],selection model for missing income[i],Coeff. of mrtl_Other[i]
 gamma[7],selection model for missing income[i],Coeff. of confident_online_ctr[i]
 gamma[8],selection model for missing income[i],Coeff. of important_ctr[i]
-para[1],substantive mixture model (count model),2*beta[2] (contrast difference)
-para[2],substantive mixture model (zero-inflation model),2*beta[10] (contrast difference)
-para[3],substantive mixture model (zero-inflation model),exp(para[2]) (odds ratio for contrast difference)
+para[1],substantive mixture model (count model),2*beta[2] (contrast diff.)
+para[2],substantive mixture model (zero-inflation model),2*beta[10] (contrast diff.)
+para[3],substantive mixture model (zero-inflation model),exp(para[2]) (OR for contrast diff.)
