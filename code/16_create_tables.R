@@ -652,11 +652,10 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
   return(summ_tbl_ft)
 }
 
-# Define general note (note: as_paragraph_md() seems to strip text of leading
-# space; thus, the footnote values lack the leading space)
+# Define general note
 
-footnotes <- list(ITT_a = " For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
-                  CMC_b = " For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
+footnotes <- list(ITT_a = "\\ For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
+                  CMC_b = "\\ For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
 
 gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have > 0 incomplete sessions; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have > 0 incomplete sessions. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; OR = odds ratio.")
 
@@ -669,8 +668,9 @@ summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note, footnotes,
 # Write summary tables to MS Word ----
 # ---------------------------------------------------------------------------- #
 
-# Write summary tables (note: "flextable" seems to have a bug in which blank 
-# page is at end of doc)
+# Write summary tables (Note: "flextable" seems to have a bug in which blank 
+# page is at end of doc. Also, a border issue involving "merge_v_cols" needs 
+# to be manually fixed after export to Word)
 
 summ_tbls <- list(summ_tbl_eff_a1_itt_ft,
                   summ_tbl_eff_a2_class_meas_compl_ft,
