@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Create Tables
+# Compute Marginal Effects and Create Tables
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -28,7 +28,7 @@ groundhog_day <- version_control_tables()
 
 # Load packages
 
-pkgs <- c("flextable", "officer", "ftExtra")
+pkgs <- c("tidyr", "flextable", "officer", "ftExtra")
 groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
 # ---------------------------------------------------------------------------- #
@@ -79,7 +79,7 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
   full_tbl <- cbind(param = rownames(full_tbl), full_tbl)
   
   full_tbl <- merge(full_tbl, param_labels, "param", all.x = TRUE, sort = FALSE)
-  
+
   # Identify significant parameters
   
   full_tbl$sig <- NA
@@ -92,6 +92,10 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
                              full_tbl$hpd_ci_ul < 0, 1, 0)
   }
   
+  # Retain raw full table before rounding and formatting full table
+  
+  full_tbl_raw <- full_tbl
+  
   # Round selected columns and ensure two decimal digits are printed
   
   if (a_contrast_type == "a1") {
@@ -102,7 +106,7 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
 
   full_tbl[, target_cols] <- format(round(full_tbl[, target_cols], 2), 
                                     nsmall = 2, trim = TRUE)
-  
+
   # Format CIs
   
   if (a_contrast_type == "a1") {
@@ -131,15 +135,20 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
   if (a_contrast_type == "a1") {
     full_tbl <- full_tbl[, c(common_cols, "num_converge_all", "mean", "emp_sd",
                              "avg_sd", "pctl_bs_ci", "sig")]
+    full_tbl_raw <- full_tbl_raw[, c(common_cols, "num_converge_all", "mean", "emp_sd",
+                                     "avg_sd", "pctl_bs_ci_ll", "pctl_bs_ci_ul", "sig")]
   } else if (a_contrast_type == "a2") {
     full_tbl <- full_tbl[, c(common_cols, "mean", "emp_sd", 
                              "hpd_ci", "geweke_z", "sig")]
+    full_tbl_raw <- full_tbl_raw[, c(common_cols, "mean", "emp_sd", 
+                                     "hpd_ci_ll", "hpd_ci_ul", "geweke_z", "sig")]
   }
   
   # Create trimmed results list
   
-  results_trim <- list(model_info = results$model_info,
-                       full_tbl   = full_tbl)
+  results_trim <- list(model_info   = results$model_info,
+                       full_tbl     = full_tbl,
+                       full_tbl_raw = full_tbl_raw)
   
   return(results_trim)
 }
@@ -159,6 +168,90 @@ rm(res_eff_c1_2000bs)
 
 rm(res_drp_c2_4_1000000iter)
 rm(res_eff_c2_4_1000000iter)
+
+# ---------------------------------------------------------------------------- #
+# Compute marginal effects and create tables ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to create marginal effects table for "a1" efficacy models
+
+create_marg_tbl <- function(results_trim, param_labels) {
+  # Extract model info and raw full table
+  
+  model_info   <- results_trim$model_info
+  full_tbl_raw <- results_trim$full_tbl_raw
+  
+  # Compute phase-specific slopes and time-specific outcomes by contrast level
+  
+  m <- full_tbl_raw[, c("param", "mean")]
+  
+  m$param <- gsub("\\[", "_", m$param)
+  m$param <- gsub("\\]", "",  m$param)
+  
+  m_wd <- pivot_wider(m, names_from = "param", values_from = "mean")
+  
+  m_wd$marg_1  <- m_wd$beta_9  + m_wd$beta_10  # Effect of time for a = 1 during TX
+  m_wd$marg_2  <- m_wd$beta_17 + m_wd$beta_18  # Effect of time for a = 1 during FU
+  m_wd$marg_3  <- m_wd$beta_9  - m_wd$beta_10  # Effect of time for a = -1 during TX
+  m_wd$marg_4  <- m_wd$beta_17 - m_wd$beta_18  # Effect of time for a = -1 during FU
+  
+  m_wd$marg_5  <- m_wd$beta_1 + m_wd$beta_2    # Time-specific means for a = 1 from baseline to FU
+  m_wd$marg_6  <- m_wd$beta_1 + m_wd$beta_2 +   m_wd$beta_9 +   m_wd$beta_10
+  m_wd$marg_7  <- m_wd$beta_1 + m_wd$beta_2 + 2*m_wd$beta_9 + 2*m_wd$beta_10
+  m_wd$marg_8  <- m_wd$beta_1 + m_wd$beta_2 + 3*m_wd$beta_9 + 3*m_wd$beta_10
+  m_wd$marg_9  <- m_wd$beta_1 + m_wd$beta_2 + 4*m_wd$beta_9 + 4*m_wd$beta_10
+  m_wd$marg_10 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10
+  m_wd$marg_11 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10 + m_wd$beta_17 + m_wd$beta_18
+  
+  m_wd$marg_12 <- m_wd$beta_1 - m_wd$beta_2    # Time-specific means for a = -1 from baseline to FU
+  m_wd$marg_13 <- m_wd$beta_1 - m_wd$beta_2 +   m_wd$beta_9 -   m_wd$beta_10
+  m_wd$marg_14 <- m_wd$beta_1 - m_wd$beta_2 + 2*m_wd$beta_9 - 2*m_wd$beta_10
+  m_wd$marg_15 <- m_wd$beta_1 - m_wd$beta_2 + 3*m_wd$beta_9 - 3*m_wd$beta_10
+  m_wd$marg_16 <- m_wd$beta_1 - m_wd$beta_2 - 4*m_wd$beta_9 - 4*m_wd$beta_10
+  m_wd$marg_17 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10
+  m_wd$marg_18 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10 + m_wd$beta_17 - m_wd$beta_18
+  
+  m <- pivot_longer(m_wd, cols = everything(), names_to = "param", values_to = "estimate")
+  
+  m$param <- gsub("_", "\\[", m$param)
+  m$param <- gsub("$", "]",  m$param)
+  
+  m <- m[grepl("marg", m$param), ]
+  
+  marg_tbl <- m
+  
+  # Add parameter labels
+  
+  marg_tbl <- merge(marg_tbl, param_labels, "param", all.x = TRUE, sort = FALSE)
+  
+  # Add model info
+  
+  marg_tbl$analysis_type   <- model_info$analysis_type
+  marg_tbl$analysis_sample <- model_info$analysis_sample
+  marg_tbl$y_var           <- model_info$y_var
+  marg_tbl$a_contrast      <- model_info$a_contrast
+  
+  # Round selected columns and ensure two decimal digits are printed
+  
+  marg_tbl$estimate <- format(round(marg_tbl$estimate, 2), nsmall = 2, trim = TRUE)
+  
+  # TODO: Rearrange columns
+  
+  common_cols <- c("analysis_type", "analysis_sample", "y_var", "a_contrast",
+                   "param", "model", "label")
+  
+  marg_tbl <- marg_tbl[, c(common_cols, "estimate")]
+  
+  # Add to list
+  
+  results_trim$marg_tbl <- marg_tbl
+  
+  return(results_trim)
+}
+
+# Run function for "a1" efficacy models
+
+res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, create_marg_tbl, eff_param_labels)
 
 # ---------------------------------------------------------------------------- #
 # Set "flextable" defaults and define section and text properties ----
@@ -475,6 +568,61 @@ summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_trm_eff_c2_4_1000000iter
 summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "c2_4_s5_train_compl")
 
 # ---------------------------------------------------------------------------- #
+# Create marginal effects summary table ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to create marginal effects summary table for "a1" efficacy models
+
+create_marg_summ_tbl <- function(results_trim_list, analysis_sample) {
+  # Put all results in one data frame
+  
+  marg_tbl_list <- lapply(results_trim_list, function(x) x$marg_tbl)
+  
+  summ_tbl <- do.call(rbind, marg_tbl_list)
+  row.names(summ_tbl) <- 1:nrow(summ_tbl)
+  
+  # Restrict to desired rows for summary
+  
+  target_params <- c("marg[1]", "marg[2]", "marg[3]", "marg[4]")
+  
+  summ_tbl <- summ_tbl[summ_tbl$param %in% target_params, ]
+  
+  # Add column for phase
+  
+  summ_tbl$phase <- NA
+  summ_tbl$phase[summ_tbl$param %in% c("marg[1]", "marg[3]")] <- "Treatment"
+  summ_tbl$phase[summ_tbl$param %in% c("marg[2]", "marg[4]")] <- "Follow-Up"
+  
+  # Add column for treatment arm
+  
+  summ_tbl$arm <- NA
+  summ_tbl$arm[summ_tbl$param %in% c("marg[1]", "marg[2]")] <- "CBM-I"
+  summ_tbl$arm[summ_tbl$param %in% c("marg[3]", "marg[4]")] <- "Psychoeducation"
+  
+  # Sort table
+  
+  analysis_sample_order <- c("c1_corr_itt_2000", "c1_corr_s5_train_compl_2000")
+  y_var_order           <- c("rr_pos_threat_m", "rr_neg_threat_m", "bbsiq_ben_m",
+                             "bbsiq_neg_m", "oa_m", "dass21_as_m")
+  param_order           <- c("marg[1]", "marg[3]", "marg[2]", "marg[4]")
+  
+  summ_tbl <- summ_tbl[order(match(summ_tbl$analysis_sample, analysis_sample_order),
+                             match(summ_tbl$y_var, y_var_order),
+                             match(summ_tbl$param, param_order)), ]
+
+  # Subset table for desired analysis sample
+  
+  summ_tbl <- summ_tbl[summ_tbl$analysis_sample == analysis_sample, ]
+  
+  return(summ_tbl)
+}
+
+# Run function
+
+marg_summ_tbl_eff_a1_itt              <- create_marg_summ_tbl(res_trm_eff_c1_2000bs, "c1_corr_itt_2000")
+marg_summ_tbl_eff_a1_s5_train_compl   <- create_marg_summ_tbl(res_trm_eff_c1_2000bs, "c1_corr_s5_train_compl_2000")
+
+# ---------------------------------------------------------------------------- #
 # Format efficacy summary tables ----
 # ---------------------------------------------------------------------------- #
 
@@ -581,6 +729,66 @@ summ_tbl_eff_a2_s5_train_compl_ft   <- format_summ_tbl_eff(summ_tbl_eff_a2_s5_tr
   "Stage 2 Efficacy Results for Session 5 Training Completer Sample")
 
 # ---------------------------------------------------------------------------- #
+# Format efficacy summary table for marginal effects ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to format marginal effects summary table for "a1" efficacy models
+
+format_marg_summ_tbl_eff <- function(marg_summ_tbl, gen_note, title) {
+    target_cols <- c("y_var", "phase", "arm", "estimate")
+    left_align_body_cols <- c("y_var", "phase", "arm")
+    merge_v_cols         <- c("y_var", "phase")
+
+  # Create flextable
+  
+  marg_summ_tbl_ft <- flextable(data = marg_summ_tbl[, target_cols]) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)),
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    merge_v(j = merge_v_cols, part = "body") |>
+    valign(j = merge_v_cols, valign = "top", part = "body") |>
+    fix_border_issues(part = "body") |>
+    
+    set_header_labels(y_var                = "Outcome",
+                      phase                = "Phase",
+                      arm                  = "Contrast Level",
+                      estimate             = "Estimate") |>
+
+    labelizor(part = "body",
+              labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
+                         "rr_neg_threat_m" = "Negative Bias (RR)",
+                         "bbsiq_ben_m"     = "Benign Bias (BBSIQ)",
+                         "bbsiq_neg_m"     = "Negative Bias (BBSIQ)",
+                         "oa_m"            = "Anxiety (OASIS)",
+                         "dass21_as_m"     = "Anxiety (DASS-21-AS)")) |>
+  
+    add_footer_lines(gen_note) |>
+    
+    autofit()
+  
+  return(marg_summ_tbl_ft)
+}
+
+# Define general notes
+
+gen_note <- as_paragraph_md("*Note.* Estimates were computed from pooled model parameters. Separate models were fit for each outcome. CBM-I = cognitive bias modification for interpretation; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales.")
+
+# Run function
+
+marg_summ_tbl_eff_a1_itt_ft            <- format_marg_summ_tbl_eff(marg_summ_tbl_eff_a1_itt, gen_note,
+  "Stage 1 Simple Time Effects for Intent-To-Treat Sample")
+marg_summ_tbl_eff_a1_s5_train_compl_ft <- format_marg_summ_tbl_eff(marg_summ_tbl_eff_a1_s5_train_compl, gen_note,
+  "Stage 1 Simple Time Effects for Session 5 Training Compl. Sample")
+
+# ---------------------------------------------------------------------------- #
 # Format dropout summary table ----
 # ---------------------------------------------------------------------------- #
 
@@ -673,13 +881,15 @@ summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note, footnotes,
 # to be manually fixed after export to Word)
 
 summ_tbls <- list(summ_tbl_eff_a1_itt_ft,
+                  marg_summ_tbl_eff_a1_itt_ft,
                   summ_tbl_eff_a2_class_meas_compl_ft,
                   summ_tbl_drp_ft,
                   summ_tbl_eff_a1_s5_train_compl_ft,
+                  marg_summ_tbl_eff_a1_s5_train_compl_ft,
                   summ_tbl_eff_a2_s5_train_compl_ft)
 
-summ_tbl_orientations <- c("p", "l", "l", "p", "l")
-summ_tbl_numbers <- c("1", "2", "3", "S8", "S10")
+summ_tbl_orientations <- c("p", "p", "l", "l", "p", "p", "l")
+summ_tbl_numbers <- c("1", "2", "3", "4", "SA5", "SA6", "SA7")
 
 doc <- read_docx()
 doc <- body_set_default_section(doc, psect_prop)
