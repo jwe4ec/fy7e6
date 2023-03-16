@@ -62,13 +62,26 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ## TODOs
 
+- Create plots for "a1" models
+- Consider computing marginal effects for "a1" dropout models
+- Format demographics table
+- Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
+- Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
+
+### Hold
+
 - Revise Scripts 14a-14d for reproducibility (e.g., fix file paths, confirm package versions)
 - Remove selected results to decrease file size
   - Remove remaining `model_samples_*.RData` and `plots_*.pdf` for `a1` models with 500 bootstrap samples (see Script 13)
   - Then consider removing more (e.g., `results.RData` files before trimming)
 - Consider transferring individual results from `scratch` directory before Script 14c was run
+- Rerun "a1" models to test significance of marginal effects
+  - Simple effects of time by treatment arm
+  - Time-specific means by treatment arm
+  - Maybe marginal effects for dropout models
+  
+- Resolve TOC issue for full tables
+- Resolve border issue in some summary tables
+
 - Resolve TODOs in `compute_flow.R`, `further_clean_demog_data.R`, `run_models_parallel.R`
-- Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
-- Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
-- Run analyses and pool results
 - Document steps for running scripts on Rivanna in README (inc. runtimes and storage requirements)
