@@ -80,18 +80,31 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
   
   full_tbl <- merge(full_tbl, param_labels, "param", all.x = TRUE, sort = FALSE)
 
-  # Identify significant parameters
+  # Identify significant parameters (note: CIs for odds ratios [OR] in dropout models
+  # need to exclude 1, whereas other CIs need to exclude 0)
   
   full_tbl$sig <- NA
+  
+  idx <- which(full_tbl$param == "para[3]") # In dropout models, "para[3]" is an OR
   
   if (a_contrast_type == "a1") {
     full_tbl$sig <- ifelse(full_tbl$pctl_bs_ci_ll > 0 | 
                              full_tbl$pctl_bs_ci_ul < 0, 1, 0)
+    
+    if (model_info$analysis_type == "dropout") {
+      full_tbl$sig[idx] <- ifelse(full_tbl$pctl_bs_ci_ll[idx] > 1 | 
+                                    full_tbl$pctl_bs_ci_ul[idx] < 1, 1, 0)
+    }
   } else if (a_contrast_type == "a2") {
     full_tbl$sig <- ifelse(full_tbl$hpd_ci_ll > 0 | 
                              full_tbl$hpd_ci_ul < 0, 1, 0)
+    
+    if (model_info$analysis_type == "dropout") {
+      full_tbl$sig[idx] <- ifelse(full_tbl$hpd_ci_ll[idx] > 1 | 
+                                    full_tbl$hpd_ci_ul[idx] < 1, 1, 0)
+    }
   }
-  
+
   # Retain raw full table before rounding and formatting full table
   
   full_tbl_raw <- full_tbl
@@ -235,7 +248,7 @@ create_marg_tbl <- function(results_trim, param_labels) {
   
   marg_tbl$estimate <- format(round(marg_tbl$estimate, 2), nsmall = 2, trim = TRUE)
   
-  # TODO: Rearrange columns
+  # Rearrange columns
   
   common_cols <- c("analysis_type", "analysis_sample", "y_var", "a_contrast",
                    "param", "model", "label")
@@ -353,11 +366,11 @@ format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
 
   if (a_contrast_type == "a1") {
     target_cols <- c("model", "param", "label", "mean", "emp_sd", "avg_sd",
-                     "pctl_bs_ci", "num_converge_all")
+                     "pctl_bs_ci", "num_converge_all", "sig")
     col_to_bold <- "pctl_bs_ci"
   } else if (a_contrast_type == "a2") {
     target_cols <- c("model", "param", "label", "mean", "emp_sd",
-                     "hpd_ci", "geweke_z")
+                     "hpd_ci", "geweke_z", "sig")
     col_to_bold <- "hpd_ci"
   }
   
@@ -366,9 +379,13 @@ format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
   full_tbl <- as_grouped_data(full_tbl[, target_cols], groups = "model",
                               columns = target_cols[!(target_cols %in% "model")])
   
+  # Define visible columns
+  
+  visible_cols <- target_cols[!(target_cols %in% c("model", "sig"))]
+  
   # Create flextable
   
-  full_tbl_ft <- as_flextable(full_tbl) |>
+  full_tbl_ft <- as_flextable(full_tbl, col_keys = visible_cols) |>
     set_table_properties(align = "left") |>
     
     set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
