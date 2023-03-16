@@ -862,7 +862,7 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
                          "a2_1"                  = "CBM-I HR Coaching vs. No Coaching",
                          "a2_2"                  = "CBM-I HR Coaching vs. CBM-I LR",
                          "a2_3"                  = "CBM-I HR No Coaching vs. CBM-I LR",
-                         "para[3]"               = "> 0 incompl. sessions (OR)",
+                         "para[3]"               = "Not completing TX (OR)",
                          "para[1]"               = "No. incomplete sessions")) |>
     
     add_footer_lines(gen_note) |>
@@ -882,7 +882,7 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
 footnotes <- list(ITT_a = "\\ For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
                   CMC_b = "\\ For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
 
-gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have > 0 incomplete sessions; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have > 0 incomplete sessions. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; OR = odds ratio.")
+gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; TX = treatment; OR = odds ratio.")
 
 # Run function
 
