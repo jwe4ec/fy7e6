@@ -220,7 +220,7 @@ create_marg_tbl <- function(results_trim, param_labels) {
   m_wd$marg_13 <- m_wd$beta_1 - m_wd$beta_2 +   m_wd$beta_9 -   m_wd$beta_10
   m_wd$marg_14 <- m_wd$beta_1 - m_wd$beta_2 + 2*m_wd$beta_9 - 2*m_wd$beta_10
   m_wd$marg_15 <- m_wd$beta_1 - m_wd$beta_2 + 3*m_wd$beta_9 - 3*m_wd$beta_10
-  m_wd$marg_16 <- m_wd$beta_1 - m_wd$beta_2 - 4*m_wd$beta_9 - 4*m_wd$beta_10
+  m_wd$marg_16 <- m_wd$beta_1 - m_wd$beta_2 + 4*m_wd$beta_9 - 4*m_wd$beta_10
   m_wd$marg_17 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10
   m_wd$marg_18 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10 + m_wd$beta_17 - m_wd$beta_18
   
