@@ -24,7 +24,7 @@ source("./code/01_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control_tables()
+groundhog_day <- version_control_tables_plots()
 
 # Load packages
 
@@ -265,6 +265,13 @@ create_marg_tbl <- function(results_trim, param_labels) {
 # Run function for "a1" efficacy models
 
 res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, create_marg_tbl, eff_param_labels)
+
+# Save object with marginal effects for plotting
+
+marg_eff_path <- c("./results/bayesian/pooled/w_marg_effects/")
+dir.create(marg_eff_path)
+
+save(res_trm_eff_c1_2000bs, file = paste0(marg_eff_path, "res_trm_eff_c1_2000bs.RData"))
 
 # ---------------------------------------------------------------------------- #
 # Set "flextable" defaults and define section and text properties ----

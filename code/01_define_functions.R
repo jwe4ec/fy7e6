@@ -52,7 +52,7 @@ version_control <- function() {
 # Define function like version_control() above but using later "groundhog_day" so
 # latest "flextable" package can be used to create tables (issues in old versions)
 
-version_control_tables <- function() {
+version_control_tables_plots <- function() {
   script_R_version <- "R version 4.1.2 (2021-11-01)"
   current_R_version <- R.Version()$version.string
   
