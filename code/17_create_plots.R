@@ -28,7 +28,7 @@ groundhog_day <- version_control_tables_plots()
 
 # Load packages
 
-pkgs <- c("ggplot2", "cowplot")
+pkgs <- c("ggplot2", "cowplot", "officer")
 
 groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
@@ -182,7 +182,7 @@ res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, create_plot)
 
 # Define function to arrange plots for ITT and Session 5 training completer samples
 
-arrange_plots <- function(results_trim_list, analysis_sample) {
+arrange_plots <- function(results_trim_list, analysis_sample, y_var_type) {
   # Extract predicted means plots and restrict to analysis sample
   
   pred_means_plot_list <- lapply(results_trim_list, function(x) x$pred_means_plot)
@@ -194,23 +194,38 @@ arrange_plots <- function(results_trim_list, analysis_sample) {
   p_rr_neg_threat_m <- pred_means_plot_list[grepl("rr_neg_threat_m", names(pred_means_plot_list))][[1]]
   p_bbsiq_ben_m     <- pred_means_plot_list[grepl("bbsiq_ben_m",     names(pred_means_plot_list))][[1]]
   p_bbsiq_neg_m     <- pred_means_plot_list[grepl("bbsiq_neg_m",     names(pred_means_plot_list))][[1]]
+  p_oa_m            <- pred_means_plot_list[grepl("oa_m",            names(pred_means_plot_list))][[1]]
+  p_dass21_as_m     <- pred_means_plot_list[grepl("dass21_as_m",     names(pred_means_plot_list))][[1]]
   
-  plot_grid <- plot_grid(p_rr_pos_threat_m +
-                           theme(legend.position = "none") + 
-                           xlab(NULL), 
-                         p_rr_neg_threat_m + 
-                           theme(legend.position = "none") + 
-                           xlab(NULL) + 
-                           ylab(NULL), 
-                         p_bbsiq_ben_m + 
-                           theme(legend.position = "none"), 
-                         p_bbsiq_neg_m + 
-                           theme(legend.position = "none") +
-                           ylab(NULL),
+  if (y_var_type == "bias") {
+    plot_grid <- plot_grid(p_rr_pos_threat_m +
+                             theme(legend.position = "none") + 
+                             xlab(NULL), 
+                           p_bbsiq_ben_m + 
+                             theme(legend.position = "none") + 
+                             xlab(NULL) + 
+                             ylab(NULL), 
+                           p_rr_neg_threat_m + 
+                             theme(legend.position = "none"), 
+                           p_bbsiq_neg_m + 
+                             theme(legend.position = "none") +
+                             ylab(NULL),
                            align = "hv",
                            ncol = 2)
-  plot_leg <- get_legend(p_rr_pos_threat_m + 
-                         theme(legend.position = "bottom"))
+    plot_leg <- get_legend(p_rr_pos_threat_m + 
+                             theme(legend.position = "bottom"))
+  } else if (y_var_type == "anxiety") {
+    plot_grid <- plot_grid(p_oa_m +
+                             theme(legend.position = "none"),
+                           p_dass21_as_m + 
+                             theme(legend.position = "none") + 
+                             ylab(NULL), 
+                           align = "hv",
+                           ncol = 2)
+    plot_leg <- get_legend(p_oa_m + 
+                             theme(legend.position = "bottom"))
+  }
+  
   plot <- plot_grid(plot_grid, plot_leg, ncol = 1, rel_heights = c(1, .1))
   
   return(plot)
@@ -218,23 +233,80 @@ arrange_plots <- function(results_trim_list, analysis_sample) {
 
 # Run function
 
-plot_eff_c1_corr_itt_2000    <- arrange_plots(res_trm_eff_c1_2000bs, "c1_corr_itt_2000")
-plot_eff_s5_train_compl_2000 <- arrange_plots(res_trm_eff_c1_2000bs, "s5_train_compl_2000")
+plot_eff_c1_corr_itt_2000_bias    <- arrange_plots(res_trm_eff_c1_2000bs, "c1_corr_itt_2000",    "bias")
+plot_eff_s5_train_compl_2000_bias <- arrange_plots(res_trm_eff_c1_2000bs, "s5_train_compl_2000", "bias")
+
+plot_eff_c1_corr_itt_2000_anx    <- arrange_plots(res_trm_eff_c1_2000bs, "c1_corr_itt_2000",    "anxiety")
+plot_eff_s5_train_compl_2000_anx <- arrange_plots(res_trm_eff_c1_2000bs, "s5_train_compl_2000", "anxiety")
 
 # Save plots
 
 plots_path <- "./results/bayesian/plots/"
 dir.create(plots_path)
 
-ggsave2(paste0(plots_path, "plot_eff_c1_corr_itt_2000.png"),
-        plot = plot_eff_c1_corr_itt_2000, 
+ggsave2(paste0(plots_path, "plot_eff_c1_corr_itt_2000_bias.png"),
+        plot = plot_eff_c1_corr_itt_2000_bias, 
         width = 10, height = 10)
-ggsave2(paste0(plots_path, "plot_eff_s5_train_compl_2000.png"),
-        plot = plot_eff_s5_train_compl_2000, 
+ggsave2(paste0(plots_path, "plot_eff_s5_train_compl_2000_bias.png"),
+        plot = plot_eff_s5_train_compl_2000_bias, 
         width = 10, height = 10)
 
-# TODO: Revise function above to arrange separate plots for anxiety outcomes
+ggsave2(paste0(plots_path, "plot_eff_c1_corr_itt_2000_anx.png"),
+        plot = plot_eff_c1_corr_itt_2000_anx, 
+        width = 10, height = 5)
+ggsave2(paste0(plots_path, "plot_eff_s5_train_compl_2000_anx.png"),
+        plot = plot_eff_s5_train_compl_2000_anx, 
+        width = 10, height = 5)
+
+# ---------------------------------------------------------------------------- #
+# Write plots to Word ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Revise below
 
 
 
 
+plots <- list(plot_eff_c1_corr_itt_2000_bias,
+              plot_eff_c1_corr_itt_2000_anx,
+              plot_eff_s5_train_compl_2000_bias,
+              plot_eff_s5_train_compl_2000_anx)
+
+y_var_types <- c("bias", "anxiety", "bias", "anxiety")
+# plot_orientations <- rep("p", 4)
+plot_numbers <- c("1", "2", "SA1", "SA2")
+plot_titles <- c("Title 1", "Title 2", "Title 3", "Title 4")
+plot_notes <- c("Note 1", "Note 2", "Note 3", "Note 4")
+
+doc <- read_docx()
+# doc <- body_set_default_section(doc, psect_prop)
+
+for (i in 1:length(plots)) {
+  doc <- body_add_fpar(doc, fpar(ftext(paste0("Figure ", plot_numbers[[i]]))))
+  # doc <- body_add_fpar(doc, fpar(ftext(paste0("Figure ", plot_numbers[[i]]),
+  #                                      prop = update(text_prop, bold = TRUE))))
+  doc <- body_add_par(doc, "")
+  
+  doc <- body_add_fpar(doc, fpar(ftext(plot_titles[[i]])))
+  doc <- body_add_par(doc, "")
+  
+  if (y_var_types[[i]] == "bias") {
+    doc <- body_add_gg(doc, plots[[i]],
+                       width = 6.5, height = 6.5, scale = 10/6.5)
+  } else if (y_var_types[[i]] == "anxiety") {
+    doc <- body_add_gg(doc, plots[[i]],
+                       width = 6.5, height = 6.5/2, scale = 10/6.5)
+  }
+  
+  # doc <- body_add_fpar(doc, fpar(ftext("Note.",
+  #                                      prop = update(text_prop, italic = TRUE))))
+  doc <- body_add_fpar(doc, fpar(ftext(plot_notes[[i]])))
+  
+  # if (plot_orientations[[i]] == "p") {
+  #   doc <- body_end_block_section(doc, block_section(psect_prop))
+  # } else if (plot_orientations[[i]] == "l") {
+  #   doc <- body_end_block_section(doc, block_section(lsect_prop))
+  # }
+}
+
+print(doc, target = paste0(plots_path, "test.docx"))
