@@ -32,6 +32,10 @@ pkgs <- c("ggplot2", "cowplot", "officer")
 
 groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
+# Load "officer" package properties
+
+source("./code/16_set_officer_properties.R")
+
 # ---------------------------------------------------------------------------- #
 # Import results and parameter labels ----
 # ---------------------------------------------------------------------------- #
@@ -242,19 +246,21 @@ plot_eff_s5_train_compl_2000_anx <- arrange_plots(res_trm_eff_c1_2000bs, "s5_tra
 # Save plots
 
 plots_path <- "./results/bayesian/plots/"
-dir.create(plots_path)
+plots_path_png <- paste0(plots_path, "png/")
 
-ggsave2(paste0(plots_path, "plot_eff_c1_corr_itt_2000_bias.png"),
+dir.create(plots_path_png)
+
+ggsave2(paste0(plots_path_png, "plot_eff_c1_corr_itt_2000_bias.png"),
         plot = plot_eff_c1_corr_itt_2000_bias, 
         width = 10, height = 10)
-ggsave2(paste0(plots_path, "plot_eff_s5_train_compl_2000_bias.png"),
+ggsave2(paste0(plots_path_png, "plot_eff_s5_train_compl_2000_bias.png"),
         plot = plot_eff_s5_train_compl_2000_bias, 
         width = 10, height = 10)
 
-ggsave2(paste0(plots_path, "plot_eff_c1_corr_itt_2000_anx.png"),
+ggsave2(paste0(plots_path_png, "plot_eff_c1_corr_itt_2000_anx.png"),
         plot = plot_eff_c1_corr_itt_2000_anx, 
         width = 10, height = 5)
-ggsave2(paste0(plots_path, "plot_eff_s5_train_compl_2000_anx.png"),
+ggsave2(paste0(plots_path_png, "plot_eff_s5_train_compl_2000_anx.png"),
         plot = plot_eff_s5_train_compl_2000_anx, 
         width = 10, height = 5)
 
@@ -262,10 +268,7 @@ ggsave2(paste0(plots_path, "plot_eff_s5_train_compl_2000_anx.png"),
 # Write plots to Word ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Revise below
-
-
-
+# Section and text properties are sourced from "set_officer_properties.R" above
 
 plots <- list(plot_eff_c1_corr_itt_2000_bias,
               plot_eff_c1_corr_itt_2000_anx,
@@ -273,21 +276,39 @@ plots <- list(plot_eff_c1_corr_itt_2000_bias,
               plot_eff_s5_train_compl_2000_anx)
 
 y_var_types <- c("bias", "anxiety", "bias", "anxiety")
-# plot_orientations <- rep("p", 4)
-plot_numbers <- c("1", "2", "SA1", "SA2")
-plot_titles <- c("Title 1", "Title 2", "Title 3", "Title 4")
-plot_notes <- c("Note 1", "Note 2", "Note 3", "Note 4")
+plot_orientations <- rep("p", 4)
+plot_numbers <- c("2", "3", "SA1", "SA2")
+plot_titles <- 
+  c("Stage 1 Estimated Interpretation Bias Means for Intent-To-Treat Sample", 
+    "Stage 1 Estimated Anxiety Means for Intent-To-Treat Sample", 
+    "Stage 1 Estimated Interpretation Bias Means for Session 5 Training Completer Sample", 
+    "Stage 1 Estimated Anxiety Means for Session 5 Training Completer Sample")
+
+# TODO: Italicize package names in notes (if possible)
+
+
+
+
+
+plot_base_str <- "Estimates were computed from pooled model parameters. Separate models were fit for each outcome. Plots were generated with the ggplot2 (ver. 3.4.1; Wickham et al., 2023) and cowplot (ver. 1.1.1; Wilke, 2020) packages."
+plot_bias_str <- "Estimates are not shown at Sessions 1, 2, and 4 because these outcomes were not administered at these assessment points. CBM-I = cognitive bias modification for interpretation; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire."
+plot_anx_str  <- "Estimates are not shown at Sessions 1, 2, and 4 for DASS-21-AS because this outcome was not administered at these assessment points. CBM-I = cognitive bias modification for interpretation; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
+
+plot_notes <- c(paste(plot_base_str, plot_bias_str),
+                paste(plot_base_str, plot_anx_str),
+                paste(plot_base_str, plot_bias_str),
+                paste(plot_base_str, plot_anx_str))
 
 doc <- read_docx()
-# doc <- body_set_default_section(doc, psect_prop)
+doc <- body_set_default_section(doc, psect_prop)
 
 for (i in 1:length(plots)) {
-  doc <- body_add_fpar(doc, fpar(ftext(paste0("Figure ", plot_numbers[[i]]))))
-  # doc <- body_add_fpar(doc, fpar(ftext(paste0("Figure ", plot_numbers[[i]]),
-  #                                      prop = update(text_prop, bold = TRUE))))
+  doc <- body_add_fpar(doc, fpar(ftext(paste0("Figure ", plot_numbers[[i]]),
+                                       prop = text_prop_bold)))
   doc <- body_add_par(doc, "")
   
-  doc <- body_add_fpar(doc, fpar(ftext(plot_titles[[i]])))
+  doc <- body_add_fpar(doc, fpar(ftext(plot_titles[[i]],
+                                       prop = text_prop_italic)))
   doc <- body_add_par(doc, "")
   
   if (y_var_types[[i]] == "bias") {
@@ -298,15 +319,18 @@ for (i in 1:length(plots)) {
                        width = 6.5, height = 6.5/2, scale = 10/6.5)
   }
   
-  # doc <- body_add_fpar(doc, fpar(ftext("Note.",
-  #                                      prop = update(text_prop, italic = TRUE))))
-  doc <- body_add_fpar(doc, fpar(ftext(plot_notes[[i]])))
-  
-  # if (plot_orientations[[i]] == "p") {
-  #   doc <- body_end_block_section(doc, block_section(psect_prop))
-  # } else if (plot_orientations[[i]] == "l") {
-  #   doc <- body_end_block_section(doc, block_section(lsect_prop))
-  # }
+  doc <- body_add_fpar(doc, fpar(ftext("Note.",
+                                       prop = text_prop_italic),
+                                 ftext(" ",
+                                       prop = text_prop),
+                                 ftext(plot_notes[[i]],
+                                       prop = text_prop)))
+
+  if (plot_orientations[[i]] == "p") {
+    doc <- body_end_block_section(doc, block_section(psect_prop))
+  } else if (plot_orientations[[i]] == "l") {
+    doc <- body_end_block_section(doc, block_section(lsect_prop))
+  }
 }
 
-print(doc, target = paste0(plots_path, "test.docx"))
+print(doc, target = paste0(plots_path, "plots.docx"))

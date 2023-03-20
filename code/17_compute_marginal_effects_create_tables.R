@@ -31,6 +31,10 @@ groundhog_day <- version_control_tables_plots()
 pkgs <- c("tidyr", "flextable", "officer", "ftExtra")
 groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
+# Load "officer" package properties
+
+source("./code/16_set_officer_properties.R")
+
 # ---------------------------------------------------------------------------- #
 # Import results and parameter labels ----
 # ---------------------------------------------------------------------------- #
@@ -285,13 +289,7 @@ set_flextable_defaults(font.size = 12, font.family = "Times New Roman", font.col
                        padding.left = 0.08, padding.right = 0.08,
                        line_spacing = 1)
 
-# Define section and text properties
-
-psect_prop <- prop_section(page_size(orient = "portrait", width = 8.5, height = 11),
-                           type = "nextPage")
-lsect_prop <- prop_section(page_size(orient = "landscape", width = 8.5, height = 11),
-                           type = "nextPage")
-text_prop <- fp_text_lite(color = "black", font.size = 12, font.family = "Times New Roman")
+# Section and text properties are sourced from "set_officer_properties.R" above
 
 # ---------------------------------------------------------------------------- #
 # Format full tables ----
@@ -515,7 +513,7 @@ doc <- body_add_toc(doc, style = "heading 1")
 
 for (i in 1:length(full_tbl_ft_list)) {
   doc <- body_add_fpar(doc, fpar(ftext(paste0("Table ", full_tbl_numbers[[i]]),
-                                       prop = update(text_prop, bold = TRUE))))
+                                       prop = text_prop_bold)))
   doc <- body_add_par(doc, "")
   
   doc <- body_add_flextable(doc, full_tbl_ft_list[[i]], align = "left")
@@ -920,7 +918,7 @@ doc <- body_set_default_section(doc, psect_prop)
 
 for (i in 1:length(summ_tbls)) {
   doc <- body_add_fpar(doc, fpar(ftext(paste0("Table ", summ_tbl_numbers[[i]]),
-                                       prop = update(text_prop, bold = TRUE))))
+                                       prop = text_prop_bold)))
   doc <- body_add_par(doc, "")
   
   doc <- body_add_flextable(doc, summ_tbls[[i]], align = "left")
@@ -999,10 +997,10 @@ print(doc, target = paste0(summ_tbl_path, "summ_tbls.docx"))
 # 
 # for (i in 1:length(summ_tbls)) {
 #   my_rtf <- rtf_add(my_rtf, fpar(ftext(paste0("Table ", summ_tbl_numbers[[i]]),
-#                                        prop = update(text_prop, bold = TRUE))))
+#                                        prop = text_prop_bold)))
 #   my_rtf <- rtf_add(my_rtf, "")
 #   my_rtf <- rtf_add(my_rtf, fpar(ftext(summ_tbl_titles[[i]],
-#                                        prop = update(text_prop, italic = TRUE))))
+#                                        prop = text_prop_italic)))
 #   my_rtf <- rtf_add(my_rtf, summ_tbls[[i]])
 #   
 #   if (i < length(summ_tbls)) {
