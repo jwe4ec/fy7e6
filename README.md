@@ -63,7 +63,8 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 ## TODOs
 
 - Compute GMA d
-- Consider computing marginal effects for "a1" dropout models
+- Compute marginal effects for "a1" dropout models
+- Correct descriptions of estimands in dropout table
 - Format demographics table
 - Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
 - Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
