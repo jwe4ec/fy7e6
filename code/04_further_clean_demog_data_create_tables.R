@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Further Clean Demographic Data and Create Table
+# Further Clean Demographic Data and Create Tables
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -342,13 +342,24 @@ compute_desc <- function(df) {
   
   # Compute mean and standard deviation for numeric variables
   
-  num_res <- data.frame(label = "Age (years): M (SD)",
-                        value = paste0(format(round(mean(df$age, na.rm = TRUE), 2),
-                                              nsmall = 2, trim = TRUE), 
-                                       " (",
-                                       format(round(sd(df$age, na.rm = TRUE), 2),
-                                              nsmall = 2, trim = TRUE),
-                                       ")"))
+  num_res <- rbind(data.frame(label = "Age",
+                              value = NA),
+                   data.frame(label = "Years: M (SD)",
+                              value = paste0(format(round(mean(df$age, na.rm = TRUE), 2),
+                                                    nsmall = 2, trim = TRUE), 
+                                             " (",
+                                             format(round(sd(df$age, na.rm = TRUE), 2),
+                                                    nsmall = 2, trim = TRUE),
+                                             ")")))
+  
+  # Compute count and percentage "prefer not to answer" for numeric variables
+  
+  num_res_pna <- data.frame(label = "Prefer not to answer: n (%)",
+                            value = paste0(sum(is.na(df$age)),
+                                           " (",
+                                           format(round(sum(is.na(df$age))/length(df$age), 1),
+                                                  nsmall = 1, trim = TRUE),
+                                           ")"))
   
   # Compute count and percentage for factor variables
   
@@ -377,7 +388,7 @@ compute_desc <- function(df) {
   
   # Combine results
   
-  res <- rbind(n, num_res, fct_res)
+  res <- rbind(n, num_res, num_res_pna, fct_res)
   
   return(res)
 }
@@ -417,20 +428,16 @@ res_s5_train_compl_by_cond <- compute_desc_by_cond(dem_tbl_s5_train_compl)
 
 # Save tables to CSV
 
-dir.create("./results/demographics")
+dem_path <- "./results/demographics/"
 
-write.csv(res_itt_across_cond, 
-          "./results/demographics/itt_across_cond.csv", row.names = FALSE)
-write.csv(res_itt_by_cond, 
-          "./results/demographics/itt_by_cond.csv", row.names = FALSE)
+dir.create(dem_path)
+
+write.csv(res_itt_across_cond,
+          paste0(dem_path, "itt_across_cond.csv"), row.names = FALSE)
+write.csv(res_itt_by_cond,
+          paste0(dem_path, "itt_by_cond.csv"), row.names = FALSE)
 write.csv(res_s5_train_compl_by_cond, 
-          "./results/demographics/s5_train_compl_by_cond.csv", row.names = FALSE)
-
-# TODO: Add "Prefer not to answer" for age
-
-
-
-
+          paste0(dem_path, "s5_train_compl_by_cond.csv"), row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Format demographics tables ----
@@ -440,18 +447,49 @@ write.csv(res_s5_train_compl_by_cond,
 
 # Section and text properties are sourced from "set_officer_properties.R" above
 
-# TODO: Define function to format demographics tables
+# Define function to format demographics tables (note: horizontal borders for added 
+# header rows for columns in which the ITT and CMC sample headings don't apply must be
+# manually removed after export to MS Word)
 
-
-
-
-
-format_dem_tbl <- function(dem_tbl, analysis_sample, gen_note, title) {
-  left_align_body_cols <- "label"
+format_dem_tbl <- function(dem_tbl, analysis_sample, gen_note, footnotes, title) {
+  # Format "label" column using Markdown
+  
+  dem_tbl$label_md <- dem_tbl$label
+  
+  rows_no_indent <- dem_tbl$label_md == "n" | 
+    grepl("\\b(Age|Gender|Race|Ethnicity|Country|Education|Employment|Annual|Marital)\\b",
+          dem_tbl$label_md)
+  rows_indent <- !rows_no_indent
+  
+  indent_spaces <- "\\ \\ \\ \\ \\ "
+  
+  dem_tbl$label_md[rows_indent] <- paste0(indent_spaces, dem_tbl$label_md[rows_indent])
+  
+  dem_tbl$label_md[dem_tbl$label_md == "n"] <- "*n*"
+  dem_tbl$label_md <- gsub("n \\(%\\)", "*n* \\(%\\)", dem_tbl$label_md)
+  
+  dem_tbl$label_md <- gsub("M \\(SD\\)", "*M* \\(*SD*\\)", dem_tbl$label_md)
+  
+  dem_tbl <- dem_tbl[c("label_md", names(dem_tbl)[names(dem_tbl) != "label_md"])]
+  
+  # Identify rows for footnotes
+  
+  transgender_rows <- c("Transgender", "Transgender Female", "Transgender Male")
+  transgender_rows_idx <- which(dem_tbl$label %in% transgender_rows)
+  
+  country_other_row_idx <- 33
+  if (dem_tbl$label[country_other_row_idx] != "Other") {
+    stop("Row index for 'country' value of 'Other' is incorrect. Update 'country_other_row_idx'.")
+  }
+  
+  # Define columns
+  
+  left_align_body_cols <- "label_md"
+  target_cols <- names(dem_tbl)[names(dem_tbl) != "label"]
   
   # Create flextable
   
-  dem_tbl_ft <- flextable(dem_tbl) |>
+  dem_tbl_ft <- flextable(dem_tbl[, target_cols]) |>
     set_table_properties(align = "left") |>
     
     set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
@@ -463,49 +501,118 @@ format_dem_tbl <- function(dem_tbl, analysis_sample, gen_note, title) {
     align(j = left_align_body_cols, align = "left", part = "body") |>
     align(align = "left", part = "footer") |>
     
-    set_header_labels(label = "Label",
-                      LR_TRAINING = "CBM-I LR",
-                      HR_NO_COACH = "CBM-I HR No Coaching",
-                      HR_COACH    = "CBM-I HR Coaching")
+    valign(valign = "bottom", part = "header") |>
     
+    set_header_labels(label_md    = "Characteristic",
+                      LR_TRAINING = "CBM-I LR",
+                      CTRL_cls    = "Psychoed.") |>
+    compose(j = "HR_COACH", part = "header",
+            value = as_paragraph_md("CBM-I HR\\\nCoaching")) |>
+    compose(j = "HR_NO_COACH", part = "header",
+            value = as_paragraph_md("CBM-I HR\\\nNo Coaching")) |>
+    
+    colformat_md(j = "label_md", part = "body") |>
+    
+    add_footer_lines(gen_note)
+  
   if (analysis_sample == "itt") {
     dem_tbl_ft <- dem_tbl_ft |>
-      set_header_labels(TRAINING  = "CBM-I (Not Classified)",
-                        CTRL_cls  = "Psychoed. (Classified)",
-                        CTRL_ncls = "Psychoed. (Not Classified)")
+      compose(j = "TRAINING", part = "header",
+              value = as_paragraph_md("CBM-I Lacking\\\nClassification\\\nMeasures or\\\nUnclassified")) |>
+      compose(j = "CTRL_ncls", part = "header",
+              value = as_paragraph_md("Psychoed.\\\nLacking\\\nClassification\\\nMeasures")) |>
+      
+      add_header_row(values = c("", "Classification Measure Completer Sample", ""),
+                     colwidths = c(2, 4, 1)) |>
+      add_header_row(values = c("", "Intent-To-Treat Sample"),
+                     colwidths = c(1, 6)) |>
+    
+      footnote(i = 3, j = c(2, 5),
+               value = as_paragraph_md(c(footnotes$TRAINING, footnotes$HR_COACH)),
+               ref_symbols = c(" a", " b"),
+               part = "header") |>
+      footnote(i = transgender_rows_idx,
+               j = 1,
+               value = as_paragraph_md(footnotes$transgender),
+               ref_symbols = " c",
+               part = "body") |>
+      footnote(i = country_other_row_idx,
+               j = 1,
+               value = as_paragraph_md(footnotes$country_other),
+               ref_symbols = " d",
+               part = "body")
   } else if (analysis_sample == "s5_train_compl") {
     dem_tbl_ft <- dem_tbl_ft |>
-      set_header_labels(CTRL_cls  = "Psychoed.")
+      footnote(i = 1, j = 4,
+               value = as_paragraph_md(footnotes$HR_COACH),
+               ref_symbols = " a",
+               part = "header") |>
+      footnote(i = transgender_rows_idx,
+               j = 1,
+               value = as_paragraph_md(footnotes$transgender),
+               ref_symbols = " b",
+               part = "body") |>
+      footnote(i = country_other_row_idx,
+               j = 1,
+               value = as_paragraph_md(footnotes$country_other),
+               ref_symbols = " c",
+               part = "body")
   }
   
   dem_tbl_ft <- dem_tbl_ft |>
-    add_footer_lines(gen_note) |>
-    
     autofit()
 }
 
 # Define general notes
 
-gen_note_itt <- as_paragraph_md("*Note.* INSERT (re classified and not). CBM-I = cognitive bias modification for interpretation; LR = Low Risk; HR = High Risk.")
-gen_note_s5_train_compl <- as_paragraph_md("*Note.* INSERT (re which Session 5 training completer sample is used). CBM-I = cognitive bias modification for interpretation; LR = Low Risk; HR = High Risk.")
+gen_note <- as_paragraph_md("*Note.* CBM-I = cognitive bias modification for interpretation; LR = Lower Risk; HR = Higher Risk.")
+
+footnotes <- list(TRAINING = "\\ Includes 2 participants who completed classification measures but were not classified (software bug).",
+                  HR_COACH = "\\ Excluded from CBM-I vs. psychoeducation comparison.",
+                  transgender = "\\ Partway through data collection (on 8/5/2019), Transgender was replaced by Transgender Female and Transgender Male.",
+                  country_other = "\\ Countries with fewer than 10 participants in the Stage 1 randomized sample (*n* = 1,614; Figure 1) were collapsed into Other.")
 
 # Run function
 
 dem_tbl_itt_by_cond_ft <-
-  format_dem_tbl(res_itt_by_cond, "itt", gen_note_itt,
-  "Demographic Characteristics by Condition for Intent-To-Treat Sample")
+  format_dem_tbl(res_itt_by_cond, "itt", gen_note, footnotes,
+  "Demographic Characteristics by Treatment Arm for Intent-To-Treat and Classification Measure Completer Samples")
 
 dem_tbl_s5_train_compl_by_cond_ft <-
-  format_dem_tbl(res_s5_train_compl_by_cond, "s5_train_compl", gen_note_s5_train_compl,
-  "Demographic Characteristics by Condition for Session 5 Training Completer Sample")
+  format_dem_tbl(res_s5_train_compl_by_cond, "s5_train_compl", gen_note, footnotes,
+  "Demographic Characteristics by Treatment Arm for Session 5 Training Completer Sample")
 
 # ---------------------------------------------------------------------------- #
-# TODO: Write demographics tables to MS Word ----
+# Write demographics tables to MS Word ----
 # ---------------------------------------------------------------------------- #
 
-# Write demographics tables (Note: "flextable" seems to have a bug in which blank 
+# Write demographics tables (note: "flextable" seems to have a bug in which blank 
 # page is at end of doc)
 
+dem_tbls <- list(dem_tbl_itt_by_cond_ft, dem_tbl_s5_train_compl_by_cond_ft)
 
+dem_tbl_orientations <- c("l", "p")
+dem_tbl_numbers      <- c("SA3", "SA4")
 
+doc <- read_docx()
+doc <- body_set_default_section(doc, psect_prop)
 
+for (i in 1:length(dem_tbls)) {
+  doc <- body_add_fpar(doc, fpar(ftext(paste0("Table ", dem_tbl_numbers[[i]]),
+                                       prop = text_prop_bold)))
+  doc <- body_add_par(doc, "")
+  
+  doc <- body_add_flextable(doc, dem_tbls[[i]], align = "left")
+  
+  if (dem_tbl_orientations[[i]] == "p") {
+    doc <- body_end_block_section(doc, block_section(psect_prop))
+  } else if (dem_tbl_orientations[[i]] == "l") {
+    doc <- body_end_block_section(doc, block_section(lsect_prop))
+  }
+}
+
+dem_tbl_path <- paste0(dem_path, "tables/")
+
+dir.create(dem_tbl_path)
+
+print(doc, target = paste0(dem_tbl_path, "dem_tbls.docx"))
