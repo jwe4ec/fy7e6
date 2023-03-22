@@ -446,7 +446,7 @@ gen_note_drp_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] and
 gen_note_eff_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] through para[4]"), 
   "; S5 = Session 5; FU = follow-up; RI = random intercept; RS = random slope."))
 
-full_a2_base_str <- "*Note.* Significant parameters are in boldface (only %s were interpreted). The latter level of the contrast is the reference group. The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; HPD CI = Highest Posterior Density Credible Interval"
+full_a2_base_str <- "*Note.* Significant parameters are in boldface (only %s were interpreted). The latter level of the contrast is the reference group. The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; HPD CI = Highest Posterior Density Credible Interval"
 
 gen_note_drp_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] and para[3]"),
   "; OR = odds ratio."))
@@ -731,7 +731,7 @@ gen_note_a1 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome",
   "Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval;")))
 
 gen_note_a2 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome and contrast",
-  "Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). HPD CI = Highest Posterior Density Credible Interval; CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk;")))
+  "Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). HPD CI = Highest Posterior Density Credible Interval; CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk;")))
 
 # Run function
 
@@ -882,7 +882,7 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
 footnotes <- list(ITT_a = "\\ For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
                   CMC_b = "\\ For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
 
-gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk; TX = treatment; OR = odds ratio.")
+gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; TX = treatment; OR = odds ratio.")
 
 # Run function
 
