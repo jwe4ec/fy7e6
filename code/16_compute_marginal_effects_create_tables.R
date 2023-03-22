@@ -725,15 +725,13 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
 
 # Define general notes
 
-summ_base_str <- "*Note.* Significant differences between contrast levels are in boldface. Separate models were fit for each %s. The latter level of the contrast is the reference group.%s CBM-I = cognitive bias modification for interpretation; %s; TX = treatment; FU = follow-up; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
+summ_base_str <- "*Note.* Significant differences between contrast levels are in boldface. Separate models were fit for each %s. The latter level of the contrast is the reference group. %s TX = treatment; FU = follow-up; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
 
 gen_note_a1 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome", 
-  " Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations).",
-  "Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval")))
+  "Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval;")))
 
 gen_note_a2 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome and contrast",
-  " Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations).",
-  "HPD CI = Highest Posterior Density Credible Interval")))
+  "Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). HPD CI = Highest Posterior Density Credible Interval; CBM-I = cognitive bias modification for interpretation; HR = High Risk; LR = Low Risk;")))
 
 # Run function
 
