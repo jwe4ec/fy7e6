@@ -24,9 +24,17 @@ source("./code/01_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control()
+groundhog_day <- version_control_tables_plots()
 
-# No packages loaded
+# Load packages
+
+pkgs <- c("flextable", "officer", "ftExtra")
+groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
+
+# Set "flextable" package defaults and load "officer" package properties
+
+source("./code/01b_set_flextable_defaults.R")
+source("./code/01c_set_officer_properties.R")
 
 # ---------------------------------------------------------------------------- #
 # Import data ----
@@ -335,8 +343,12 @@ compute_desc <- function(df) {
   # Compute mean and standard deviation for numeric variables
   
   num_res <- data.frame(label = "Age (years): M (SD)",
-                        value = paste0(round(mean(df$age, na.rm = TRUE), 2), 
-                                       " (", round(sd(df$age, na.rm = TRUE), 2), ")"))
+                        value = paste0(format(round(mean(df$age, na.rm = TRUE), 2),
+                                              nsmall = 2, trim = TRUE), 
+                                       " (",
+                                       format(round(sd(df$age, na.rm = TRUE), 2),
+                                              nsmall = 2, trim = TRUE),
+                                       ")"))
   
   # Compute count and percentage for factor variables
   
@@ -350,13 +362,16 @@ compute_desc <- function(df) {
   
   for (i in 1:length(vars)) {
     tbl <- table(df[, vars[i]])
-    prop_tbl <- round(prop.table(tbl)*100, 1)
+    prop_tbl <- prop.table(tbl)*100
     
     tbl_res <- rbind(data.frame(label = var_labels[i],
                                 value = NA),
                      data.frame(label = names(tbl),
                                 value = paste0(as.numeric(tbl),
-                                               " (", as.numeric(prop_tbl), ")")))
+                                               " (", 
+                                               format(round(as.numeric(prop_tbl), 1),
+                                                      nsmall = 1, trim = TRUE),
+                                               ")")))
     fct_res <- rbind(fct_res, tbl_res)
   }
   
@@ -412,6 +427,84 @@ write.csv(res_s5_train_compl_by_cond,
           "./results/demographics/s5_train_compl_by_cond.csv", row.names = FALSE)
 
 # TODO: Add "Prefer not to answer" for age
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Format demographics tables ----
+# ---------------------------------------------------------------------------- #
+
+# "flextable" defaults are set in "set_flextable_defaults.R" above
+
+# Section and text properties are sourced from "set_officer_properties.R" above
+
+# TODO: Define function to format demographics tables
+
+
+
+
+
+format_dem_tbl <- function(dem_tbl, analysis_sample, gen_note, title) {
+  left_align_body_cols <- "label"
+  
+  # Create flextable
+  
+  dem_tbl_ft <- flextable(dem_tbl) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)), word_stylename = "heading 1",
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    set_header_labels(label = "Label",
+                      LR_TRAINING = "CBM-I LR",
+                      HR_NO_COACH = "CBM-I HR No Coaching",
+                      HR_COACH    = "CBM-I HR Coaching")
+    
+  if (analysis_sample == "itt") {
+    dem_tbl_ft <- dem_tbl_ft |>
+      set_header_labels(TRAINING  = "CBM-I (Not Classified)",
+                        CTRL_cls  = "Psychoed. (Classified)",
+                        CTRL_ncls = "Psychoed. (Not Classified)")
+  } else if (analysis_sample == "s5_train_compl") {
+    dem_tbl_ft <- dem_tbl_ft |>
+      set_header_labels(CTRL_cls  = "Psychoed.")
+  }
+  
+  dem_tbl_ft <- dem_tbl_ft |>
+    add_footer_lines(gen_note) |>
+    
+    autofit()
+}
+
+# Define general notes
+
+gen_note_itt <- as_paragraph_md("*Note.* INSERT (re classified and not). CBM-I = cognitive bias modification for interpretation; LR = Low Risk; HR = High Risk.")
+gen_note_s5_train_compl <- as_paragraph_md("*Note.* INSERT (re which Session 5 training completer sample is used). CBM-I = cognitive bias modification for interpretation; LR = Low Risk; HR = High Risk.")
+
+# Run function
+
+dem_tbl_itt_by_cond_ft <-
+  format_dem_tbl(res_itt_by_cond, "itt", gen_note_itt,
+  "Demographic Characteristics by Condition for Intent-To-Treat Sample")
+
+dem_tbl_s5_train_compl_by_cond_ft <-
+  format_dem_tbl(res_s5_train_compl_by_cond, "s5_train_compl", gen_note_s5_train_compl,
+  "Demographic Characteristics by Condition for Session 5 Training Completer Sample")
+
+# ---------------------------------------------------------------------------- #
+# TODO: Write demographics tables to MS Word ----
+# ---------------------------------------------------------------------------- #
+
+# Write demographics tables (Note: "flextable" seems to have a bug in which blank 
+# page is at end of doc)
 
 
 
