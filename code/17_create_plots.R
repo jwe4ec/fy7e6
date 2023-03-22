@@ -34,7 +34,7 @@ groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
 # Load "officer" package properties
 
-source("./code/16_set_officer_properties.R")
+source("./code/01c_set_officer_properties.R")
 
 # ---------------------------------------------------------------------------- #
 # Import results and parameter labels ----

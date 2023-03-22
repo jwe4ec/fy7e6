@@ -3,7 +3,7 @@
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
-# Set section and text properties that can be sourced across scripts
+# Set section and text properties that can be sourced in other scripts
 
 psect_prop <- prop_section(page_size(orient = "portrait", width = 8.5, height = 11),
                            type = "nextPage")

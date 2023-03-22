@@ -31,9 +31,10 @@ groundhog_day <- version_control_tables_plots()
 pkgs <- c("tidyr", "flextable", "officer", "ftExtra")
 groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
-# Load "officer" package properties
+# Set "flextable" package defaults and load "officer" package properties
 
-source("./code/16_set_officer_properties.R")
+source("./code/01b_set_flextable_defaults.R")
+source("./code/01c_set_officer_properties.R")
 
 # ---------------------------------------------------------------------------- #
 # Import results and parameter labels ----
@@ -278,22 +279,18 @@ dir.create(marg_eff_path)
 save(res_trm_eff_c1_2000bs, file = paste0(marg_eff_path, "res_trm_eff_c1_2000bs.RData"))
 
 # ---------------------------------------------------------------------------- #
-# Set "flextable" defaults and define section and text properties ----
+# Set "flextable" defaults and section and text properties ----
 # ---------------------------------------------------------------------------- #
 
-# Set defaults for "flextable" package (mimic those of MS Word)
-
-set_flextable_defaults(font.size = 12, font.family = "Times New Roman", font.color = "black", 
-                       border.width = 0.5, border.color = "black",
-                       padding.bottom = 0, padding.top = 0, 
-                       padding.left = 0.08, padding.right = 0.08,
-                       line_spacing = 1)
+# "flextable" defaults are set in "set_flextable_defaults.R" above
 
 # Section and text properties are sourced from "set_officer_properties.R" above
 
 # ---------------------------------------------------------------------------- #
 # Format full tables ----
 # ---------------------------------------------------------------------------- #
+
+# "flextable" defaults are set in "set_flextable_defaults.R" above
 
 # Define function to format full tables
 
@@ -898,9 +895,9 @@ summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note, footnotes,
 # Write summary tables to MS Word ----
 # ---------------------------------------------------------------------------- #
 
-# Write summary tables (Note: "flextable" seems to have a bug in which blank 
+# Write summary tables. (Note: "flextable" seems to have a bug in which blank 
 # page is at end of doc. Also, a border issue involving "merge_v_cols" needs 
-# to be manually fixed after export to Word)
+# to be manually fixed after export to Word.)
 
 summ_tbls <- list(summ_tbl_eff_a1_itt_ft,
                   marg_summ_tbl_eff_a1_itt_ft,
