@@ -191,7 +191,7 @@ rm(res_eff_c2_4_1000000iter)
 # Compute marginal effects and create tables ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to create marginal effects table for "a1" efficacy models
+# Define function to create marginal effects table for "a1" models
 
 create_marg_tbl <- function(results_trim, param_labels) {
   # Extract model info and raw full table
@@ -199,7 +199,7 @@ create_marg_tbl <- function(results_trim, param_labels) {
   model_info   <- results_trim$model_info
   full_tbl_raw <- results_trim$full_tbl_raw
   
-  # Compute phase-specific slopes and time-specific outcomes by contrast level
+  # Structure means in wide data frame
   
   m <- full_tbl_raw[, c("param", "mean")]
   
@@ -208,26 +208,48 @@ create_marg_tbl <- function(results_trim, param_labels) {
   
   m_wd <- pivot_wider(m, names_from = "param", values_from = "mean")
   
-  m_wd$marg_1  <- m_wd$beta_9  + m_wd$beta_10  # Effect of time for a = 1 during TX
-  m_wd$marg_2  <- m_wd$beta_17 + m_wd$beta_18  # Effect of time for a = 1 during FU
-  m_wd$marg_3  <- m_wd$beta_9  - m_wd$beta_10  # Effect of time for a = -1 during TX
-  m_wd$marg_4  <- m_wd$beta_17 - m_wd$beta_18  # Effect of time for a = -1 during FU
+  if (model_info$analysis_type == "efficacy") {
+    # Compute phase-specific slopes and time-specific outcomes by contrast level
+    
+    m_wd$marg_1  <- m_wd$beta_9  + m_wd$beta_10  # Effect of time for a = 1 during TX
+    m_wd$marg_2  <- m_wd$beta_17 + m_wd$beta_18  # Effect of time for a = 1 during FU
+    m_wd$marg_3  <- m_wd$beta_9  - m_wd$beta_10  # Effect of time for a = -1 during TX
+    m_wd$marg_4  <- m_wd$beta_17 - m_wd$beta_18  # Effect of time for a = -1 during FU
+    
+    m_wd$marg_5  <- m_wd$beta_1 + m_wd$beta_2    # Time-specific means for a = 1 from baseline to FU
+    m_wd$marg_6  <- m_wd$beta_1 + m_wd$beta_2 +   m_wd$beta_9 +   m_wd$beta_10
+    m_wd$marg_7  <- m_wd$beta_1 + m_wd$beta_2 + 2*m_wd$beta_9 + 2*m_wd$beta_10
+    m_wd$marg_8  <- m_wd$beta_1 + m_wd$beta_2 + 3*m_wd$beta_9 + 3*m_wd$beta_10
+    m_wd$marg_9  <- m_wd$beta_1 + m_wd$beta_2 + 4*m_wd$beta_9 + 4*m_wd$beta_10
+    m_wd$marg_10 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10
+    m_wd$marg_11 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10 + m_wd$beta_17 + m_wd$beta_18
+    
+    m_wd$marg_12 <- m_wd$beta_1 - m_wd$beta_2    # Time-specific means for a = -1 from baseline to FU
+    m_wd$marg_13 <- m_wd$beta_1 - m_wd$beta_2 +   m_wd$beta_9 -   m_wd$beta_10
+    m_wd$marg_14 <- m_wd$beta_1 - m_wd$beta_2 + 2*m_wd$beta_9 - 2*m_wd$beta_10
+    m_wd$marg_15 <- m_wd$beta_1 - m_wd$beta_2 + 3*m_wd$beta_9 - 3*m_wd$beta_10
+    m_wd$marg_16 <- m_wd$beta_1 - m_wd$beta_2 + 4*m_wd$beta_9 - 4*m_wd$beta_10
+    m_wd$marg_17 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10
+    m_wd$marg_18 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10 + m_wd$beta_17 - m_wd$beta_18
+  } else if (model_info$analysis_type == "dropout") {
+    m_wd$marg_1  <- m_wd$beta_1 + m_wd$beta_2                 # Log incident rate for a = 1
+    m_wd$marg_2  <- exp(m_wd$marg_1)                          # Incident rate for a = 1
+    
+    m_wd$marg_3  <- m_wd$beta_9 + m_wd$beta_10                # Log odds for a = 1
+    m_wd$marg_4  <- exp(m_wd$marg_3)                          # Odds for a = 1
+    m_wd$marg_5  <- exp(m_wd$marg_3) / (1 + exp(m_wd$marg_3)) # Prob. for a = 1
+    
+    m_wd$marg_6  <- m_wd$beta_1 - m_wd$beta_2                 # Log incident rate for a = -1
+    m_wd$marg_7  <- exp(m_wd$marg_6)                          # Incident rate for a = -1
+    
+    m_wd$marg_8  <- m_wd$beta_9 - m_wd$beta_10                # Log odds for a = -1
+    m_wd$marg_9  <- exp(m_wd$marg_8)                          # Odds for a = -1
+    m_wd$marg_10 <- exp(m_wd$marg_8) / (1 + exp(m_wd$marg_8)) # Prob. for a = -1
+    
+    m_wd$marg_11 <- exp(m_wd$para_1)             # Incident rate ratio for contrast diff.
+  }
   
-  m_wd$marg_5  <- m_wd$beta_1 + m_wd$beta_2    # Time-specific means for a = 1 from baseline to FU
-  m_wd$marg_6  <- m_wd$beta_1 + m_wd$beta_2 +   m_wd$beta_9 +   m_wd$beta_10
-  m_wd$marg_7  <- m_wd$beta_1 + m_wd$beta_2 + 2*m_wd$beta_9 + 2*m_wd$beta_10
-  m_wd$marg_8  <- m_wd$beta_1 + m_wd$beta_2 + 3*m_wd$beta_9 + 3*m_wd$beta_10
-  m_wd$marg_9  <- m_wd$beta_1 + m_wd$beta_2 + 4*m_wd$beta_9 + 4*m_wd$beta_10
-  m_wd$marg_10 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10
-  m_wd$marg_11 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10 + m_wd$beta_17 + m_wd$beta_18
-  
-  m_wd$marg_12 <- m_wd$beta_1 - m_wd$beta_2    # Time-specific means for a = -1 from baseline to FU
-  m_wd$marg_13 <- m_wd$beta_1 - m_wd$beta_2 +   m_wd$beta_9 -   m_wd$beta_10
-  m_wd$marg_14 <- m_wd$beta_1 - m_wd$beta_2 + 2*m_wd$beta_9 - 2*m_wd$beta_10
-  m_wd$marg_15 <- m_wd$beta_1 - m_wd$beta_2 + 3*m_wd$beta_9 - 3*m_wd$beta_10
-  m_wd$marg_16 <- m_wd$beta_1 - m_wd$beta_2 + 4*m_wd$beta_9 - 4*m_wd$beta_10
-  m_wd$marg_17 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10
-  m_wd$marg_18 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10 + m_wd$beta_17 - m_wd$beta_18
+  # Structure computed values in long data frame
   
   m <- pivot_longer(m_wd, cols = everything(), names_to = "param", values_to = "estimate")
   
@@ -267,16 +289,18 @@ create_marg_tbl <- function(results_trim, param_labels) {
   return(results_trim)
 }
 
-# Run function for "a1" efficacy models
+# Run function for "a1" models
 
 res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, create_marg_tbl, eff_param_labels)
+res_trm_drp_c1_2000bs <- lapply(res_trm_drp_c1_2000bs, create_marg_tbl, drp_param_labels)
 
 # Save object with marginal effects for plotting
 
-marg_eff_path <- c("./results/bayesian/pooled/w_marg_effects/")
-dir.create(marg_eff_path)
+marg_path <- c("./results/bayesian/pooled/w_marg_effects/")
+dir.create(marg_path)
 
-save(res_trm_eff_c1_2000bs, file = paste0(marg_eff_path, "res_trm_eff_c1_2000bs.RData"))
+save(res_trm_eff_c1_2000bs, file = paste0(marg_path, "res_trm_eff_c1_2000bs.RData"))
+save(res_trm_drp_c1_2000bs, file = paste0(marg_path, "res_trm_drp_c1_2000bs.RData"))
 
 # ---------------------------------------------------------------------------- #
 # Set "flextable" defaults and section and text properties ----
@@ -587,12 +611,12 @@ summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_trm_eff_c2_4_1000000iter
 summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "c2_4_s5_train_compl")
 
 # ---------------------------------------------------------------------------- #
-# Create marginal effects summary table ----
+# Create marginal effects summary table for efficacy models ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to create marginal effects summary table for "a1" efficacy models
 
-create_marg_summ_tbl <- function(results_trim_list, analysis_sample) {
+create_marg_summ_tbl_eff <- function(results_trim_list, analysis_sample) {
   # Put all results in one data frame
   
   marg_tbl_list <- lapply(results_trim_list, function(x) x$marg_tbl)
@@ -638,8 +662,54 @@ create_marg_summ_tbl <- function(results_trim_list, analysis_sample) {
 
 # Run function
 
-marg_summ_tbl_eff_a1_itt              <- create_marg_summ_tbl(res_trm_eff_c1_2000bs, "c1_corr_itt_2000")
-marg_summ_tbl_eff_a1_s5_train_compl   <- create_marg_summ_tbl(res_trm_eff_c1_2000bs, "c1_corr_s5_train_compl_2000")
+marg_summ_tbl_eff_a1_itt            <- create_marg_summ_tbl_eff(res_trm_eff_c1_2000bs, 
+                                                                "c1_corr_itt_2000")
+marg_summ_tbl_eff_a1_s5_train_compl <- create_marg_summ_tbl_eff(res_trm_eff_c1_2000bs, 
+                                                                "c1_corr_s5_train_compl_2000")
+
+# ---------------------------------------------------------------------------- #
+# Create marginal effects summary table for dropout models ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to create marginal effects summary table for "a1" dropout model
+
+create_marg_summ_tbl_drp <- function(results_trim_list) {
+  # Put all results in one data frame
+  
+  marg_tbl_list <- lapply(results_trim_list, function(x) x$marg_tbl)
+  
+  summ_tbl <- do.call(rbind, marg_tbl_list)
+  row.names(summ_tbl) <- 1:nrow(summ_tbl)
+  
+  # Add column for treatment arm
+  
+  summ_tbl$arm <- NA
+  summ_tbl$arm[summ_tbl$param %in% c("marg[1]", "marg[2]", "marg[3]", 
+                                     "marg[4]", "marg[5]")] <- "CBM-I"
+  summ_tbl$arm[summ_tbl$param %in% c("marg[6]", "marg[7]", "marg[8]",
+                                     "marg[9]", "marg[10]")] <- "Psychoeducation"
+  
+  # TODO: Ultimately move this parameter to dropout summary table
+  
+  summ_tbl$arm[summ_tbl$param == "marg[11]"] <- "CBM-I vs. Psychoeducation"
+  
+  
+  
+  
+  
+  # Sort table
+  
+  param_order <- c("marg[3]", "marg[4]", "marg[5]", "marg[8]", "marg[9]", 
+                   "marg[10]", "marg[1]", "marg[2]", "marg[6]", "marg[7]")
+  
+  summ_tbl <- summ_tbl[order(match(summ_tbl$param, param_order)), ]
+  
+  return(summ_tbl)
+}
+
+# Run function
+
+marg_summ_tbl_drp_a1_itt <- create_marg_summ_tbl_drp(res_trm_drp_c1_2000bs)
 
 # ---------------------------------------------------------------------------- #
 # Format efficacy summary tables ----
@@ -863,7 +933,7 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
                          "a2_2"                  = "CBM-I HR Coaching vs. CBM-I LR",
                          "a2_3"                  = "CBM-I HR No Coaching vs. CBM-I LR",
                          "para[3]"               = "Not completing TX (OR)",
-                         "para[1]"               = "No. incomplete sessions")) |>
+                         "para[1]"               = "Log No. incompl. sessions")) |>
     
     add_footer_lines(gen_note) |>
     
@@ -882,12 +952,77 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
 footnotes <- list(ITT_a = "\\ For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
                   CMC_b = "\\ For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
 
-gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session; the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session. Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; TX = treatment; OR = odds ratio.")
+gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session (the odds ratio comparing the contrast levels is shown); the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session (the difference between contrast levels in the log of the number of incomplete sessions is shown). Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; TX = treatment; OR = odds ratio.")
 
 # Run function
 
 summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note, footnotes,
   "Stages 1-2 Dropout Results for Intent-To-Treat (ITT) and Classification Measure Completer (CMC) Samples")
+
+# ---------------------------------------------------------------------------- #
+# Format dropout summary table for marginal estimates ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to format marginal estimates summary table for "a1" dropout model
+
+format_marg_summ_tbl_drp <- function(marg_summ_tbl, gen_note, title) {
+  target_cols <- c("model", "arm", "param", "estimate")
+  left_align_body_cols <- c("model", "arm", "param")
+  merge_v_cols         <- c("model", "arm")
+  
+  # Create flextable
+  
+  marg_summ_tbl_ft <- flextable(data = marg_summ_tbl[, target_cols]) |>
+    set_table_properties(align = "left") |>
+    
+    set_caption(as_paragraph(as_i(title)),
+                fp_p = fp_par(padding.left = 0, padding.right = 0),
+                align_with_table = FALSE) |>
+    
+    align(align = "center", part = "header") |>
+    align(align = "center", part = "body") |>
+    align(j = left_align_body_cols, align = "left", part = "body") |>
+    align(align = "left", part = "footer") |>
+    
+    merge_v(j = merge_v_cols, part = "body") |>
+    valign(j = merge_v_cols, valign = "top", part = "body") |>
+    fix_border_issues(part = "body") |>
+    
+    set_header_labels(model                = "Model",
+                      arm                  = "Contrast Level",
+                      param                = "Estimand",
+                      estimate             = "Estimate") |>
+    
+    labelizor(part = "body",
+              labels = c("substantive mixture model (zero-inflation model)" = "Zero-inflation",
+                         "substantive mixture model (count model)" = "Count",
+                         "marg[3]"  = "Log odds of not completing TX",
+                         "marg[4]"  = "Odds of not completing TX",
+                         "marg[5]"  = "Probability of not completing TX",
+                         "marg[8]"  = "Log odds of not completing TX",
+                         "marg[9]"  = "Odds of not completing TX",
+                         "marg[10]" = "Probability of not completing TX",
+                         "marg[1]"  = "Log No. of incomplete sessions",
+                         "marg[2]"  = "No. of incomplete sessions (incident rate)",
+                         "marg[6]"  = "Log No. of incomplete sessions",
+                         "marg[7]"  = "No. of incomplete sessions (incident rate)",
+                         "marg[11]" = "Incident rate ratio")) |>
+    
+    add_footer_lines(gen_note) |>
+    
+    autofit()
+  
+  return(marg_summ_tbl_ft)
+}
+
+# Define general notes
+
+gen_note <- as_paragraph_md("*Note.* Estimates were computed from pooled mixture model parameters. CBM-I = cognitive bias modification for interpretation; TX = treatment.")
+
+# Run function
+
+marg_summ_tbl_drp_a1_itt_ft <- format_marg_summ_tbl_drp(marg_summ_tbl_drp_a1_itt, gen_note,
+  "Stage 1 Marginal Dropout Estimates for Intent-To-Treat Sample")
 
 # ---------------------------------------------------------------------------- #
 # Write summary tables to MS Word ----
@@ -901,12 +1036,13 @@ summ_tbls <- list(summ_tbl_eff_a1_itt_ft,
                   marg_summ_tbl_eff_a1_itt_ft,
                   summ_tbl_eff_a2_class_meas_compl_ft,
                   summ_tbl_drp_ft,
+                  marg_summ_tbl_drp_a1_itt_ft,
                   summ_tbl_eff_a1_s5_train_compl_ft,
                   marg_summ_tbl_eff_a1_s5_train_compl_ft,
                   summ_tbl_eff_a2_s5_train_compl_ft)
 
-summ_tbl_orientations <- c("p", "p", "l", "l", "p", "p", "l")
-summ_tbl_numbers <- c("1", "2", "3", "4", "SA5", "SA6", "SA7")
+summ_tbl_orientations <- c("p", "p", "l", "l", "l", "p", "p", "l")
+summ_tbl_numbers <- c("1", "2", "3", "4", "5", "SA5", "SA6", "SA7")
 
 doc <- read_docx()
 doc <- body_set_default_section(doc, psect_prop)
