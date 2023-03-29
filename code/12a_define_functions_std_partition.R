@@ -192,13 +192,30 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
     
     r_mat <- is.na(y_mat)
     
+      # Compute individual and pooled within-group standard deviations at baseline
+      # based on observed data
+    
+    y_var_at_baseline <- paste0(y_var, ".", 1)
+    
+    bl_sd_grp1 <- sd(df[df[, a_contrast] == -1, y_var_at_baseline], na.rm = TRUE)
+    bl_sd_grp2 <- sd(df[df[, a_contrast] == 1,  y_var_at_baseline], na.rm = TRUE)
+    
+    n_grp1 <- sum(df[, a_contrast] == -1)
+    n_grp2 <- sum(df[, a_contrast] == 1)
+    
+    bl_sd_pooled <- sqrt(((n_grp1 - 1)*bl_sd_grp1^2 + (n_grp2 - 1)*bl_sd_grp2^2) / 
+                           (n_grp1 + n_grp2 - 2))
+    
       # Add time-varying elements to list
     
-    jags_dat_time_varying <- list(J  = length(assessed_at_j),
-                                  t1 = t1,
-                                  t2 = t2,
-                                  y  = y_mat,
-                                  r  = r_mat)
+    jags_dat_time_varying <- list(J            = length(assessed_at_j),
+                                  t1           = t1,
+                                  t2           = t2,
+                                  y            = y_mat,
+                                  r            = r_mat,
+                                  bl_sd_grp1   = bl_sd_grp1,
+                                  bl_sd_grp2   = bl_sd_grp2,
+                                  bl_sd_pooled = bl_sd_pooled)
     
     jags_dat <- append(jags_dat, jags_dat_time_varying)
   }

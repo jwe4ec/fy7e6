@@ -257,13 +257,13 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
   if (y_var == "miss_session_train_sum") {
     # For time-invariant outcome
     
-    # Add time-invariant y to list
+      # Add time-invariant y to list
     
     jags_dat_time_invariant <- list(y = df[, y_var])
     
     jags_dat <- append(jags_dat, jags_dat_time_invariant)
     
-    # Remove unneeded elements
+      # Remove unneeded elements
     
     rm_elements <- c("gender_col", "gender_col_imp", "device_col_bin",
                      "gndr_Male", "gndr_Trans_or_Other", "dvce_multiple_types")
@@ -273,7 +273,7 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
   } else {
     # For time-varying outcome
     
-    # Define piecewise linear time variables
+      # Define piecewise linear time variables
     
     if (y_var %in% c("rr_neg_threat_m", "rr_pos_threat_m",
                      "bbsiq_neg_m", "bbsiq_ben_m", "dass21_as_m")) {
@@ -286,21 +286,38 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
       t2            <- c(0, 0, 0, 0, 0, 0, 1)
     }
     
-    # Create matrix for outcome
+      # Create matrix for outcome
     
     y_mat <- as.matrix(df[, paste0(y_var, ".", assessed_at_j)])
     
-    # Create missing data indicator matrix for outcome (0 = present, 1 = missing)
+      # Create missing data indicator matrix for outcome (0 = present, 1 = missing)
     
     r_mat <- is.na(y_mat)
     
-    # Add time-varying elements to list
+      # Compute individual and pooled within-group standard deviations at baseline
+      # based on observed data
     
-    jags_dat_time_varying <- list(J  = length(assessed_at_j),
-                                  t1 = t1,
-                                  t2 = t2,
-                                  y  = y_mat,
-                                  r  = r_mat)
+    y_var_at_baseline <- paste0(y_var, ".", 1)
+    
+    bl_sd_grp1 <- sd(df[df[, a_contrast] == -1, y_var_at_baseline], na.rm = TRUE)
+    bl_sd_grp2 <- sd(df[df[, a_contrast] == 1,  y_var_at_baseline], na.rm = TRUE)
+    
+    n_grp1 <- sum(df[, a_contrast] == -1)
+    n_grp2 <- sum(df[, a_contrast] == 1)
+    
+    bl_sd_pooled <- sqrt(((n_grp1 - 1)*bl_sd_grp1^2 + (n_grp2 - 1)*bl_sd_grp2^2) / 
+                           (n_grp1 + n_grp2 - 2))
+    
+      # Add time-varying elements to list
+    
+    jags_dat_time_varying <- list(J            = length(assessed_at_j),
+                                  t1           = t1,
+                                  t2           = t2,
+                                  y            = y_mat,
+                                  r            = r_mat,
+                                  bl_sd_grp1   = bl_sd_grp1,
+                                  bl_sd_grp2   = bl_sd_grp2,
+                                  bl_sd_pooled = bl_sd_pooled)
     
     jags_dat <- append(jags_dat, jags_dat_time_varying)
   }
