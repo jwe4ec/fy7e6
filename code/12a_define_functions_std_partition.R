@@ -197,11 +197,11 @@ specify_jags_dat <- function(df, a_contrast, y_var) {
     
     y_var_at_baseline <- paste0(y_var, ".", 1)
     
-    bl_sd_grp1 <- sd(df[df[, a_contrast] == -1, y_var_at_baseline], na.rm = TRUE)
-    bl_sd_grp2 <- sd(df[df[, a_contrast] == 1,  y_var_at_baseline], na.rm = TRUE)
+    bl_sd_grp1 <- sd(df[df[, a_contrast] == 1, y_var_at_baseline], na.rm = TRUE)
+    bl_sd_grp2 <- sd(df[df[, a_contrast] == -1,  y_var_at_baseline], na.rm = TRUE)
     
-    n_grp1 <- sum(df[, a_contrast] == -1)
-    n_grp2 <- sum(df[, a_contrast] == 1)
+    n_grp1 <- sum(df[, a_contrast] == 1)
+    n_grp2 <- sum(df[, a_contrast] == -1)
     
     bl_sd_pooled <- sqrt(((n_grp1 - 1)*bl_sd_grp1^2 + (n_grp2 - 1)*bl_sd_grp2^2) / 
                            (n_grp1 + n_grp2 - 2))
