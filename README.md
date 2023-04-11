@@ -62,12 +62,6 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ## TODOs
 
-- Compute GMA d
-- Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
-- Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
-
-### Hold
-
 - Revise Scripts 14a-14d for reproducibility (e.g., fix file paths, confirm package versions)
 - Remove selected results to decrease file size
   - Remove remaining `model_samples_*.RData` and `plots_*.pdf` for `a1` models with 500 bootstrap samples (see Script 13)
@@ -77,7 +71,13 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
   - Simple effects of time by treatment arm
   - Time-specific means by treatment arm
   - Marginal effects for dropout models (note: make "marg[11]" one of the "para" parameters)
-  
+  - Compute GMA d
+
+- Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
+- Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
+
+### Hold
+
 - Resolve TOC issue for full tables
 - Resolve border issue in some summary tables
 - Resolve border issue in demographics tables
