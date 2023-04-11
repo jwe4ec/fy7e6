@@ -69,21 +69,15 @@ rm_files <- function(anlys_path_pattern, file_pattern) {
       file.remove(rm_filepaths[i])
     }
   }
-  
 }
 
-# TODO (not all relevant efficacy files are being removed) Run function for each 
-# analysis type for "a1" ("c1_") models (one file pattern at a time; these objects
-# were saved only for models based on 500 bootstrap samples)
+# Run function for each analysis type for "a1" ("c1_") models (one file pattern at
+# a time; these objects were saved only for models based on 500 bootstrap samples)
 
 rm_files("dropout/out/c1_500",  "model_samples_")
 rm_files("dropout/out/c1_500",  "plots_")
 rm_files("efficacy/out/c1_500", "model_samples_")
 rm_files("efficacy/out/c1_500", "plots_")
-
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # Trim results from "results.RData" ----
@@ -138,10 +132,24 @@ trim_results <- function(anlys_path_pattern) {
 }
 
 # Run function for each analysis type for "a1" ("c1_"; these objects were saved 
-# only for models based on 500 bootstrap samples) and "a2" ("c2_4_"; these objects
-# were saved only for models based on 20,000 iterations) models
+# only for initial models based on 500 bootstrap samples) and "a2" ("c2_4_"; these 
+# objects were saved only for initial models based on 20,000 iterations, which is
+# a restriction implemented in the trim_results function itself) models
 
 trim_results("dropout/out/c1_500")
 trim_results("dropout/out/c2_4_")
 trim_results("efficacy/out/c1_500")
 trim_results("efficacy/out/c2_4_")
+
+# ---------------------------------------------------------------------------- #
+# Remove "results.RData" for models with "results_trim.RData" ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: Remove "results.RData" files for "a1" models based on 500 bs samples and 
+# "a2" models based on 20,000 iterations (which now have "results_trim.RData" files)
+
+
+
+
+
+
