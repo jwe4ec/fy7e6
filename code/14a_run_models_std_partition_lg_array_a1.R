@@ -91,8 +91,7 @@ if (!dir.exists(out_path)) {
 # contents, revised, appear outside any function in Section "Run Analyses" below.
 
 # 2. In "run_jags_model()", we no longer save posterior samples ("model_samples") 
-# or plots of the MCMC object "model_res". We also no longer include the model 
-# ("jags_model") or "model_res" in the returned list of results ("results").
+# or plots of the MCMC object "model_res"
 
 # 3. In "create_parameter_table()", for "a1" analyses we use 2000 bootstrap samples
 # instead of 6800 bootstrap samples.
