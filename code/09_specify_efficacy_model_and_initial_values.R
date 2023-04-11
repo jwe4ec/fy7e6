@@ -166,11 +166,11 @@ model_string = "model {
   # Store parameters of interest into list called para so that we can get HPD
   # credible intervals for them all
   
-  para[1] <- 2*beta[2] + 10*beta[10]               # Contrast difference in outcome at Session 5
-  para[2] <- 2*beta[2] + 10*beta[10] + 2*beta[18]  # Contrast difference in outcome at follow-up
+  para[1] <- 2*beta[2] + 10*beta[10]               # Contrast difference in S5 mean
+  para[2] <- 2*beta[2] + 10*beta[10] + 2*beta[18]  # Contrast difference in FU mean
 
-  para[3] <- 2*beta[10]               # Contrast difference in t1 slope (baseline to Session 5)
-  para[4] <- 2*beta[18]               # Contrast difference in t2 slope (Session 5 to follow-up)
+  para[3] <- 2*beta[10]               # Contrast difference in t1 slope (BL to S5)
+  para[4] <- 2*beta[18]               # Contrast difference in t2 slope (S5 to FU)
   
   para[5] <- sig_RI
   para[6] <- sig_RS1
@@ -185,6 +185,39 @@ model_string = "model {
   para[13] <- rho_2_3
   
   para[14] <- sig_e2
+  
+  # Store additional parameters for marginal effects and GMA d effect size
+  
+  para[15] <- beta[9]  + beta[10]  # t1 slope for a = 1
+  para[16] <- beta[17] + beta[18]  # t2 slope for a = 1
+  para[17] <- beta[9]  - beta[10]  # t1 slope for a = -1
+  para[18] <- beta[17] - beta[18]  # t2 slope for a = -1
+  
+  para[19] <- beta[1] + beta[2]    # Time-specific means for a = 1 from BL to FU
+  para[20] <- beta[1] + beta[2] +   beta[9] +   beta[10]
+  para[21] <- beta[1] + beta[2] + 2*beta[9] + 2*beta[10]
+  para[22] <- beta[1] + beta[2] + 3*beta[9] + 3*beta[10]
+  para[23] <- beta[1] + beta[2] + 4*beta[9] + 4*beta[10]
+  para[24] <- beta[1] + beta[2] + 5*beta[9] + 5*beta[10]
+  para[25] <- beta[1] + beta[2] + 5*beta[9] + 5*beta[10] + beta[17] + beta[18]
+  
+  para[26] <- beta[1] - beta[2]    # Time-specific means for a = -1 from BL to FU
+  para[27] <- beta[1] - beta[2] +   beta[9] -   beta[10]
+  para[28] <- beta[1] - beta[2] + 2*beta[9] - 2*beta[10]
+  para[29] <- beta[1] - beta[2] + 3*beta[9] - 3*beta[10]
+  para[30] <- beta[1] - beta[2] + 4*beta[9] - 4*beta[10]
+  para[31] <- beta[1] - beta[2] + 5*beta[9] - 5*beta[10]
+  para[32] <- beta[1] - beta[2] + 5*beta[9] - 5*beta[10] + beta[17] - beta[18]
+  
+  para[33] <- 10*beta[10]/bl_sd_pooled                                  # Btw-grp d at S5 (adj.)
+  para[34] <- (10*beta[10] + 2*beta[18])/bl_sd_pooled                   # Btw-grp d at FU (adj.)
+  para[35] <- (2*beta[2] + 10*beta[10])/bl_sd_pooled                    # Btw-grp d at S5 (unadj.)
+  para[36] <- (2*beta[2] + 10*beta[10] + 2*beta[18])/bl_sd_pooled       # Btw-grp d at FU (unadj.)
+  												         
+  para[37] <- (5*beta[9] + 5*beta[10])/bl_sd_grp1                       # Wtn-grp d for a = 1 at S5
+  para[38] <- (5*beta[9] + 5*beta[10] + beta[17] + beta[18])/bl_sd_grp1 # Wtn-grp d for a = 1 at FU
+  para[39] <- (5*beta[9] - 5*beta[10])/bl_sd_grp2                       # Wtn-grp d for a = -1 at S5
+  para[40] <- (5*beta[9] - 5*beta[10] + beta[17] - beta[18])/bl_sd_grp2 # Wtn-grp d for a = -1 at FU
 }
 "
 
