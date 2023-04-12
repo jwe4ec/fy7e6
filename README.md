@@ -29,6 +29,10 @@ Scripts 14a-14d were used to run the "a1" analysis models in parallel on the Sta
 
 We tried to run "a1" models in parallel on the [Parallel](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/), which uses multiple cores across multiple nodes (nodes communicate with one another using Message Passing Interface). However, we abandoned this approach due to long run times; these scripts may have unresolved issues and inaccurate comments.
 
+<details>
+
+<summary>Scripts</summary>
+
 Scripts 13a-13d were used to try running the "a1" models using 6,800 bootstrap samples with 20,000 iterations.
 - A single desired model is run via `13c_run_single_model_a1.sh i` on Rivanna's CLI, where `i` is the row number of `parameter_table` for the desired model.
   - This script uses `i` to update the name of the job outfile and to define `myNum` in `13b_run_models_parallel_partition_a1.slurm`. It then submits the Slurm script, which passes `myNum` to `13a_run_models_parallel_partition_a1.R`.
@@ -40,6 +44,8 @@ Scripts 14a-14f are updated versions of 13a-13d. We tried to analyze 2,000 boots
 - Scripts 14d-14e concatenate the results across all subsets into one list for the model. Script 14f may be redundant with Script 14e.
 
 Script 15a is an updated version of 14a. The run times were improved but still too long due to Rivanna's limitations.
+
+</details>
 
 ### `psyc_5705_anlys` Folder
 
