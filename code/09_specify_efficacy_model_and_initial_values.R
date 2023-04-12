@@ -166,15 +166,15 @@ model_string = "model {
   # Store parameters of interest into list called para so that we can get HPD
   # credible intervals for them all
   
-  para[1] <- 2*beta[2] + 10*beta[10]               # Contrast difference in S5 mean
-  para[2] <- 2*beta[2] + 10*beta[10] + 2*beta[18]  # Contrast difference in FU mean
+  para[1]  <- 2*beta[2] + 10*beta[10]               # Contrast difference in S5 mean
+  para[2]  <- 2*beta[2] + 10*beta[10] + 2*beta[18]  # Contrast difference in FU mean
 
-  para[3] <- 2*beta[10]               # Contrast difference in t1 slope (BL to S5)
-  para[4] <- 2*beta[18]               # Contrast difference in t2 slope (S5 to FU)
+  para[3]  <- 2*beta[10]               # Contrast difference in t1 slope (BL to S5)
+  para[4]  <- 2*beta[18]               # Contrast difference in t2 slope (S5 to FU)
   
-  para[5] <- sig_RI
-  para[6] <- sig_RS1
-  para[7] <- sig_RS2
+  para[5]  <- sig_RI
+  para[6]  <- sig_RS1
+  para[7]  <- sig_RS2
 
   para[8]  <- cov_1_2
   para[9]  <- cov_1_3

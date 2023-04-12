@@ -127,14 +127,14 @@ model_string = "model {
   # Store parameters of interest into list called para so that we can get HPD
   # credible intervals for them all
   
-  para[1] <- 2*beta[2]    # Contrast diff. in log incident rate for count model
+  para[1]  <- 2*beta[2]    # Contrast diff. in log incident rate for count model
   
-  para[2] <- 2*beta[10]   # Contrast diff. in log odds for zero-inflation model
-  para[3] <- exp(para[2]) # Corresponding odds ratio for zero-inflation model
+  para[2]  <- 2*beta[10]   # Contrast diff. in log odds for zero-inflation model
+  para[3]  <- exp(para[2]) # Corresponding odds ratio for zero-inflation model
   
   # Store additional parameters for incident rate ratio and marginal effects
   
-  para[4] <- exp(para[1]) # Corresponding incident rate ratio for count model
+  para[4]  <- exp(para[1]) # Corresponding incident rate ratio for count model
   
   para[5]  <- beta[1] + beta[2]                   # Log incident rate for a = 1
   para[6]  <- exp(para[5])                        # Incident rate for a = 1
