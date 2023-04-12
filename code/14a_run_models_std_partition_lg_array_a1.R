@@ -20,8 +20,7 @@
 # "a2" contrast models, which involve no bootstrapping, were run on the standard 
 # partition using "12d_run_models_std_partition.R"
 
-# TODO (check this): Packages (e.g., groundhog) must first be installed via a 
-# prior script.
+# TODO (check this): Packages must first be installed via a prior script.
 
 
 
@@ -33,17 +32,35 @@
 # Load packages ----
 # ---------------------------------------------------------------------------- #
 
-# TODO
+# TODO: Check versions of installed packages against those required
+
+installed_pkgs <- as.data.frame(installed.packages())
+
+check_installed_pkg_ver <- function(package, ver_needed, installed_pkgs) {
+  installed_pkg_ver <- installed_pkgs[installed_pkgs$Package == package, ]$Version
+  
+  if (installed_pkg_ver != ver_needed) {
+    stop(paste0("This script is based on ", package, " ver. ", ver_needed,
+                ". You have ", installed_pkg_ver, " installed. Install ", ver_needed, "."))
+  }
+}
+
+check_installed_pkg_ver("fastDummies", "1.6.3", installed_pkgs) # TODO: Just an example
+check_installed_pkg_ver("rjags", "4-13", installed_pkgs)        # Need 4-13
+
+
+
+
+
+# Load packages
 
 library(fastDummies)
+library(rjags)
 
-library(rjags) # TODO: Be sure it's 4-13. And add sessionInfo(). And consider
-# Jackie's code "pkgs <- as.data.frame(installed.packages())"
-# to check that correct version of package is installed. Then
-# pkgs[which(row.names(pkgs) == "rjags"), ]$Version. Then compare
-# to version number installed. If different, halt the code and
-# add message that package version needs to be corrected (use
-# stop command)
+# TODO: Print session info
+
+sessionInfo()
+
 
 
 
@@ -85,44 +102,23 @@ if (!dir.exists(out_path)) {
 # ---------------------------------------------------------------------------- #
 
 # Functions below are identical to those of "12a_define_functions_std_partition.R" 
-# used for models run on the standard partition before, with three exceptions:
+# used for models run on the standard partition before, with four exceptions:
 
-# 1. Script 12a's "run_analysis()" function is no longer defined below; its
+# 1. Script 12a's "load_pkgs_via_groundhog()" function is no longer defined below;
+# rather, package versions are controlled using "check_installed_pkg_ver()" above.
+
+# 2. Script 12a's "run_analysis()" function is no longer defined below; its
 # contents, revised, appear outside any function in Section "Run Analyses" below.
 
-# 2. In "run_jags_model()", we no longer save posterior samples ("model_samples") 
+# 3. In "run_jags_model()", we no longer save posterior samples ("model_samples") 
 # or plots of the MCMC object "model_res"
 
-# 3. In "create_parameter_table()", for "a1" analyses we use 2000 bootstrap samples
+# 4. In "create_parameter_table()", for "a1" analyses we use 2000 bootstrap samples
 # instead of 6800 bootstrap samples.
 
 # Note: Some of these functions refer to "a2" contrasts, but this script is not
 # used for running "a2" models. Nevertheless, we retain the code relevant to "a2"
 # models so that these functions remain nearly identical to those in Script 12a.
-
-# ---------------------------------------------------------------------------- #
-# 1. Define "load_pkgs_via_groundhog()" ----
-# ---------------------------------------------------------------------------- #
-
-# TODO (check rjags version): Define function to load packages via groundhog package. 
-# If packages have not been installed yet, groundhog will install them.
-
-load_pkgs_via_groundhog <- function() {
-  library(groundhog)
-  meta.groundhog("2022-01-01")
-  groundhog_day <- "2022-01-01"
-  
-  parallel_pkgs <- c("iterators", "foreach", "doParallel")
-  anlys_pkgs <- c("fastDummies", "rjags")
-  
-  groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
-  
-  comm.cat("\ngroundhog_day =", groundhog_day, "\n\n")
-}
-
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # 2. Define "impute_mcar_nominal()" ----
