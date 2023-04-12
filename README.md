@@ -62,7 +62,7 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ## TODOs
 
-- Revise Scripts 14a-14d for reproducibility (e.g., fix file paths, confirm package versions)
+- Revise Scripts 14a-14d for reproducibility (e.g., fix file paths)
 - Consider transferring individual results from `scratch` directory before Script 14c was run
 - Rerun "a1" and "a2" models to compute intervals for additional parameters
 
