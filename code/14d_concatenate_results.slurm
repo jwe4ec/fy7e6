@@ -6,7 +6,7 @@
 #SBATCH --account=pactlab
 #SBATCH --output=concat.out
 #SBATCH --mem=34000
-#SBATCH --array=1-12,49
+#SBATCH --array=1-12,49               # Run for all "a1" models
 
 module purge
 module load goolf/7.1.0_3.1.4 R/4.1.1 # Rivanna does not have 4.1.2
