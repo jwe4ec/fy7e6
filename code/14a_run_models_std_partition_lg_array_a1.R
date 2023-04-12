@@ -74,17 +74,11 @@ bs_sample_num <- as.integer(cmdArgs[2])
 # If needed, create directory for output files
 # ---------------------------------------------------------------------------- #
 
-# TODO (perhaps revise directory location)
-
-out_path <- paste0("./test_results_", myNum)
+out_path <- paste0("./results_for_model_", myNum)
 
 if (!dir.exists(out_path)) {
   dir.create(out_path)
 }
-
-
-
-
 
 # ---------------------------------------------------------------------------- #
 # Import data and initial values ----
@@ -93,17 +87,11 @@ if (!dir.exists(out_path)) {
 # Note: Only data based on 2000 bootstrap samples for "a1" models are loaded; we no longer 
 # load data based on 500 bootstrap samples for "a1" models or data for "a2" models.
 
-filename <- paste0("../data/final_clean/wd_c1_corr_itt_2000.RData_", bs_sample_num)
-load(filename)
+load(paste0("../data/final_clean/wd_c1_corr_itt_2000.RData_", bs_sample_num))
+load(paste0("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData_", bs_sample_num))
 
-filename <- paste0("../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData_", bs_sample_num)
-load(filename)
-
-filename <- paste0("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData_", bs_sample_num)
-load(filename)
-
-filename <- paste0("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData_", bs_sample_num)
-load(filename)
+load(paste0("../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData_", bs_sample_num))
+load(paste0("../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData_", bs_sample_num))
 
 # Store initial values and data in lists
 
@@ -149,26 +137,10 @@ if (a_contrast == "a1") {
                                             a_contrast, y_var, total_iterations))
   names(results_list) <- bs_sample_num
   
-  # ************************************************************************** #
-  # TODO: Revise this section as needed to save results outside "/code" folder
-  
-  jmh <- FALSE
-  if (jmh) {
-    # Obtain path for saving results
-    
-    model_results_path_stem <- results_list[[1]]$model_results_path_stem
-    
-    # Create results object
-    
-    results <- list(per_bs_smp = results_list)
-  } # End jmh
-  
-  # ************************************************************************** #
-  
   # Save results list for a given bootstrap sample. Results across bootstrap
   # samples are concatenated in a separate script.
   
-  outfile <- paste0(out_path, "/results_", bs_sample_num, ".RData")
+  outfile <- paste0(out_path, "/results_for_bs_sample_", bs_sample_num, ".RData")
   save(results_list, file = outfile)
   
 } else if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {

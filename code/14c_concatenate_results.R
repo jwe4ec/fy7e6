@@ -7,45 +7,48 @@
 # Notes ----
 # ---------------------------------------------------------------------------- #
 
-# This script concatenates "results_list" files for a given model. It is run on
-# the standard partition via a separate Slurm script.
+# This script uses a job array to concatenate each "a1" model's "results_list" 
+# files across bootstrap samples into one results list for that model. It is run 
+# on Rivanna's standard partition via a separate Slurm script.
 
-# Before running script, restart R and set working directory to "code" folder
+# Before running script, restart R, set working directory to "code" folder, and
+# move the "results_for_model_<myNum>" folders containing the models' results for 
+# each bootstrap sample to a folder "a1_outputs" alongside the "code" folder.
+
+# The concatenated results list "results_for_model_<myNum>.RData" will be saved
+# in the "code" folder.
 
 # ---------------------------------------------------------------------------- #
-# TODO (check this): Check number of "results_list" files for a model
+# Concatenate "results_list" files into one list for the model
 # ---------------------------------------------------------------------------- #
 
-test_num <- as.integer(commandArgs(trailingOnly = TRUE))
-results_path <- paste0("../a1_outputs/test_results_", test_num)
+myNum <- as.integer(commandArgs(trailingOnly = TRUE))
+
+results_path <- paste0("../a1_outputs/results_for_model_", myNum)
+
 cat("\nProcessing files in ", results_path, "\n")
+
 if (file.exists(results_path)) {
+  # Concatenate files into list
+  
   files <- list.files(results_path, pattern = ".RData", full.names = TRUE)
 
-   # ---------------------------------------------------------------------------- #
-   # TODO (check this): Concatenate "results_list" files into one list for the model
-   # ---------------------------------------------------------------------------- #
-
-   combined_list <- NULL
-
-   for (myfile in files) {
-     load(myfile)
-     combined_list <- c(combined_list, results_list)
-     rm(results_list)
-   }
-
-   print(length(combined_list))
- 
-   # ---------------------------------------------------------------------------- #
-   # TODO (check this): Complete work that was in the original code
-   # ---------------------------------------------------------------------------- #
-   
-   model_results_path_stem <- combined_list[[1]]$model_results_path_stem
-
-   # Create results object
-
-   results <- list(per_bs_smp = combined_list)
+  combined_list <- NULL
   
-   outfile <- paste0("results_", test_num, ".RData")
-   save(results, file = outfile)
+  for (myfile in files) {
+   load(myfile)
+   combined_list <- c(combined_list, results_list)
+   rm(results_list)
+  }
+  
+  # Check length of list (should equal number of bootstrap samples)
+  
+  print(length(combined_list))
+ 
+  # Create and save results object
+  
+  results <- list(per_bs_smp = combined_list)
+  
+  outfile <- paste0("results_for_model_", myNum, ".RData")
+  save(results, file = outfile)
 }
