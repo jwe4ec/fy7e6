@@ -593,10 +593,10 @@ dat_all <- list(c1_corr_itt_2000            = wd_c1_corr_itt_2000,
 
 parameter_table <- create_parameter_table()
 
-analysis_type <- parameter_table$analysis_type[myNum]
-a_contrast <- parameter_table$a_contrast[myNum]
+analysis_type   <- parameter_table$analysis_type[myNum]
+a_contrast      <- parameter_table$a_contrast[myNum]
 analysis_sample <- parameter_table$analysis_sample[myNum]
-y_var <- parameter_table$y_var[myNum]
+y_var           <- parameter_table$y_var[myNum]
 
 dat <- dat_all[[analysis_sample]]
 inits <- inits_all[[analysis_type]]
