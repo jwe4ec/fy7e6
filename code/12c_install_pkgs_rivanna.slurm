@@ -9,7 +9,7 @@
 #SBATCH --output=../jobs/install_pkgs.out
 
 module purge
-module load goolf/7.1.0_3.1.4 R/4.1
+module load goolf/7.1.0_3.1.4 R/4.1.1 # Rivanna does not have 4.1.2
 module load jags
 
 Rscript 12b_install_pkgs_rivanna.R

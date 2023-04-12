@@ -21,10 +21,29 @@
 
 source("./12a_define_functions_std_partition.R")
 
-# Load groundhog and use it to load other packages per groundhog_day defined
-# in load_pkgs_via_groundhog() function (Slurm script specifies R version)
+# Check R version
 
-load_pkgs_via_groundhog()
+check_r_version()
+
+# Check package versions installed
+
+check_installed_pkg_ver("iterators", "1.0.14")
+check_installed_pkg_ver("foreach", "1.5.2")
+check_installed_pkg_ver("doParallel", "1.0.17")
+check_installed_pkg_ver("fastDummies", "1.6.3")
+check_installed_pkg_ver("rjags", "4-13")
+
+# Load packages
+
+library(iterators)
+library(foreach)
+library(doParallel)
+library(fastDummies)
+library(rjags)
+
+# Print sessionInfo
+
+sessionInfo()
 
 # Set seed
 

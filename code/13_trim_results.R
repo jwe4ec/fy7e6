@@ -36,48 +36,49 @@ groundhog_day <- version_control()
 # models from "scratch/" directory on Rivanna to local computer
 
 # ---------------------------------------------------------------------------- #
-# Remove selected results files ----
+# DEPRECATED: Remove selected results files ----
 # ---------------------------------------------------------------------------- #
 
 # Define function to remove all `model_samples_*.RData` and `plots_*.pdf` files
-# for `a1` models as we assessed convergence based solely on Geweke's statistic
+# for `a1` models as we assessed convergence based solely on Geweke's statistic.
+# Function no longer needed as we no longer save these objects for "a1" models.
 
-rm_files <- function(anlys_path_pattern, file_pattern) {
-  res_dir_short <- "results/bayesian"
-  res_dir       <- paste0("./", res_dir_short)
-  
-  # Use results directory with "./" for "list.files()"
-  
-  rm_filenames <- list.files(res_dir, pattern = file_pattern,
-                             recursive = TRUE, full.names = FALSE)
-  rm_filenames <- rm_filenames[grep(anlys_path_pattern, rm_filenames)]
-  
-  n_rm_filenames <- length(rm_filenames)
-  
-  cat("Number of files with pattern", file_pattern, "found: ", n_rm_filenames, "\n\n")
-  
-  if (length(rm_filenames) != 0) {
-    print(rm_filenames)
-  }
-  
-  # Use results directory without "./" for "file.exists()"
-  
-  rm_filepaths <- paste0(res_dir_short, "/", rm_filenames)
-  
-  for (i in 1:length(rm_filepaths)) {
-    if (file.exists(rm_filepaths[i])) {
-      file.remove(rm_filepaths[i])
-    }
-  }
-}
+# rm_files <- function(anlys_path_pattern, file_pattern) {
+#   res_dir_short <- "results/bayesian"
+#   res_dir       <- paste0("./", res_dir_short)
+# 
+#   # Use results directory with "./" for "list.files()"
+# 
+#   rm_filenames <- list.files(res_dir, pattern = file_pattern,
+#                              recursive = TRUE, full.names = FALSE)
+#   rm_filenames <- rm_filenames[grep(anlys_path_pattern, rm_filenames)]
+# 
+#   n_rm_filenames <- length(rm_filenames)
+# 
+#   cat("Number of files with pattern", file_pattern, "found: ", n_rm_filenames, "\n\n")
+# 
+#   if (length(rm_filenames) != 0) {
+#     print(rm_filenames)
+#   }
+# 
+#   # Use results directory without "./" for "file.exists()"
+# 
+#   rm_filepaths <- paste0(res_dir_short, "/", rm_filenames)
+# 
+#   for (i in 1:length(rm_filepaths)) {
+#     if (file.exists(rm_filepaths[i])) {
+#       file.remove(rm_filepaths[i])
+#     }
+#   }
+# }
 
 # Run function for each analysis type for "a1" ("c1_") models (one file pattern at
 # a time; these objects were saved only for models based on 500 bootstrap samples)
 
-rm_files("dropout/out/c1_500",  "model_samples_")
-rm_files("dropout/out/c1_500",  "plots_")
-rm_files("efficacy/out/c1_500", "model_samples_")
-rm_files("efficacy/out/c1_500", "plots_")
+# rm_files("dropout/out/c1_500",  "model_samples_")
+# rm_files("dropout/out/c1_500",  "plots_")
+# rm_files("efficacy/out/c1_500", "model_samples_")
+# rm_files("efficacy/out/c1_500", "plots_")
 
 # ---------------------------------------------------------------------------- #
 # Trim results from "results.RData" ----

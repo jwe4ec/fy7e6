@@ -4,23 +4,36 @@
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-# Define "load_pkgs_via_groundhog()" ----
+# Define "check_r_version()" ----
 # ---------------------------------------------------------------------------- #
 
-# Define function to load packages via groundhog package. If packages have not
-# been installed yet, groundhog will install them.
+# Define function to check R version on Rivanna (Rivanna does not have R 4.1.2)
 
-load_pkgs_via_groundhog <- function() {
-  library(groundhog)
-  meta.groundhog("2022-01-01")
-  groundhog_day <- "2022-01-01"
+check_r_version <- function() {
+  script_R_version <- "R version 4.1.1 (2021-08-10)"
+  current_R_version <- R.Version()$version.string
   
-  parallel_pkgs <- c("iterators", "foreach", "doParallel")
-  anlys_pkgs <- c("fastDummies", "rjags")
+  if(current_R_version != script_R_version) {
+    stop(paste0("This script is based on ", script_R_version,
+                ". You are running ", current_R_version, "."))
+  }
+}
+
+# ---------------------------------------------------------------------------- #
+# Define "check_installed_pkg_ver()" ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to check installed package version on Rivanna
+
+check_installed_pkg_ver <- function(package, ver_needed) {
+  installed_pkgs <- as.data.frame(installed.packages())
   
-  groundhog.library(c(parallel_pkgs, anlys_pkgs), groundhog_day)
+  installed_pkg_ver <- installed_pkgs[installed_pkgs$Package == package, ]$Version
   
-  cat("\ngroundhog_day =", groundhog_day, "\n\n")
+  if (installed_pkg_ver != ver_needed) {
+    stop(paste0("This script is based on ", package, " version ", ver_needed,
+                ". You have ", installed_pkg_ver, " installed."))
+  }
 }
 
 # ---------------------------------------------------------------------------- #
@@ -280,12 +293,16 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
 
   dir.create(model_results_path_specific, recursive = TRUE)
   
-  # Save posterior samples and create MCMC object
+  # Save posterior samples (only for "a2" contrasts)
 
-  save(model_samples,
-       file = paste0(model_results_path_specific, "/model_samples",
-                     switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
-                     ".RData"))
+  if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
+    save(model_samples,
+         file = paste0(model_results_path_specific, "/model_samples",
+                       switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
+                       ".RData"))
+  }
+  
+  # Create MCMC object
   
   model_res <- as.mcmc(do.call(rbind, model_samples))
 
@@ -349,14 +366,16 @@ run_jags_model <- function(analysis_type, bs_sample, analysis_sample,
   
   sink()
   
-  # Save plots
+  # Save plots (only for "a2" contrasts)
   
-  pdf(file = paste0(model_results_path_specific, "/plots",
-                    switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
-                    ".pdf"))
-  par(mfrow=c(4,2))
-  plot(model_res)
-  dev.off()
+  if (a_contrast %in% c("a2_1", "a2_2", "a2_3")) {
+    pdf(file = paste0(model_results_path_specific, "/plots",
+                      switch(is.null(bs_sample) + 1, paste0("_", bs_sample), NULL),
+                      ".pdf"))
+    par(mfrow=c(4,2))
+    plot(model_res)
+    dev.off()
+  }
   
   # Save results in list
   
@@ -443,8 +462,8 @@ create_parameter_table <- function() {
   c1_a_contrasts   <- "a1"
   c2_4_a_contrasts <- c("a2_1", "a2_2", "a2_3")
 
-  c1_eff_analysis_samples   <- c("c1_corr_itt_6800", "c1_corr_s5_train_compl_6800")
-  c1_drp_analysis_samples   <- "c1_corr_itt_6800"
+  c1_eff_analysis_samples   <- c("c1_corr_itt_2000", "c1_corr_s5_train_compl_2000")
+  c1_drp_analysis_samples   <- "c1_corr_itt_2000"
   
   c2_4_eff_analysis_samples <- c("c2_4_class_meas_compl", "c2_4_s5_train_compl")
   c2_4_drp_analysis_samples <- "c2_4_class_meas_compl"

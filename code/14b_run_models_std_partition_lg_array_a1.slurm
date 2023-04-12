@@ -11,7 +11,7 @@
 #SBATCH --array=1-2000
 
 module purge
-module load goolf/7.1.0_3.1.4 R/4.1.1
+module load goolf/7.1.0_3.1.4 R/4.1.1 # Rivanna does not have 4.1.2
 module load jags
 myNum=12                    # Specify the desired "a1" model to run based on its
                             # row in "parameter_table". User should provide only 
@@ -33,4 +33,3 @@ rm "../data/final_clean/wd_c1_corr_itt_2000.RData_${SLURM_ARRAY_TASK_ID}"
 rm "../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData_${SLURM_ARRAY_TASK_ID}"
 rm "../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData_${SLURM_ARRAY_TASK_ID}"  
 rm "../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData_${SLURM_ARRAY_TASK_ID}"
-

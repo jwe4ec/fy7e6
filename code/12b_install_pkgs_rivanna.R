@@ -21,11 +21,19 @@
 
 source("./12a_define_functions_std_partition.R")
 
-# Install groundhog (if needed) and use it to install other packages per groundhog_day 
-# defined in load_pkgs_via_groundhog() function (Slurm script specifies R version)
+# Check R version
 
-if (!require("groundhog", quietly = TRUE)) {
-  install.packages("groundhog", repos = "https://cran.case.edu")
+check_r_version()
+
+# Install packages (if needed)
+
+parallel_pkgs <- c("iterators", "foreach", "doParallel")
+anlys_pkgs <- c("fastDummies", "rjags")
+
+pkgs <- c(parallel_pkgs, anlys_pkgs)
+
+for (i in 1:length(pkgs)) {
+  if (!require(pkgs[i], quietly = TRUE)) {
+    install.packages(pkgs[i], repos = "https://cran.case.edu")
+  }
 }
-
-load_pkgs_via_groundhog()
