@@ -48,11 +48,9 @@ library(rjags)
 
 sessionInfo()
 
-# TODO: Set seed
+# Set seed
 
-
-
-
+set.seed(1234)
 
 # ---------------------------------------------------------------------------- #
 # Set up node for analysis
