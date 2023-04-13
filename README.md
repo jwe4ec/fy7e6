@@ -68,15 +68,14 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ## TODOs
 
-- Finalize Scripts 12a-14d (e.g., set seed in 14a, resolve TODO in 14b)
 - Rerun "a1" and "a2" models to compute intervals for additional parameters
-
-### Hold
 
 - Compute table for raw means and standard deviations of outcomes by condition over time (`compute_raw_m_and_sd.R`)
 - Compute rates of item- and scale-level missingness (`compute_missing_data_rates.R`)
 
 - Remove `results.RData` files for "a1" models based on 500 bs samples and "a2" models based on 20,000 iterations after `trim_results()`, which created `results_trim.RData` files for these models in Script 13
+
+### Hold
 
 - Resolve TOC issue for full tables
 - Resolve border issue in some summary tables
