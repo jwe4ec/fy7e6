@@ -6,14 +6,13 @@
 #SBATCH --time=06:00:00
 #SBATCH --partition=standard
 #SBATCH --account=pactlab
-#SBATCH --output=job_12.out # TODO (store in separate "jobs" folder?): User must
-                            # update this number manually based on "myNum" below
+#SBATCH --output=job_1.out  # Update this number manually based on "myNum" below
 #SBATCH --array=1-2000
 
 module purge
 module load goolf/7.1.0_3.1.4 R/4.1.1 # Rivanna does not have 4.1.2
 module load jags
-myNum=12                    # Specify the desired "a1" model to run based on its
+myNum=1                     # Specify the desired "a1" model to run based on its
                             # row in "parameter_table". User should provide only 
                             # indices for "a1" models (1-12, 49). (Could write Bash 
                             # script to run this script for all desired models.)
