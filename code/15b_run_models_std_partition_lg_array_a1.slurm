@@ -26,7 +26,7 @@ cp "../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData" "../data/final_cle
 cp "../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData" "../results/bayesian/efficacy/model_and_initial_values/inits_efficacy.RData_${SLURM_ARRAY_TASK_ID}"
 cp "../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData"   "../results/bayesian/dropout/model_and_initial_values/inits_dropout.RData_${SLURM_ARRAY_TASK_ID}"
 
-Rscript 14a_run_models_std_partition_lg_array_a1.R $myNum $SLURM_ARRAY_TASK_ID
+Rscript 15a_run_models_std_partition_lg_array_a1.R $myNum $SLURM_ARRAY_TASK_ID
 
 rm "../data/final_clean/wd_c1_corr_itt_2000.RData_${SLURM_ARRAY_TASK_ID}"
 rm "../data/final_clean/wd_c1_corr_s5_train_compl_2000.RData_${SLURM_ARRAY_TASK_ID}"

@@ -11,14 +11,14 @@
 # in parallel via a separate Slurm script that specifies a large job array on 
 # Rivanna's standard partition (i.e., one node with multiple cores). But rather 
 # than using a job array to submit all "a1" models at once (and many cores/node 
-# to run model across bootstrap samples) as in "12d_run_models_std_partition.R",
+# to run model across bootstrap samples) as in "13a_run_models_std_partition.R",
 # the present script runs one "a1" model at a time (specified by "myNum" in Slurm 
 # script) and uses a larger job array to run the model across bootstrap samples 
 # (with each node analyzing only one bootstrap sample). Once a given model has
 # run, "myNum" in Slurm script must be manually updated to run the next model.
 
 # "a2" contrast models, which involve no bootstrapping, were run on the standard 
-# partition using "12d_run_models_std_partition.R"
+# partition using "13a_run_models_std_partition.R"
 
 # Before running script, restart R and set working directory to "code" folder
 

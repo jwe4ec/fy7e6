@@ -11,4 +11,4 @@
 module purge
 module load goolf/7.1.0_3.1.4 R/4.1.1 # Rivanna does not have 4.1.2
 
-Rscript 14c_concatenate_results.R $SLURM_ARRAY_TASK_ID
+Rscript 15c_concatenate_results.R $SLURM_ARRAY_TASK_ID
