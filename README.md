@@ -14,7 +14,7 @@ The imported data are considered intermediately cleaned because further analysis
 
 Scripts 1-10 were run on a Windows 10 Pro laptop (12 GB of RAM; Intel Core i5-4300U CPU @ 1.90GHz, 2494 Mhz, 2 cores, 4 logical processors). Script 11 was used for testing the analysis models (in series).
 
-Scripts 12a-13c were used to run the "a1" and "a2" analysis models in parallel on the [Standard](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of the [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/) supercomputer, which uses multiple cores on one node.
+Scripts 12a-13c were used to run the "a1" and "a2" analysis models in parallel on the [Standard](https://www.rc.virginia.edu/userinfo/rivanna/queues/) partition of the [Rivanna](https://www.rc.virginia.edu/userinfo/computing-environments/) supercomputer, which uses multiple cores on one node. See [Rivanna Setup](#rivanna-setup) before running these scripts.
 - Scripts 12a-12c define functions and install packages on Rivanna. Given that we had issues with the `groundhog` package on Rivanna, we manually do version control at the top of R scripts run on Rivanna. Also, given that Rivanna does not have R 4.1.2 (used in scripts run on laptop), we use R 4.1.1 on Rivanna.
 - "a1" models are run via `sbatch 13b_run_models_std_partition_a1.slurm` on Rivanna's command line (CLI), which uses a job array to submit jobs for all desired models at once based on their row numbers in `parameter_table`. Each job in the array runs one model, and analyses for a given model are run across bootstrap samples in parallel using a `foreach() %dopar%` command in the `run_analysis()` function.
   - Initial models used 500 bootstrap samples with 20,000 total MCMC iterations. When we tried using 6,800 bootstrap samples with 20,000 iterations, all jobs timed out. Thus, we tried to run these models on the Parallel partition (see below), but we still faced long run times due to Rivanna's resource limitations, even after reducing to 2,000 bootstrap samples. We ultimately used Scripts 15a-15d below to run these models for 2,000 bootstrap samples on the Standard partition using a large job array.
@@ -23,7 +23,7 @@ Scripts 12a-13c were used to run the "a1" and "a2" analysis models in parallel o
   
 Once results from Scripts 13a-13c are downloaded from Rivanna, Script 14 (run on laptop) trims results so they are small enough to load into R for many models at once. Note that results from Scripts 15a-15d below do not need to be trimmed, as they contain fewer saved objects.
 
-Scripts 15a-15d were used to run the "a1" analysis models in parallel on Rivanna's Standard partition using 2,000 bootstrap samples with 20,000 iterations.
+Scripts 15a-15d were used to run the "a1" analysis models in parallel on Rivanna's Standard partition using 2,000 bootstrap samples with 20,000 iterations. Scripts 12a-12c must be run first (Scripts 13a-13c are not required). See [Rivanna Setup](#rivanna-setup) before running these scripts.
 - The models are run via `sbatch 15b_run_models_std_partition_lg_array_a1.slurm` on Rivanna's CLI, which uses a large job array to submit jobs for a single desired model based on its row number in `parameter_table`. Each job in the array analyzes one bootstrap sample. A separate job array must be run for each desired model.
 - Once all job arrays have run, results across bootstrap samples for the models are then concatenated by running `sbatch 15d_concatenate_results.slurm`, which is a job array in which each job handles one model.
 
