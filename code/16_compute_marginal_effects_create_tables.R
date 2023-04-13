@@ -289,10 +289,12 @@ create_marg_tbl <- function(results_trim, param_labels) {
   return(results_trim)
 }
 
-# Run function for "a1" models
+# Run function for "a1" models and "a2" dropout model
 
 res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, create_marg_tbl, eff_param_labels)
 res_trm_drp_c1_2000bs <- lapply(res_trm_drp_c1_2000bs, create_marg_tbl, drp_param_labels)
+
+res_trm_drp_c2_4_1000000iter <- lapply(res_trm_drp_c2_4_1000000iter, create_marg_tbl, drp_param_labels)
 
 # Save object with marginal effects for plotting
 
@@ -301,6 +303,8 @@ dir.create(marg_path)
 
 save(res_trm_eff_c1_2000bs, file = paste0(marg_path, "res_trm_eff_c1_2000bs.RData"))
 save(res_trm_drp_c1_2000bs, file = paste0(marg_path, "res_trm_drp_c1_2000bs.RData"))
+
+save(res_trm_drp_c2_4_1000000iter, file = paste0(marg_path, "res_trm_drp_c2_4_1000000iter.RData"))
 
 # ---------------------------------------------------------------------------- #
 # Set "flextable" defaults and section and text properties ----
@@ -683,15 +687,29 @@ create_marg_summ_tbl_drp <- function(results_trim_list) {
   
   # Add column for treatment arm
   
+  a_level1_params <- c("marg[1]", "marg[2]", "marg[3]", "marg[4]", "marg[5]")
+  a_level2_params <- c("marg[6]", "marg[7]", "marg[8]", "marg[9]", "marg[10]")
+  
   summ_tbl$arm <- NA
-  summ_tbl$arm[summ_tbl$param %in% c("marg[1]", "marg[2]", "marg[3]", 
-                                     "marg[4]", "marg[5]")] <- "CBM-I"
-  summ_tbl$arm[summ_tbl$param %in% c("marg[6]", "marg[7]", "marg[8]",
-                                     "marg[9]", "marg[10]")] <- "Psychoeducation"
+  
+  summ_tbl$arm[summ_tbl$a_contrast == "a1"   & summ_tbl$param %in% a_level1_params] <- "CBM-I"
+  summ_tbl$arm[summ_tbl$a_contrast == "a1"   & summ_tbl$param %in% a_level2_params] <- "Psychoeducation"
+  
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_1" & summ_tbl$param %in% a_level1_params] <- "CBM-I HR Coaching"
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_1" & summ_tbl$param %in% a_level2_params] <- "CBM-I HR No Coaching"
+  
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_2" & summ_tbl$param %in% a_level1_params] <- "CBM-I HR Coaching"
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_2" & summ_tbl$param %in% a_level2_params] <- "CBM-I LR"
+  
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_3" & summ_tbl$param %in% a_level1_params] <- "CBM-I HR No Coaching"
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_3" & summ_tbl$param %in% a_level2_params] <- "CBM-I LR"
   
   # TODO: Ultimately move this parameter to dropout summary table
   
-  summ_tbl$arm[summ_tbl$param == "marg[11]"] <- "CBM-I vs. Psychoeducation"
+  summ_tbl$arm[summ_tbl$a_contrast == "a1"   & summ_tbl$param == "marg[11]"] <- "CBM-I vs. Psychoeducation"
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_1" & summ_tbl$param == "marg[11]"] <- "CBM-I HR Coaching vs. No Coaching"
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_2" & summ_tbl$param == "marg[11]"] <- "CBM-I HR Coaching vs. CBM-I LR"
+  summ_tbl$arm[summ_tbl$a_contrast == "a2_3" & summ_tbl$param == "marg[11]"] <- "CBM-I HR No Coaching vs. CBM-I LR"
   
   
   
@@ -702,14 +720,16 @@ create_marg_summ_tbl_drp <- function(results_trim_list) {
   param_order <- c("marg[3]", "marg[4]", "marg[5]", "marg[8]", "marg[9]", 
                    "marg[10]", "marg[1]", "marg[2]", "marg[6]", "marg[7]")
   
-  summ_tbl <- summ_tbl[order(match(summ_tbl$param, param_order)), ]
+  summ_tbl <- summ_tbl[order(summ_tbl$a_contrast,
+                             match(summ_tbl$param, param_order)), ]
   
   return(summ_tbl)
 }
 
 # Run function
 
-marg_summ_tbl_drp_a1_itt <- create_marg_summ_tbl_drp(res_trm_drp_c1_2000bs)
+marg_summ_tbl_drp_a1_itt              <- create_marg_summ_tbl_drp(res_trm_drp_c1_2000bs)
+marg_summ_tbl_drp_a2_class_meas_compl <- create_marg_summ_tbl_drp(res_trm_drp_c2_4_1000000iter)
 
 # ---------------------------------------------------------------------------- #
 # Format efficacy summary tables ----
@@ -1021,8 +1041,25 @@ gen_note <- as_paragraph_md("*Note.* Estimates were computed from pooled mixture
 
 # Run function
 
-marg_summ_tbl_drp_a1_itt_ft <- format_marg_summ_tbl_drp(marg_summ_tbl_drp_a1_itt, gen_note,
+marg_summ_tbl_drp_a1_itt_ft <- 
+  format_marg_summ_tbl_drp(marg_summ_tbl_drp_a1_itt, gen_note,
   "Stage 1 Marginal Dropout Estimates for Intent-To-Treat Sample")
+
+marg_summ_tbl_drp_a2_class_meas_compl_ft <- 
+  format_marg_summ_tbl_drp(marg_summ_tbl_drp_a2_class_meas_compl, gen_note,
+  "Stage 2 Marginal Dropout Estimates for Classification Measure Completer Sample")
+
+# TODO (figure out if need table like below)
+
+
+
+
+
+test <- rbind(marg_summ_tbl_drp_a1_itt, marg_summ_tbl_drp_a2_class_meas_compl)
+test <- test[test$param %in% c("marg[5]", "marg[2]", "marg[10]", "marg[7]"), ]
+test_ft <- format_marg_summ_tbl_drp(test, gen_note,
+  "Stages 1-2 Marginal Dropout Estimates for Intent-to-Treat and Classification Measure Completer Samples")
+save_as_docx(test_ft, path = "./results/bayesian/tables/summ/test_ft.docx", pr_section = lsect_prop, align = "left")
 
 # ---------------------------------------------------------------------------- #
 # Write summary tables to MS Word ----
