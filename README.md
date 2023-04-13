@@ -26,7 +26,7 @@ Once results from Scripts 13a-13c are downloaded from Rivanna, Script 14 (run on
 Scripts 15a-15d were used to run the "a1" analysis models in parallel on Rivanna's Standard partition using 2,000 bootstrap samples with 20,000 iterations.
 - The models are run via `sbatch 15b_run_models_std_partition_lg_array_a1.slurm` on Rivanna's CLI, which uses a large job array to submit jobs for a single desired model based on its row number in `parameter_table`. Each job in the array analyzes one bootstrap sample. A separate job array must be run for each desired model. Once all job arrays have run, results across bootstrap samples for each model are then concatenated by running `sbatch 15d_concatenate_results.slurm`, which is a job array in which each job handles one model.
 
-Scripts 16-18 (run on laptop) pool results and create tables and plots.
+Once results from Scripts 15a-15d are downloaded from Rivanna, Scripts 16-18 (run on laptop) pool results and create tables and plots.
 
 ### `parallel_partition` Folder
 
