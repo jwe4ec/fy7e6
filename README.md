@@ -57,6 +57,8 @@ Scripts in this folder were used for initial analyses by Jeremy Eberle and [Kati
 
 ## Rivanna Setup
 
+### "a2" Contrast Models
+
 Prior to running Scripts 12a-13c on Rivanna, create the following folders on Rivanna's `scratch` directory and upload files to the folders where indicated.
 
 ```
@@ -81,6 +83,8 @@ Prior to running Scripts 12a-13c on Rivanna, create the following folders on Riv
 │   │   │   │                             #   outputted from Script 9
 └── └── └── └── out
 ```
+
+### "a1" Contrast Models With 2,000 Bootstrap Samples 
 
 Prior to running Scripts 12a-12c and 15a-15d on Rivanna, create the following folders on Rivanna's `scratch` directory and upload files to the folders where indicated.
 
