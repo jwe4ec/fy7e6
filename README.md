@@ -55,6 +55,51 @@ Script 15a is an updated version of 14a. The run times were improved but still t
 
 Scripts in this folder were used for initial analyses by Jeremy Eberle and [Katie Daniel](https://github.com/KatharineDaniel) for a Fall 2020 course project.
 
+## Rivanna Setup
+
+Prior to running Scripts 12a-13c on Rivanna, create the following folders on Rivanna's `scratch` directory and upload files to the folders where indicated.
+
+```
+.
+├── code                                  # Scripts 12a-13c
+├── data                    
+├── ├── final_clean                       # "wd_c1_corr_itt.RData", 
+│   │                                     #   "wd_c1_corr_itt_6800.RData",
+│   │                                     #   "wd_c1_corr_s5_train_compl.RData",
+│   │                                     #   "wd_c1_corr_s5_train_compl_6800.RData",
+│   │                                     #   "wd_c2_4_class_meas_compl.RData", and
+│   │                                     #   "wd_c2_4_s5_train_compl.RData"
+├── jobs
+├── results
+├── ├── bayesian
+├── ├── ├── dropout
+├── ├── ├── ├── model_and_initial_values  # "inits_dropout.RData" and "model_string.txt"
+│   │   │   │                             #   outputted from Script 10
+├── ├── ├── ├── out
+├── ├── ├── efficacy
+├── ├── ├── ├── model_and_initial_values  # "inits_efficacy.RData" and "model_string.txt"
+│   │   │   │                             #   outputted from Script 9
+└── └── └── └── out
+```
+
+Prior to running Scripts 12a-12c and 15a-15d on Rivanna, create the following folders on Rivanna's `scratch` directory and upload files to the folders where indicated.
+
+```
+.
+├── code                                  # Scripts 12a-12c, 15a-15d
+├── data                    
+├── ├── final_clean                       # "wd_c1_corr_itt_2000.RData" and
+│   │                                     #   "wd_c1_corr_s5_train_compl_2000.RData"
+├── results
+├── ├── bayesian
+├── ├── ├── dropout
+├── ├── ├── ├── model_and_initial_values  # "inits_dropout.RData" and "model_string.txt"
+│   │   │   │                             #   outputted from Script 10
+├── ├── ├── efficacy
+└── └── └── └── model_and_initial_values  # "inits_efficacy.RData" and "model_string.txt"
+                                          #   outputted from Script 9
+```
+
 ## Results
 
 - TODO: Add results to components on OSF project using `osfr` package
