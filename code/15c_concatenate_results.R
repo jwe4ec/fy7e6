@@ -12,8 +12,8 @@
 # on Rivanna's standard partition via a separate Slurm script.
 
 # Before running script, restart R, set working directory to "code" folder, and
-# move the "results_for_model_<myNum>" folders containing the models' results for 
-# each bootstrap sample to a folder "a1_outputs" alongside the "code" folder.
+# ensure all "results_for_model_<myNum>" folders containing the models' results for 
+# each bootstrap sample are in the "a1_outputs" folder alongside the "code" folder.
 
 # The concatenated results list "results_for_model_<myNum>.RData" will be saved
 # in the "code" folder.

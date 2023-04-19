@@ -72,7 +72,7 @@ bs_sample_num <- as.integer(cmdArgs[2])
 # If needed, create directory for output files
 # ---------------------------------------------------------------------------- #
 
-out_path <- paste0("./results_for_model_", myNum)
+out_path <- paste0("../a1_outputs/results_for_model_", myNum)
 
 if (!dir.exists(out_path)) {
   dir.create(out_path)

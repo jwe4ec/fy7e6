@@ -121,8 +121,6 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ## TODOs
 
-- Check Jackie's potential revisions to Scripts 15a-15b and her new `check_for_missing_bootstraps.R`
-- Implement suggestions from her email on 4/18/2023
 - Add output from rerun "a1" and "a2" models in `from_rivanna/` to `results/`
 - Pool results and update tables and plots
 

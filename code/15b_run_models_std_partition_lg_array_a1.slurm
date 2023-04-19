@@ -19,6 +19,14 @@ myNum=1                     # Specify the desired "a1" model to run based on its
                             
 echo $myNum
 
+# Create "../a1_outputs" folder if it doesn't already exist
+
+dir="../a1_outputs"
+
+if [ ! -d "$dir" ]; then
+   mkdir "$dir"
+fi
+
 # Temporarily copy data and initial values for each job in array
 
 cp "../data/final_clean/wd_c1_corr_itt_2000.RData"            "../data/final_clean/wd_c1_corr_itt_2000.RData_${SLURM_ARRAY_TASK_ID}"
