@@ -85,28 +85,40 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
   
   full_tbl <- merge(full_tbl, param_labels, "param", all.x = TRUE, sort = FALSE)
 
-  # Identify significant parameters (note: CIs for odds ratios [OR] in dropout models
-  # need to exclude 1, whereas other CIs need to exclude 0)
+  # Identify significant parameters (note: except where noted below, CIs need to exclude 0)
   
   full_tbl$sig <- NA
   
-  idx <- which(full_tbl$param == "para[3]") # In dropout models, "para[3]" is an OR
+    # In dropout models, CIs for probabilities ("para[9]", "para[14]") need to exclude 0.5
+  
+  idx_prob <- which(full_tbl$param %in% c("para[9]", "para[14]"))
+  
+    # In dropout models, CIs for odds ("para[8]", "para[13]"), odds ratios ("para[3]"), 
+    # incident rates ("para[6]", "para[11]"), and incident rate ratios ("para[4]") need to 
+    # exclude 1
+  
+  idx_other <- which(full_tbl$param %in% c("para[8]", "para[13]", "para[3]", 
+                                           "para[6]", "para[11]", "para[4]"))
   
   if (a_contrast_type == "a1") {
     full_tbl$sig <- ifelse(full_tbl$pctl_bs_ci_ll > 0 | 
                              full_tbl$pctl_bs_ci_ul < 0, 1, 0)
     
     if (model_info$analysis_type == "dropout") {
-      full_tbl$sig[idx] <- ifelse(full_tbl$pctl_bs_ci_ll[idx] > 1 | 
-                                    full_tbl$pctl_bs_ci_ul[idx] < 1, 1, 0)
+      full_tbl$sig[idx_prob]  <- ifelse(full_tbl$pctl_bs_ci_ll[idx_prob] > .5 | 
+                                          full_tbl$pctl_bs_ci_ul[idx_prob] < .5, 1, 0)
+      full_tbl$sig[idx_other] <- ifelse(full_tbl$pctl_bs_ci_ll[idx_other] > 1 | 
+                                          full_tbl$pctl_bs_ci_ul[idx_other] < 1, 1, 0)
     }
   } else if (a_contrast_type == "a2") {
     full_tbl$sig <- ifelse(full_tbl$hpd_ci_ll > 0 | 
                              full_tbl$hpd_ci_ul < 0, 1, 0)
     
     if (model_info$analysis_type == "dropout") {
-      full_tbl$sig[idx] <- ifelse(full_tbl$hpd_ci_ll[idx] > 1 | 
-                                    full_tbl$hpd_ci_ul[idx] < 1, 1, 0)
+      full_tbl$sig[idx_prob]  <- ifelse(full_tbl$hpd_ci_ll[idx_prob] > .5 | 
+                                          full_tbl$hpd_ci_ul[idx_prob] < .5, 1, 0)
+      full_tbl$sig[idx_other] <- ifelse(full_tbl$hpd_ci_ll[idx_other] > 1 | 
+                                          full_tbl$hpd_ci_ul[idx_other] < 1, 1, 0)
     }
   }
 
@@ -124,6 +136,10 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
 
   full_tbl[, target_cols] <- format(round(full_tbl[, target_cols], 2), 
                                     nsmall = 2, trim = TRUE)
+  
+  # Format combined empirical M and SD column
+  
+  full_tbl$emp_mean_sd <- paste0(full_tbl$mean, " (", full_tbl$emp_sd, ")")
 
   # Format CIs
   
@@ -137,10 +153,12 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
   
   # Remove redundant columns
   
+  rm_cols <- c("mean", "emp_sd")
+  
   if (a_contrast_type == "a1") {
-    rm_cols <- c("pctl_bs_ci_ll", "pctl_bs_ci_ul")
+    rm_cols <- c(rm_cols, "pctl_bs_ci_ll", "pctl_bs_ci_ul")
   } else if (a_contrast_type == "a2") {
-    rm_cols <- c("hpd_ci_ll", "hpd_ci_ul")
+    rm_cols <- c(rm_cols, "hpd_ci_ll", "hpd_ci_ul")
   }
   
   full_tbl <- full_tbl[, !(names(full_tbl) %in% rm_cols)]
@@ -151,12 +169,12 @@ create_full_tbl <- function(results, param_labels, a_contrast_type) {
                    "param", "model", "label")
   
   if (a_contrast_type == "a1") {
-    full_tbl <- full_tbl[, c(common_cols, "num_converge_all", "mean", "emp_sd",
+    full_tbl <- full_tbl[, c(common_cols, "num_converge_all", "emp_mean_sd",
                              "avg_sd", "pctl_bs_ci", "sig")]
     full_tbl_raw <- full_tbl_raw[, c(common_cols, "num_converge_all", "mean", "emp_sd",
                                      "avg_sd", "pctl_bs_ci_ll", "pctl_bs_ci_ul", "sig")]
   } else if (a_contrast_type == "a2") {
-    full_tbl <- full_tbl[, c(common_cols, "mean", "emp_sd", 
+    full_tbl <- full_tbl[, c(common_cols, "emp_mean_sd", 
                              "hpd_ci", "geweke_z", "sig")]
     full_tbl_raw <- full_tbl_raw[, c(common_cols, "mean", "emp_sd", 
                                      "hpd_ci_ll", "hpd_ci_ul", "geweke_z", "sig")]
@@ -179,6 +197,13 @@ res_trm_eff_c1_2000bs <- lapply(res_eff_c1_2000bs, create_full_tbl, eff_param_la
 res_trm_drp_c2_4_1000000iter <- lapply(res_drp_c2_4_1000000iter, create_full_tbl, drp_param_labels, "a2")
 res_trm_eff_c2_4_1000000iter <- lapply(res_eff_c2_4_1000000iter, create_full_tbl, eff_param_labels, "a2")
 
+# Save object with full tables for plotting
+
+full_tbl_path <- "./results/bayesian/pooled/w_full_tbls/"
+dir.create(full_tbl_path)
+
+save(res_trm_eff_c1_2000bs, file = paste0(full_tbl_path, "res_trm_eff_c1_2000bs.RData"))
+
 # Remove large results objects from environment
 
 rm(res_drp_c1_2000bs)
@@ -186,125 +211,6 @@ rm(res_eff_c1_2000bs)
 
 rm(res_drp_c2_4_1000000iter)
 rm(res_eff_c2_4_1000000iter)
-
-# ---------------------------------------------------------------------------- #
-# Compute marginal effects and create tables ----
-# ---------------------------------------------------------------------------- #
-
-# Define function to create marginal effects table for "a1" models
-
-create_marg_tbl <- function(results_trim, param_labels) {
-  # Extract model info and raw full table
-  
-  model_info   <- results_trim$model_info
-  full_tbl_raw <- results_trim$full_tbl_raw
-  
-  # Structure means in wide data frame
-  
-  m <- full_tbl_raw[, c("param", "mean")]
-  
-  m$param <- gsub("\\[", "_", m$param)
-  m$param <- gsub("\\]", "",  m$param)
-  
-  m_wd <- pivot_wider(m, names_from = "param", values_from = "mean")
-  
-  if (model_info$analysis_type == "efficacy") {
-    # Compute phase-specific slopes and time-specific outcomes by contrast level
-    
-    m_wd$marg_1  <- m_wd$beta_9  + m_wd$beta_10  # Effect of time for a = 1 during TX
-    m_wd$marg_2  <- m_wd$beta_17 + m_wd$beta_18  # Effect of time for a = 1 during FU
-    m_wd$marg_3  <- m_wd$beta_9  - m_wd$beta_10  # Effect of time for a = -1 during TX
-    m_wd$marg_4  <- m_wd$beta_17 - m_wd$beta_18  # Effect of time for a = -1 during FU
-    
-    m_wd$marg_5  <- m_wd$beta_1 + m_wd$beta_2    # Time-specific means for a = 1 from baseline to FU
-    m_wd$marg_6  <- m_wd$beta_1 + m_wd$beta_2 +   m_wd$beta_9 +   m_wd$beta_10
-    m_wd$marg_7  <- m_wd$beta_1 + m_wd$beta_2 + 2*m_wd$beta_9 + 2*m_wd$beta_10
-    m_wd$marg_8  <- m_wd$beta_1 + m_wd$beta_2 + 3*m_wd$beta_9 + 3*m_wd$beta_10
-    m_wd$marg_9  <- m_wd$beta_1 + m_wd$beta_2 + 4*m_wd$beta_9 + 4*m_wd$beta_10
-    m_wd$marg_10 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10
-    m_wd$marg_11 <- m_wd$beta_1 + m_wd$beta_2 + 5*m_wd$beta_9 + 5*m_wd$beta_10 + m_wd$beta_17 + m_wd$beta_18
-    
-    m_wd$marg_12 <- m_wd$beta_1 - m_wd$beta_2    # Time-specific means for a = -1 from baseline to FU
-    m_wd$marg_13 <- m_wd$beta_1 - m_wd$beta_2 +   m_wd$beta_9 -   m_wd$beta_10
-    m_wd$marg_14 <- m_wd$beta_1 - m_wd$beta_2 + 2*m_wd$beta_9 - 2*m_wd$beta_10
-    m_wd$marg_15 <- m_wd$beta_1 - m_wd$beta_2 + 3*m_wd$beta_9 - 3*m_wd$beta_10
-    m_wd$marg_16 <- m_wd$beta_1 - m_wd$beta_2 + 4*m_wd$beta_9 - 4*m_wd$beta_10
-    m_wd$marg_17 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10
-    m_wd$marg_18 <- m_wd$beta_1 - m_wd$beta_2 + 5*m_wd$beta_9 - 5*m_wd$beta_10 + m_wd$beta_17 - m_wd$beta_18
-  } else if (model_info$analysis_type == "dropout") {
-    m_wd$marg_1  <- m_wd$beta_1 + m_wd$beta_2                 # Log incident rate for a = 1
-    m_wd$marg_2  <- exp(m_wd$marg_1)                          # Incident rate for a = 1
-    
-    m_wd$marg_3  <- m_wd$beta_9 + m_wd$beta_10                # Log odds for a = 1
-    m_wd$marg_4  <- exp(m_wd$marg_3)                          # Odds for a = 1
-    m_wd$marg_5  <- exp(m_wd$marg_3) / (1 + exp(m_wd$marg_3)) # Prob. for a = 1
-    
-    m_wd$marg_6  <- m_wd$beta_1 - m_wd$beta_2                 # Log incident rate for a = -1
-    m_wd$marg_7  <- exp(m_wd$marg_6)                          # Incident rate for a = -1
-    
-    m_wd$marg_8  <- m_wd$beta_9 - m_wd$beta_10                # Log odds for a = -1
-    m_wd$marg_9  <- exp(m_wd$marg_8)                          # Odds for a = -1
-    m_wd$marg_10 <- exp(m_wd$marg_8) / (1 + exp(m_wd$marg_8)) # Prob. for a = -1
-    
-    m_wd$marg_11 <- exp(m_wd$para_1)             # Incident rate ratio for contrast diff.
-  }
-  
-  # Structure computed values in long data frame
-  
-  m <- pivot_longer(m_wd, cols = everything(), names_to = "param", values_to = "estimate")
-  
-  m$param <- gsub("_", "\\[", m$param)
-  m$param <- gsub("$", "]",  m$param)
-  
-  m <- m[grepl("marg", m$param), ]
-  
-  marg_tbl <- m
-  
-  # Add parameter labels
-  
-  marg_tbl <- merge(marg_tbl, param_labels, "param", all.x = TRUE, sort = FALSE)
-  
-  # Add model info
-  
-  marg_tbl$analysis_type   <- model_info$analysis_type
-  marg_tbl$analysis_sample <- model_info$analysis_sample
-  marg_tbl$y_var           <- model_info$y_var
-  marg_tbl$a_contrast      <- model_info$a_contrast
-  
-  # Round selected columns and ensure two decimal digits are printed
-  
-  marg_tbl$estimate <- format(round(marg_tbl$estimate, 2), nsmall = 2, trim = TRUE)
-  
-  # Rearrange columns
-  
-  common_cols <- c("analysis_type", "analysis_sample", "y_var", "a_contrast",
-                   "param", "model", "label")
-  
-  marg_tbl <- marg_tbl[, c(common_cols, "estimate")]
-  
-  # Add to list
-  
-  results_trim$marg_tbl <- marg_tbl
-  
-  return(results_trim)
-}
-
-# Run function for "a1" models and "a2" dropout model
-
-res_trm_eff_c1_2000bs <- lapply(res_trm_eff_c1_2000bs, create_marg_tbl, eff_param_labels)
-res_trm_drp_c1_2000bs <- lapply(res_trm_drp_c1_2000bs, create_marg_tbl, drp_param_labels)
-
-res_trm_drp_c2_4_1000000iter <- lapply(res_trm_drp_c2_4_1000000iter, create_marg_tbl, drp_param_labels)
-
-# Save object with marginal effects for plotting
-
-marg_path <- c("./results/bayesian/pooled/w_marg_effects/")
-dir.create(marg_path)
-
-save(res_trm_eff_c1_2000bs, file = paste0(marg_path, "res_trm_eff_c1_2000bs.RData"))
-save(res_trm_drp_c1_2000bs, file = paste0(marg_path, "res_trm_drp_c1_2000bs.RData"))
-
-save(res_trm_drp_c2_4_1000000iter, file = paste0(marg_path, "res_trm_drp_c2_4_1000000iter.RData"))
 
 # ---------------------------------------------------------------------------- #
 # Set "flextable" defaults and section and text properties ----
@@ -395,11 +301,11 @@ format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
   left_align_body_cols <- c("param", "label")
 
   if (a_contrast_type == "a1") {
-    target_cols <- c("model", "param", "label", "mean", "emp_sd", "avg_sd",
+    target_cols <- c("model", "param", "label", "emp_mean_sd", "avg_sd",
                      "pctl_bs_ci", "num_converge_all", "sig")
     col_to_bold <- "pctl_bs_ci"
   } else if (a_contrast_type == "a2") {
-    target_cols <- c("model", "param", "label", "mean", "emp_sd",
+    target_cols <- c("model", "param", "label", "emp_mean_sd",
                      "hpd_ci", "geweke_z", "sig")
     col_to_bold <- "hpd_ci"
   }
@@ -435,11 +341,9 @@ format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
     
     set_header_labels(param                = "Parameter",
                       label                = "Description") |>
-    compose(j = "mean", part = "header",
-            value = as_paragraph("Emp. ", as_i("M"))) |>
-    compose(j = "emp_sd", part = "header",
-            value = as_paragraph("Emp. ", as_i("SD"))) |>
-    
+    compose(j = "emp_mean_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+
     add_footer_lines(gen_note)
   
   if (a_contrast_type == "a1") {
@@ -456,8 +360,10 @@ format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
   }
   
   full_tbl_ft <- full_tbl_ft |>
-    autofit()
+    fontsize(size = 10, part = "all") |>
   
+    autofit()
+    
   # Add to list
   
   results_trim$full_tbl_ft <- full_tbl_ft
@@ -467,19 +373,23 @@ format_full_tbl <- function(results_trim, a_contrast_type, gen_note) {
 
 # Define general notes
 
-full_a1_base_str <- "*Note.* Significant parameters are in boldface (only %s were interpreted). The latter level of the contrast is the reference group. Results were pooled across (No. Samples) bootstrap samples (out of 2,000) in which all parameters converged (Geweke's *z* in [-1.96, 1.96]). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval"
+full_a1_base_str <- "*Note.* Significant parameters are in boldface (only %s were initially interpreted; %s were then computed and interpreted). The latter level of the contrast is the reference group. Results were pooled across (No. Samples) bootstrap samples (out of 2,000) in which all parameters converged (Geweke's *z* in [-1.96, 1.96]). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* (*SD*) = *M* and *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval"
 
-gen_note_drp_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] and para[3]"), 
-  "; OR = odds ratio."))
-gen_note_eff_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] through para[4]"), 
-  "; S5 = Session 5; FU = follow-up; RI = random intercept; RS = random slope."))
+gen_note_drp_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] and para[3]",
+                                                  "para[4] through para[14]"), 
+  "; prob. = probability."))
+gen_note_eff_a1 <- as_paragraph_md(paste0(sprintf(full_a1_base_str, "para[1] through para[4]",
+                                                  "para[15] through para[40]"), 
+  "; BL = baseline; S1-S5 = Sessions 1-5; FU = follow-up; RI = random intercept; RS = random slope; adj. = adjusted; unadj. = unadjusted; btw-grp = between-group; wtn-grp = within-group."))
 
-full_a2_base_str <- "*Note.* Significant parameters are in boldface (only %s were interpreted). The latter level of the contrast is the reference group. The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; HPD CI = Highest Posterior Density Credible Interval"
+full_a2_base_str <- "*Note.* Significant parameters are in boldface (only %s were initially interpreted; %s were then computed and interpreted). The latter level of the contrast is the reference group. The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; HPD CI = Highest Posterior Density Credible Interval"
 
-gen_note_drp_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] and para[3]"),
-  "; OR = odds ratio."))
-gen_note_eff_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] through para[4]"),
-  "; S5 = Session 5; FU = follow-up; RI = random intercept; RS = random slope."))
+gen_note_drp_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] and para[3]",
+                                                  "para[4] through para[14]"),
+  "; prob. = probability."))
+gen_note_eff_a2 <- as_paragraph_md(paste0(sprintf(full_a2_base_str, "para[1] through para[4]",
+                                                  "para[15] through para[40]"),
+  "; BL = baseline; S1-S5 = Sessions 1-5; FU = follow-up; RI = random intercept; RS = random slope; adj. = adjusted; unadj. = unadjusted; btw-grp = between-group; wtn-grp = within-group."))
 
 # Run function
 
@@ -558,23 +468,58 @@ print(doc, target = paste0(full_tbl_path, "full_tbls.docx"))
 
 # Define function to create summary table
 
-create_summ_tbl <- function(results_trim_list, analysis_type, analysis_sample) {
+create_summ_tbl <- function(results_trim_list, analysis_type, a_contrast_type, analysis_sample) {
   # Put all results in one data frame
   
   full_tbl_list <- lapply(results_trim_list, function(x) x$full_tbl)
   
-  summ_tbl <- do.call(rbind, full_tbl_list)
-  row.names(summ_tbl) <- 1:nrow(summ_tbl)
+  full_tbl_df <- do.call(rbind, full_tbl_list)
+  row.names(full_tbl_df) <- 1:nrow(full_tbl_df)
   
   # Restrict to desired rows for summary
   
   if (analysis_type == "efficacy") {
     target_params <- c("para[1]", "para[2]", "para[3]", "para[4]")
   } else if (analysis_type == "dropout") {
-    target_params <- c("para[1]", "para[3]")
+    target_params <- c("para[3]", "para[4]")
   }
   
-  summ_tbl <- summ_tbl[summ_tbl$param %in% target_params, ]
+  summ_tbl <- full_tbl_df[full_tbl_df$param %in% target_params, ]
+  
+  # Add between-group GMA d for efficacy models
+  
+  if (analysis_type == "efficacy") {
+    btw_d_params <- c("para[35]", "para[36]", "para[33]", "para[34]")
+    
+    btw_d_cols <- full_tbl_df[full_tbl_df$param %in% btw_d_params, ]
+    
+    names(btw_d_cols)[names(btw_d_cols) == "param"]       <- "d_param"
+    names(btw_d_cols)[names(btw_d_cols) == "label"]       <- "d_label"
+    names(btw_d_cols)[names(btw_d_cols) == "emp_mean_sd"] <- "d_emp_mean_sd"
+    names(btw_d_cols)[names(btw_d_cols) == "sig"]         <- "d_sig"
+    
+    if (a_contrast_type == "a1") {
+      names(btw_d_cols)[names(btw_d_cols) == "avg_sd"]     <- "d_avg_sd"
+      names(btw_d_cols)[names(btw_d_cols) == "pctl_bs_ci"] <- "d_pctl_bs_ci"
+      
+      merge_by_cols <- c("analysis_type", "analysis_sample", "y_var", 
+                         "a_contrast", "param", "model", "num_converge_all")
+    } else if (a_contrast_type == "a2") {
+      names(btw_d_cols)[names(btw_d_cols) == "hpd_ci"]     <- "d_hpd_ci"
+      names(btw_d_cols)[names(btw_d_cols) == "geweke_z"]   <- "d_geweke_z"
+      
+      merge_by_cols <- c("analysis_type", "analysis_sample", "y_var", 
+                         "a_contrast", "param", "model")
+    }
+    
+    btw_d_cols$param <- NA
+    btw_d_cols$param[btw_d_cols$d_param == "para[35]"] <- "para[1]"
+    btw_d_cols$param[btw_d_cols$d_param == "para[36]"] <- "para[2]"
+    btw_d_cols$param[btw_d_cols$d_param == "para[33]"] <- "para[3]"
+    btw_d_cols$param[btw_d_cols$d_param == "para[34]"] <- "para[4]"
+    
+    summ_tbl <- merge(summ_tbl, btw_d_cols, by = merge_by_cols, all.x = TRUE)
+  }
   
   # Sort table (note: alphabetical order reflects desired order for "a_contrast")
   
@@ -589,7 +534,7 @@ create_summ_tbl <- function(results_trim_list, analysis_type, analysis_sample) {
                                summ_tbl$a_contrast,
                                match(summ_tbl$param, param_order)), ]
   } else if (analysis_type == "dropout") {
-    param_order           <- c("para[3]", "para[1]")
+    param_order           <- c("para[3]", "para[4]")
     
     summ_tbl <- summ_tbl[order(summ_tbl$a_contrast,
                                match(summ_tbl$param, param_order)), ]
@@ -606,13 +551,13 @@ create_summ_tbl <- function(results_trim_list, analysis_type, analysis_sample) {
 
 # Run function
 
-summ_tbl_drp_a1_itt              <- create_summ_tbl(res_trm_drp_c1_2000bs, "dropout",  "c1_corr_itt_2000")
-summ_tbl_eff_a1_itt              <- create_summ_tbl(res_trm_eff_c1_2000bs, "efficacy", "c1_corr_itt_2000")
-summ_tbl_eff_a1_s5_train_compl   <- create_summ_tbl(res_trm_eff_c1_2000bs, "efficacy", "c1_corr_s5_train_compl_2000")
+summ_tbl_drp_a1_itt              <- create_summ_tbl(res_trm_drp_c1_2000bs, "dropout",  "a1", "c1_corr_itt_2000")
+summ_tbl_eff_a1_itt              <- create_summ_tbl(res_trm_eff_c1_2000bs, "efficacy", "a1", "c1_corr_itt_2000")
+summ_tbl_eff_a1_s5_train_compl   <- create_summ_tbl(res_trm_eff_c1_2000bs, "efficacy", "a1", "c1_corr_s5_train_compl_2000")
 
-summ_tbl_drp_a2_class_meas_compl <- create_summ_tbl(res_trm_drp_c2_4_1000000iter, "dropout",  "c2_4_class_meas_compl")
-summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "c2_4_class_meas_compl")
-summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "c2_4_s5_train_compl")
+summ_tbl_drp_a2_class_meas_compl <- create_summ_tbl(res_trm_drp_c2_4_1000000iter, "dropout",  "a2", "c2_4_class_meas_compl")
+summ_tbl_eff_a2_class_meas_compl <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "a2", "c2_4_class_meas_compl")
+summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_trm_eff_c2_4_1000000iter, "efficacy", "a2", "c2_4_s5_train_compl")
 
 # ---------------------------------------------------------------------------- #
 # Create marginal effects summary table for efficacy models ----
@@ -623,35 +568,59 @@ summ_tbl_eff_a2_s5_train_compl   <- create_summ_tbl(res_trm_eff_c2_4_1000000iter
 create_marg_summ_tbl_eff <- function(results_trim_list, analysis_sample) {
   # Put all results in one data frame
   
-  marg_tbl_list <- lapply(results_trim_list, function(x) x$marg_tbl)
+  full_tbl_list <- lapply(results_trim_list, function(x) x$full_tbl)
   
-  summ_tbl <- do.call(rbind, marg_tbl_list)
-  row.names(summ_tbl) <- 1:nrow(summ_tbl)
+  full_tbl_df <- do.call(rbind, full_tbl_list)
+  row.names(full_tbl_df) <- 1:nrow(full_tbl_df)
   
   # Restrict to desired rows for summary
   
-  target_params <- c("marg[1]", "marg[2]", "marg[3]", "marg[4]")
+  target_params <- c("para[15]", "para[16]", "para[17]", "para[18]")
   
-  summ_tbl <- summ_tbl[summ_tbl$param %in% target_params, ]
+  summ_tbl <- full_tbl_df[full_tbl_df$param %in% target_params, ]
+  
+  # Add within-group GMA d
+
+  wtn_d_params <- c("para[37]", "para[38]", "para[39]", "para[40]")
+  
+  wtn_d_cols <- full_tbl_df[full_tbl_df$param %in% wtn_d_params, ]
+  
+  names(wtn_d_cols)[names(wtn_d_cols) == "param"]       <- "d_param"
+  names(wtn_d_cols)[names(wtn_d_cols) == "label"]       <- "d_label"
+  names(wtn_d_cols)[names(wtn_d_cols) == "emp_mean_sd"] <- "d_emp_mean_sd"
+  names(wtn_d_cols)[names(wtn_d_cols) == "avg_sd"]      <- "d_avg_sd"
+  names(wtn_d_cols)[names(wtn_d_cols) == "pctl_bs_ci"]  <- "d_pctl_bs_ci"
+  names(wtn_d_cols)[names(wtn_d_cols) == "sig"]         <- "d_sig"
+  
+  wtn_d_cols$param <- NA
+  wtn_d_cols$param[wtn_d_cols$d_param == "para[37]"] <- "para[15]"
+  wtn_d_cols$param[wtn_d_cols$d_param == "para[38]"] <- "para[16]"
+  wtn_d_cols$param[wtn_d_cols$d_param == "para[39]"] <- "para[17]"
+  wtn_d_cols$param[wtn_d_cols$d_param == "para[40]"] <- "para[18]"
+  
+  merge_by_cols <- c("analysis_type", "analysis_sample", "y_var", 
+                     "a_contrast", "param", "model", "num_converge_all")
+  
+  summ_tbl <- merge(summ_tbl, wtn_d_cols, by = merge_by_cols, all.x = TRUE)
   
   # Add column for phase
   
   summ_tbl$phase <- NA
-  summ_tbl$phase[summ_tbl$param %in% c("marg[1]", "marg[3]")] <- "Treatment"
-  summ_tbl$phase[summ_tbl$param %in% c("marg[2]", "marg[4]")] <- "Follow-Up"
+  summ_tbl$phase[summ_tbl$param %in% c("para[15]", "para[17]")] <- "TX"
+  summ_tbl$phase[summ_tbl$param %in% c("para[16]", "para[18]")] <- "FU"
   
   # Add column for treatment arm
   
   summ_tbl$arm <- NA
-  summ_tbl$arm[summ_tbl$param %in% c("marg[1]", "marg[2]")] <- "CBM-I"
-  summ_tbl$arm[summ_tbl$param %in% c("marg[3]", "marg[4]")] <- "Psychoeducation"
+  summ_tbl$arm[summ_tbl$param %in% c("para[15]", "para[16]")] <- "CBM-I"
+  summ_tbl$arm[summ_tbl$param %in% c("para[17]", "para[18]")] <- "Psychoeducation"
   
   # Sort table
   
   analysis_sample_order <- c("c1_corr_itt_2000", "c1_corr_s5_train_compl_2000")
   y_var_order           <- c("rr_pos_threat_m", "rr_neg_threat_m", "bbsiq_ben_m",
                              "bbsiq_neg_m", "oa_m", "dass21_as_m")
-  param_order           <- c("marg[1]", "marg[3]", "marg[2]", "marg[4]")
+  param_order           <- c("para[15]", "para[17]", "para[16]", "para[18]")
   
   summ_tbl <- summ_tbl[order(match(summ_tbl$analysis_sample, analysis_sample_order),
                              match(summ_tbl$y_var, y_var_order),
@@ -680,15 +649,21 @@ marg_summ_tbl_eff_a1_s5_train_compl <- create_marg_summ_tbl_eff(res_trm_eff_c1_2
 create_marg_summ_tbl_drp <- function(results_trim_list) {
   # Put all results in one data frame
   
-  marg_tbl_list <- lapply(results_trim_list, function(x) x$marg_tbl)
+  full_tbl_list <- lapply(results_trim_list, function(x) x$full_tbl)
   
-  summ_tbl <- do.call(rbind, marg_tbl_list)
+  summ_tbl <- do.call(rbind, full_tbl_list)
   row.names(summ_tbl) <- 1:nrow(summ_tbl)
+  
+  # Restrict to desired rows for summary
+  
+  target_params <- paste0("para[", 5:14, "]")
+  
+  summ_tbl <- summ_tbl[summ_tbl$param %in% target_params, ]
   
   # Add column for treatment arm
   
-  a_level1_params <- c("marg[1]", "marg[2]", "marg[3]", "marg[4]", "marg[5]")
-  a_level2_params <- c("marg[6]", "marg[7]", "marg[8]", "marg[9]", "marg[10]")
+  a_level1_params <- c("para[5]", "para[6]", "para[7]", "para[8]", "para[9]")
+  a_level2_params <- c("para[10]", "para[11]", "para[12]", "para[13]", "para[14]")
   
   summ_tbl$arm <- NA
   
@@ -704,21 +679,10 @@ create_marg_summ_tbl_drp <- function(results_trim_list) {
   summ_tbl$arm[summ_tbl$a_contrast == "a2_3" & summ_tbl$param %in% a_level1_params] <- "CBM-I HR No Coaching"
   summ_tbl$arm[summ_tbl$a_contrast == "a2_3" & summ_tbl$param %in% a_level2_params] <- "CBM-I LR"
   
-  # TODO: Ultimately move this parameter to dropout summary table
-  
-  summ_tbl$arm[summ_tbl$a_contrast == "a1"   & summ_tbl$param == "marg[11]"] <- "CBM-I vs. Psychoeducation"
-  summ_tbl$arm[summ_tbl$a_contrast == "a2_1" & summ_tbl$param == "marg[11]"] <- "CBM-I HR Coaching vs. No Coaching"
-  summ_tbl$arm[summ_tbl$a_contrast == "a2_2" & summ_tbl$param == "marg[11]"] <- "CBM-I HR Coaching vs. CBM-I LR"
-  summ_tbl$arm[summ_tbl$a_contrast == "a2_3" & summ_tbl$param == "marg[11]"] <- "CBM-I HR No Coaching vs. CBM-I LR"
-  
-  
-  
-  
-  
   # Sort table
   
-  param_order <- c("marg[3]", "marg[4]", "marg[5]", "marg[8]", "marg[9]", 
-                   "marg[10]", "marg[1]", "marg[2]", "marg[6]", "marg[7]")
+  param_order <- c("para[7]", "para[8]", "para[9]", "para[12]", "para[13]", 
+                   "para[14]", "para[5]", "para[6]", "para[10]", "para[11]")
   
   summ_tbl <- summ_tbl[order(summ_tbl$a_contrast,
                              match(summ_tbl$param, param_order)), ]
@@ -739,15 +703,19 @@ marg_summ_tbl_drp_a2_class_meas_compl <- create_marg_summ_tbl_drp(res_trm_drp_c2
 
 format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
   if (a_contrast_type == "a1") {
-    target_cols <- c("y_var", "param", "mean", "emp_sd", "avg_sd", "pctl_bs_ci")
+    target_cols <- c("y_var", "param", "emp_mean_sd", "pctl_bs_ci",
+                     "d_emp_mean_sd", "d_pctl_bs_ci")
     left_align_body_cols <- c("y_var", "param")
     merge_v_cols         <- "y_var"
     col_to_bold          <- "pctl_bs_ci"
+    d_col_to_bold        <- "d_pctl_bs_ci"
   } else if (a_contrast_type == "a2") {
-    target_cols <- c("y_var", "a_contrast", "param", "mean", "emp_sd", "hpd_ci")
+    target_cols <- c("y_var", "a_contrast", "param", "emp_mean_sd", "hpd_ci",
+                     "d_emp_mean_sd", "d_hpd_ci")
     left_align_body_cols <- c("y_var", "a_contrast", "param")
     merge_v_cols         <- c("y_var", "a_contrast")
     col_to_bold          <- "hpd_ci"
+    d_col_to_bold        <- "d_hpd_ci"
   }
   
   # Create flextable
@@ -769,14 +737,16 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
     fix_border_issues(part = "body") |>
     
     bold(which(summ_tbl$sig == 1), col_to_bold) |>
+    bold(which(summ_tbl$d_sig == 1), d_col_to_bold) |>
     
     set_header_labels(y_var                = "Outcome",
                       param                = "Estimand") |>
-    compose(j = "mean", part = "header",
-            value = as_paragraph("Emp. ", as_i("M"))) |>
-    compose(j = "emp_sd", part = "header",
-            value = as_paragraph("Emp. ", as_i("SD"))) |>
-    
+    compose(j = "emp_mean_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+    compose(j = "d_emp_mean_sd", part = "header",
+            value = as_paragraph(as_i("d"), 
+                                 " Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+
     labelizor(part = "body",
               labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
                          "rr_neg_threat_m" = "Negative Bias (RR)",
@@ -792,24 +762,33 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
   if (a_contrast_type == "a1") {
     summ_tbl_ft <- summ_tbl_ft |>
       set_header_labels(pctl_bs_ci         = "95% PB CI") |>
-      compose(j = "avg_sd", part = "header",
-              value = as_paragraph("Avg. ", as_i("SD")))
+      compose(j = "d_pctl_bs_ci", part = "header",
+              value = as_paragraph(as_i("d"), " 95% PB CI"))
   } else if (a_contrast_type == "a2") {
     summ_tbl_ft <- summ_tbl_ft |>
-      set_header_labels(a_contrast         = "Contrast",
+      set_header_labels(a_contrast         = "CBM-I Contrast",
                         hpd_ci             = "95% HPD CI") |>
+      compose(j = "d_hpd_ci", part = "header",
+              value = as_paragraph(as_i("d"), " 95% HPD CI")) |>
     
       labelizor(part = "body",
-                labels = c("a2_1"          = "CBM-I HR Coaching vs. No Coaching",
-                           "a2_2"          = "CBM-I HR Coaching vs. CBM-I LR",
-                           "a2_3"          = "CBM-I HR No Coaching vs. CBM-I LR"))
+                labels = c("a2_1"          = "HR Coaching vs. No Coaching",
+                           "a2_2"          = "HR Coaching vs. LR",
+                           "a2_3"          = "HR No Coaching vs. LR"))
   }
   
   summ_tbl_ft <- summ_tbl_ft |>
     add_footer_lines(gen_note) |>
     
-    autofit()
-  
+    footnote(j = 5,
+             value = as_paragraph_md(footnote),
+             ref_symbols = " a",
+             part = "header") |>
+    
+    autofit() |>
+    
+    width(j = 1, width = 1)
+
   return(summ_tbl_ft)
 }
 
@@ -818,10 +797,12 @@ format_summ_tbl_eff <- function(summ_tbl, a_contrast_type, gen_note, title) {
 summ_base_str <- "*Note.* Significant differences between contrast levels are in boldface. Separate models were fit for each %s. The latter level of the contrast is the reference group. %s TX = treatment; FU = follow-up; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
 
 gen_note_a1 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome", 
-  "Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval;")))
+  "Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). CBM-I = cognitive bias modification for interpretation; Emp. *M* (*SD*) = *M* and *SD* of empirical *M*s across bootstrap samples; PB CI = percentile bootstrap confidence interval;")))
 
 gen_note_a2 <- as_paragraph_md(paste0(sprintf(summ_base_str, "outcome and contrast",
   "Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). HPD CI = Highest Posterior Density Credible Interval; CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk;")))
+
+footnote <- "\\ *d* for slope during TX is the model-estimated standardized mean difference between contrast levels at Session 5, and *d* for slope during FU is that at follow-up; these *d*s are adjusted for any mean differences at baseline (and thus reflect differences only in growth, not in initial status). By contrast, *d*s for mean at Session 5 and mean at FU are unadjusted for any mean differences at baseline (and thus reflect differences in both initial status and growth)."
 
 # Run function
 
@@ -842,9 +823,12 @@ summ_tbl_eff_a2_s5_train_compl_ft   <- format_summ_tbl_eff(summ_tbl_eff_a2_s5_tr
 # Define function to format marginal effects summary table for "a1" efficacy models
 
 format_marg_summ_tbl_eff <- function(marg_summ_tbl, gen_note, title) {
-    target_cols <- c("y_var", "phase", "arm", "estimate")
+    target_cols <- c("y_var", "phase", "arm", "emp_mean_sd", "pctl_bs_ci",
+                     "d_emp_mean_sd", "d_pctl_bs_ci")
     left_align_body_cols <- c("y_var", "phase", "arm")
     merge_v_cols         <- c("y_var", "phase")
+    col_to_bold          <- "pctl_bs_ci"
+    d_col_to_bold        <- "d_pctl_bs_ci"
 
   # Create flextable
   
@@ -864,13 +848,24 @@ format_marg_summ_tbl_eff <- function(marg_summ_tbl, gen_note, title) {
     valign(j = merge_v_cols, valign = "top", part = "body") |>
     fix_border_issues(part = "body") |>
     
+    bold(which(marg_summ_tbl$sig == 1), col_to_bold) |>
+    bold(which(marg_summ_tbl$d_sig == 1), d_col_to_bold) |>
+    
     set_header_labels(y_var                = "Outcome",
                       phase                = "Phase",
-                      arm                  = "Contrast Level",
-                      estimate             = "Estimate") |>
+                      arm                  = "Level",
+                      pctl_bs_ci           = "95% PB CI") |>
+    compose(j = "emp_mean_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+    compose(j = "d_emp_mean_sd", part = "header",
+            value = as_paragraph(as_i("d"),
+                                 " Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+    compose(j = "d_pctl_bs_ci", part = "header",
+            value = as_paragraph(as_i("d"), " 95% PB CI")) |>
 
     labelizor(part = "body",
-              labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
+              labels = c("Psychoeducation" = "Psychoed.",
+                         "rr_pos_threat_m" = "Positive Bias (RR)",
                          "rr_neg_threat_m" = "Negative Bias (RR)",
                          "bbsiq_ben_m"     = "Benign Bias (BBSIQ)",
                          "bbsiq_neg_m"     = "Negative Bias (BBSIQ)",
@@ -879,14 +874,24 @@ format_marg_summ_tbl_eff <- function(marg_summ_tbl, gen_note, title) {
   
     add_footer_lines(gen_note) |>
     
-    autofit()
+    footnote(j = 6,
+             value = as_paragraph_md(footnote),
+             ref_symbols = " a",
+             part = "header") |>
+    
+    autofit() |>
+    
+    width(j = 1, width = 1) |>
+    width(j = 2, width = .5)
   
   return(marg_summ_tbl_ft)
 }
 
 # Define general notes
 
-gen_note <- as_paragraph_md("*Note.* Estimates were computed from pooled model parameters. Separate models were fit for each outcome. CBM-I = cognitive bias modification for interpretation; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales.")
+gen_note <- as_paragraph_md("*Note.* Significant differences from 0 are in boldface. Separate models were fit for each outcome. Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and number of samples in which all parameters converged, see Supplement B). The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* (*SD*) = *M* and *SD* of empirical *M*s across bootstrap samples; PB CI = percentile bootstrap confidence interval; TX = treatment; FU = follow-up; CBM-I = cognitive bias modification for interpretation; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales.")
+
+footnote <- "\\ For TX phase, *d* is the model-estimated standardized mean difference within the contrast level from baseline to Session 5. For FU phase, *d* is that from baseline to follow-up."
 
 # Run function
 
@@ -907,8 +912,8 @@ summ_tbl_drp <- merge(summ_tbl_drp_a1_itt, summ_tbl_drp_a2_class_meas_compl,
 # Define function to format dropout summary table
 
 format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
-  target_cols <- c("analysis_sample", "a_contrast", "param", "mean", "emp_sd", 
-                   "avg_sd", "pctl_bs_ci", "hpd_ci")
+  target_cols <- c("analysis_sample", "a_contrast", "param", "emp_mean_sd", 
+                   "pctl_bs_ci", "hpd_ci")
   left_align_body_cols <- c("analysis_sample", "a_contrast", "param")
   merge_v_cols         <- c("analysis_sample", "a_contrast")
   cols_to_bold         <- c("pctl_bs_ci", "hpd_ci")
@@ -938,13 +943,9 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
                       param                      = "Estimand",
                       pctl_bs_ci                 = "95% PB CI",
                       hpd_ci                     = "95% HPD CI") |>
-    compose(j = "mean", part = "header",
-            value = as_paragraph("Emp. ", as_i("M"))) |>
-    compose(j = "emp_sd", part = "header",
-            value = as_paragraph("Emp. ", as_i("SD"))) |>
-    compose(j = "avg_sd", part = "header",
-            value = as_paragraph("Avg. ", as_i("SD"))) |>
-    
+    compose(j = "emp_mean_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+
     labelizor(part = "body",
               labels = c("c1_corr_itt_2000"      = "ITT",
                          "c2_4_class_meas_compl" = "CMC",
@@ -953,7 +954,7 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
                          "a2_2"                  = "CBM-I HR Coaching vs. CBM-I LR",
                          "a2_3"                  = "CBM-I HR No Coaching vs. CBM-I LR",
                          "para[3]"               = "Not completing TX (OR)",
-                         "para[1]"               = "Log No. incompl. sessions")) |>
+                         "para[4]"               = "No. incompl. sessions (IRR)")) |>
     
     add_footer_lines(gen_note) |>
     
@@ -969,10 +970,10 @@ format_summ_tbl_drp <- function(summ_tbl, gen_note, footnotes, title) {
 
 # Define general note
 
-footnotes <- list(ITT_a = "\\ For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* = *M* of empirical *M*s across bootstrap samples; Emp. *SD* = *SD* of empirical *M*s across bootstrap samples; Avg. *SD* = *M* of empirical *SD*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
-                  CMC_b = "\\ For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* = empirical *M*; Emp. *SD* = empirical *SD*; HPD CI = Highest Posterior Density Credible Interval.")
+footnotes <- list(ITT_a = "\\ For the ITT model, results were pooled across bootstrap samples in which all parameters converged, and the posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* (*SD*) = *M* and *SD* of empirical *M*s across bootstrap samples; PB CI = percentile bootstrap confidence interval.",
+                  CMC_b = "\\ For the CMC models, the posterior distribution was based on 500,000 MCMC sampling iterations (after 500,000 burn-in iterations). Emp. *M* (*SD*) = empirical *M* and *SD*; HPD CI = Highest Posterior Density Credible Interval.")
 
-gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session (the odds ratio comparing the contrast levels is shown); the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session (the difference between contrast levels in the log of the number of incomplete sessions is shown). Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; TX = treatment; OR = odds ratio.")
+gen_note <- as_paragraph_md("*Note.* The zero-inflation (logistic regression) model predicts whether a participant may (vs. will not) have $\\ge$ 1 incomplete session (the odds ratio comparing the contrast levels is shown); the count (Poisson regression) model predicts number of incomplete sessions (0-5) for participants who may have $\\ge$ 1 incomplete session (the incident rate ratio comparing the contrast levels is shown). Significant differences between contrast levels are in boldface. Separate models were fit for each contrast. The latter level of the contrast is the reference group. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). CBM-I = cognitive bias modification for interpretation; HR = Higher Risk; LR = Lower Risk; TX = treatment; OR = odds ratio; IRR = incident rate ratio.")
 
 # Run function
 
@@ -986,9 +987,10 @@ summ_tbl_drp_ft <- format_summ_tbl_drp(summ_tbl_drp, gen_note, footnotes,
 # Define function to format marginal estimates summary table for "a1" dropout model
 
 format_marg_summ_tbl_drp <- function(marg_summ_tbl, gen_note, title) {
-  target_cols <- c("model", "arm", "param", "estimate")
+  target_cols <- c("model", "arm", "param", "emp_mean_sd", "pctl_bs_ci")
   left_align_body_cols <- c("model", "arm", "param")
   merge_v_cols         <- c("model", "arm")
+  col_to_bold          <- "pctl_bs_ci"
   
   # Create flextable
   
@@ -1008,25 +1010,28 @@ format_marg_summ_tbl_drp <- function(marg_summ_tbl, gen_note, title) {
     valign(j = merge_v_cols, valign = "top", part = "body") |>
     fix_border_issues(part = "body") |>
     
-    set_header_labels(model                = "Model",
-                      arm                  = "Contrast Level",
-                      param                = "Estimand",
-                      estimate             = "Estimate") |>
+    bold(which(marg_summ_tbl$sig == 1), col_to_bold) |>
     
+    set_header_labels(model                = "Model",
+                      arm                  = "Level",
+                      param                = "Estimand",
+                      pctl_bs_ci           = "95% PB CI") |>
+    compose(j = "emp_mean_sd", part = "header",
+            value = as_paragraph("Emp. ", as_i("M"), " (", as_i("SD"), ")")) |>
+
     labelizor(part = "body",
               labels = c("substantive mixture model (zero-inflation model)" = "Zero-inflation",
                          "substantive mixture model (count model)" = "Count",
-                         "marg[3]"  = "Log odds of not completing TX",
-                         "marg[4]"  = "Odds of not completing TX",
-                         "marg[5]"  = "Probability of not completing TX",
-                         "marg[8]"  = "Log odds of not completing TX",
-                         "marg[9]"  = "Odds of not completing TX",
-                         "marg[10]" = "Probability of not completing TX",
-                         "marg[1]"  = "Log No. of incomplete sessions",
-                         "marg[2]"  = "No. of incomplete sessions (incident rate)",
-                         "marg[6]"  = "Log No. of incomplete sessions",
-                         "marg[7]"  = "No. of incomplete sessions (incident rate)",
-                         "marg[11]" = "Incident rate ratio")) |>
+                         "para[7]"  = "Log odds of not completing TX",
+                         "para[8]"  = "Odds of not completing TX",
+                         "para[9]"  = "Probability of not completing TX",
+                         "para[12]" = "Log odds of not completing TX",
+                         "para[13]" = "Odds of not completing TX",
+                         "para[14]" = "Probability of not completing TX",
+                         "para[5]"  = "Log No. of incompl. sessions",
+                         "para[6]"  = "No. of incompl. sessions",
+                         "para[10]" = "Log No. of incompl. sessions",
+                         "para[11]" = "No. of incompl. sessions")) |>
     
     add_footer_lines(gen_note) |>
     
@@ -1037,29 +1042,13 @@ format_marg_summ_tbl_drp <- function(marg_summ_tbl, gen_note, title) {
 
 # Define general notes
 
-gen_note <- as_paragraph_md("*Note.* Estimates were computed from pooled mixture model parameters. CBM-I = cognitive bias modification for interpretation; TX = treatment.")
+gen_note <- as_paragraph_md("*Note.* Significant differences from 0 (for log odds and log No.), 1 (for odds and No.), and 0.5 (for probability) are in boldface. Results were pooled across bootstrap samples in which all parameters converged. Only estimands of interest are shown (for all model parameters and convergence diagnostics, see Supplement B). The posterior disribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Emp. *M* (*SD*) = *M* and *SD* of empirical *M*s across bootstrap samples; PB CI = percentile bootstrap confidence interval; CBM-I = cognitive bias modification for interpretation; TX = treatment.")
 
 # Run function
 
 marg_summ_tbl_drp_a1_itt_ft <- 
   format_marg_summ_tbl_drp(marg_summ_tbl_drp_a1_itt, gen_note,
   "Stage 1 Marginal Dropout Estimates for Intent-To-Treat Sample")
-
-marg_summ_tbl_drp_a2_class_meas_compl_ft <- 
-  format_marg_summ_tbl_drp(marg_summ_tbl_drp_a2_class_meas_compl, gen_note,
-  "Stage 2 Marginal Dropout Estimates for Classification Measure Completer Sample")
-
-# TODO (figure out if need table like below)
-
-
-
-
-
-test <- rbind(marg_summ_tbl_drp_a1_itt, marg_summ_tbl_drp_a2_class_meas_compl)
-test <- test[test$param %in% c("marg[5]", "marg[2]", "marg[10]", "marg[7]"), ]
-test_ft <- format_marg_summ_tbl_drp(test, gen_note,
-  "Stages 1-2 Marginal Dropout Estimates for Intent-to-Treat and Classification Measure Completer Samples")
-save_as_docx(test_ft, path = "./results/bayesian/tables/summ/test_ft.docx", pr_section = lsect_prop, align = "left")
 
 # ---------------------------------------------------------------------------- #
 # Write summary tables to MS Word ----

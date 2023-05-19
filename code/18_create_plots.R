@@ -40,7 +40,7 @@ source("./code/01c_set_officer_properties.R")
 # Import results and parameter labels ----
 # ---------------------------------------------------------------------------- #
 
-load("./results/bayesian/pooled/w_marg_effects/res_trm_eff_c1_2000bs.RData")
+load("./results/bayesian/pooled/w_full_tbls/res_trm_eff_c1_2000bs.RData")
 
 # ---------------------------------------------------------------------------- #
 # Structure predicted time-specific means by treatment arm for efficacy plots ----
@@ -49,23 +49,19 @@ load("./results/bayesian/pooled/w_marg_effects/res_trm_eff_c1_2000bs.RData")
 # Define function to structure predicted means for plots of "a1" efficacy models
 
 structure_pred_means <- function(results_trim) {
-  # Extract predicted means from marginal effects table
+  # Extract predicted means from full table
   
-  marg_tbl <- results_trim$marg_tbl
+  full_tbl_raw <- results_trim$full_tbl_raw
   
-  pred_means <- marg_tbl[marg_tbl$param %in% c(paste0("marg[", 5:18, "]")), ]
+  pred_means <- full_tbl_raw[full_tbl_raw$param %in% c(paste0("para[", 19:32, "]")), ]
   
   pred_means$a_contrast_level <- NA
-  pred_means$a_contrast_level[pred_means$param %in% c(paste0("marg[", 5:11,  "]"))] <- 1
-  pred_means$a_contrast_level[pred_means$param %in% c(paste0("marg[", 12:18, "]"))] <- -1
+  pred_means$a_contrast_level[pred_means$param %in% c(paste0("para[", 19:25,  "]"))] <- 1
+  pred_means$a_contrast_level[pred_means$param %in% c(paste0("para[", 26:32, "]"))] <- -1
   
   assessments <- c("Baseline", paste0("Session ", 1:5), "Follow-Up")
   pred_means$assessment <- rep(assessments, times = 2)
   
-  # Change "estimate" from character to numeric for ggplot2
-  
-  pred_means$estimate <- as.numeric(pred_means$estimate)
-
   # Code contrast level and assessment as factors for ggplot2
   
   if (results_trim$model_info$a_contrast == "a1") {
@@ -146,13 +142,13 @@ create_plot <- function(results_trim) {
   # Create plot
   
   pred_means_plot <- ggplot(pred_means,
-                            aes(x = assessment, y = estimate, 
+                            aes(x = assessment, y = mean,
                             group = arm, color = arm, linetype = arm)) +
     geom_line() +
     geom_point(data = pred_means[!(pred_means$assessment %in% hidden_pts), ]) +
-    # geom_errorbar(aes(ymin = estimate - se, ymax = estimate + se),
-    #               pred_means[!(pred_means$assessment %in% hidden_pts), ],
-    #               width = .3) +
+    geom_errorbar(aes(ymin = mean - emp_sd, ymax = mean + emp_sd),
+                  pred_means[!(pred_means$assessment %in% hidden_pts), ],
+                  width = .3) +
     labs(title = title, 
          x = "Assessment",
          y = "Average Item Score") +
@@ -284,13 +280,13 @@ plot_titles <-
     "Stage 1 Estimated Interpretation Bias Means for Session 5 Training Completer Sample", 
     "Stage 1 Estimated Anxiety Means for Session 5 Training Completer Sample")
 
-# TODO: Italicize package names in notes (if possible)
+# TODO: In notes, (a) italicize package names, SD, and M and (b) add +/- sign (if possible)
 
 
 
 
 
-plot_base_str <- "Estimates were computed from pooled model parameters. Separate models were fit for each outcome. Plots were generated with the ggplot2 (ver. 3.4.1; Wickham et al., 2023) and cowplot (ver. 1.1.1; Wilke, 2020) packages."
+plot_base_str <- "Means (+/- 1 empirical SD; i.e., SD of empirical Ms across bootstrap samples) are shown. Separate models were fit for each outcome. Results were pooled across bootstrap samples in which all parameters converged. The posterior distribution in each bootstrap sample was based on 10,000 MCMC sampling iterations (after 10,000 burn-in iterations). Plots were generated with the ggplot2 (ver. 3.4.1; Wickham et al., 2023) and cowplot (ver. 1.1.1; Wilke, 2020) packages."
 plot_bias_str <- "Estimates are not shown at Sessions 1, 2, and 4 because these outcomes were not administered at these assessment points. CBM-I = cognitive bias modification for interpretation; RR = Recognition Ratings; BBSIQ = Brief Body Sensations Interpretation Questionnaire."
 plot_anx_str  <- "Estimates are not shown at Sessions 1, 2, and 4 for DASS-21-AS because this outcome was not administered at these assessment points. CBM-I = cognitive bias modification for interpretation; OASIS = Overall Anxiety Severity and Impairment Scale; DASS-21-AS = Anxiety Subscale of Depression Anxiety Stress Scales."
 

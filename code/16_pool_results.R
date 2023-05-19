@@ -42,9 +42,9 @@ import_results <- function(anlys_path_pattern, c2_4_iter_path_pattern) {
   if (anlys_path_pattern %in% c("dropout/out/c1_500", "efficacy/out/c1_500")) {
     file_pattern <- "results_trim.RData"
   } else if (anlys_path_pattern %in% c("dropout/out/c1_2000", "efficacy/out/c1_2000")) {
-    file_pattern <- "results_"
+    file_pattern <- "results_for_model_"
   } else if (anlys_path_pattern %in% c("dropout/out/c2_4_", "efficacy/out/c2_4_")) {
-    if (c2_4_iter_path_pattern %in% "burn_10000_total_20000") {
+    if (c2_4_iter_path_pattern == "burn_10000_total_20000") {
       file_pattern <- "results_trim.RData"
     } else if (c2_4_iter_path_pattern == "burn_500000_total_1000000") {
       file_pattern <- "results.RData"
@@ -57,6 +57,11 @@ import_results <- function(anlys_path_pattern, c2_4_iter_path_pattern) {
 
   if (!is.null(c2_4_iter_path_pattern)) {
     res_filenames <- res_filenames[grepl(c2_4_iter_path_pattern, res_filenames)]
+    
+    # Exclude old results
+    
+    res_filenames <- res_filenames[!grepl(paste0(c2_4_iter_path_pattern, "_old"),
+                                          res_filenames)]
   }
   
   res <- lapply(paste0(res_dir, "/", res_filenames),
