@@ -358,6 +358,10 @@ anlys_df <- merge(anlys_df,
 
 anlys_df <- anlys_df[order(anlys_df$participant_id, anlys_df$j), ]
 
+# Save data for later use in computing raw means and standard deviations
+
+save(anlys_df, file = "./data/intermediate_clean_further/anlys_df.RData")
+
 # ---------------------------------------------------------------------------- #
 # Convert to wide format ----
 # ---------------------------------------------------------------------------- #

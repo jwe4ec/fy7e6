@@ -321,6 +321,10 @@ dem_tbl$condition_sep <-
          levels = c("TRAINING", "LR_TRAINING", "HR_NO_COACH", "HR_COACH", 
                     "CTRL_cls", "CTRL_ncls"))
 
+# Save data for later use in computing raw means and standard deviations
+
+save(dem_tbl, file = "./data/intermediate_clean_further/dem_tbl.RData")
+
 # Restrict to ITT and Session 5 training completer samples
 
 table(dem_tbl$condition_sep[dem_tbl$itt_anlys == 1])
