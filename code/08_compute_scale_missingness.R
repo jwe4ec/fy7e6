@@ -64,10 +64,7 @@ compute_scale_missingness_itt <- function(desc_tbl, outcome, J) {
 
 # Run function and write results
 
-missing_rates_path <- "./results/missing_rates/"
-dir.create(missing_rates_path)
-
-sink(file = paste0(missing_rates_path, "scale_level.txt"))
+sink(file = "./results/missing_rates/scale_missingness.txt")
 
 cat("Percentages of Scale-Level Missingness for Each Outcome:", "\n\n")
 
