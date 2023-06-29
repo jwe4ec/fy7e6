@@ -306,6 +306,82 @@ dat3$oa$oa_m[is.nan(dat3$oa$oa_m)] <- NA
 sum(is.nan(dat3$dass21_as$dass21_as_m)) == 0
 
 # ---------------------------------------------------------------------------- #
+# Compute rates of item-level missingness for ITT participants ----
+# ---------------------------------------------------------------------------- #
+
+# Restrict to ITT participants
+
+itt_ids <- dat3$participant$participant_id[dat3$participant$itt_anlys == 1]
+
+dat3_itt <- lapply(dat3, function(x) x[x$participant_id %in% itt_ids, ])
+
+# Define function to compute percentage of scale scores computed with at least 
+# one item missing for given outcome
+
+compute_some_item_missingness <- function(dat, outcome, items) {
+  denom <- sum(!is.na(dat[, outcome]))
+  
+  rows_at_least_one_item_na <- rowSums(is.na(dat[, items])) > 0
+  rows_all_items_na <- rowSums(!is.na(dat[, items])) == 0
+  
+  numer <- nrow(dat[rows_at_least_one_item_na & !rows_all_items_na, ])
+  
+  prop <- numer/denom
+  percent <- prop*100
+  
+  cat(outcome, ": ", percent, "%", "\n", sep = "")
+}
+
+# Run function for ITT participants and write results
+
+missing_rates_path <- "./results/missing_rates/"
+dir.create(missing_rates_path)
+
+sink(file = paste0(missing_rates_path, "some_item_missingness.txt"))
+
+cat("Percentages of Scale Scores Computed With At Least One Item Missing:", "\n\n")
+
+compute_some_item_missingness(dat3_itt$rr,        "rr_pos_threat_m", rr_pos_threat_items)
+compute_some_item_missingness(dat3_itt$rr,        "rr_neg_threat_m", rr_neg_threat_items)
+compute_some_item_missingness(dat3_itt$bbsiq,     "bbsiq_ben_m",     bbsiq_ben_items)
+compute_some_item_missingness(dat3_itt$bbsiq,     "bbsiq_neg_m",     bbsiq_neg_items)
+compute_some_item_missingness(dat3_itt$oa,        "oa_m",            oa_items)
+compute_some_item_missingness(dat3_itt$dass21_as, "dass21_as_m",     dass21_as_items)
+
+sink()
+
+# TODO (report by arm and condition): Define function to compute number of scale scores missing due to endorsements
+# of "prefer not to answer" for all items
+
+compute_all_item_missingness <- function(dat, outcome, items) {
+  num_rows_all_items_na <- sum(rowSums(!is.na(dat[, items])) == 0)
+
+  num_missing_outcome <- sum(is.na(dat[, outcome]))
+  
+  cat(num_rows_all_items_na == num_missing_outcome, "\n")
+  
+  cat(outcome, ": ", num_rows_all_items_na, "\n", sep = "")
+}
+
+
+
+
+
+# TODO: Run function for ITT participants and write results
+
+compute_all_item_missingness(dat3_itt$rr,        "rr_pos_threat_m", rr_pos_threat_items)
+compute_all_item_missingness(dat3_itt$rr,        "rr_neg_threat_m", rr_neg_threat_items)
+compute_all_item_missingness(dat3_itt$bbsiq,     "bbsiq_ben_m",     bbsiq_ben_items)
+compute_all_item_missingness(dat3_itt$bbsiq,     "bbsiq_neg_m",     bbsiq_neg_items)
+compute_all_item_missingness(dat3_itt$oa,        "oa_m",            oa_items)
+compute_all_item_missingness(dat3_itt$dass21_as, "dass21_as_m",     c(dass21_as_items, 
+                                                                      dass21_as_mean_items))
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
 # Collapse "Eligibility" and "preTest" into "baseline" ----
 # ---------------------------------------------------------------------------- #
 
