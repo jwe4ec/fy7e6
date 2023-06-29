@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-# Compute Missing Data Rates
+# Compute Scale-Level Missing Data Rates
 # Author: Jeremy W. Eberle
 # ---------------------------------------------------------------------------- #
 
@@ -40,7 +40,9 @@ load("./results/descriptives/res_outcomes_s5_train_compl_by_cond.RData")
 # ---------------------------------------------------------------------------- #
 
 # Define function to compute rate of scale-level missingness for given outcome
-# based on number of ITT participants (N) and number of time points (J)
+# based on number of ITT participants (N) and number of time points (J). Note:
+# Scale-level missingness can occur due to (a) attrition or (b) endorsing "prefer 
+# not to answer" for all items (see "all_item_missingness.txt" for rates of this).
 
 compute_scale_missingness_itt <- function(desc_tbl, outcome, J) {
   n_cols <- c("n_TRAINING", "n_LR_TRAINING", "n_HR_NO_COACH", "n_HR_COACH", 
@@ -52,11 +54,12 @@ compute_scale_missingness_itt <- function(desc_tbl, outcome, J) {
   dat <- desc_tbl[desc_tbl$Outcome == outcome, n_cols]
   dat <- sapply(dat, as.numeric)
   
-  # Compute proportion of scale-level missingness
+  # Compute percentages of scale-level missingness
   
   prop <- 1 - sum(dat, na.rm = TRUE)/(N*J)
+  percent <- prop*100
   
-  cat(outcome, ": ", prop, "\n", sep = "")
+  cat(outcome, ": ", percent, "%", "\n", sep = "")
 }
 
 # Run function and write results
@@ -66,7 +69,7 @@ dir.create(missing_rates_path)
 
 sink(file = paste0(missing_rates_path, "scale_level.txt"))
 
-cat("Proportions of Scale-Level Missingness for Each Outcome:", "\n\n")
+cat("Percentages of Scale-Level Missingness for Each Outcome:", "\n\n")
 
 compute_scale_missingness_itt(res_outcomes_itt_by_cond, "rr_pos_threat_m", 4)
 compute_scale_missingness_itt(res_outcomes_itt_by_cond, "rr_neg_threat_m", 4)
@@ -76,8 +79,3 @@ compute_scale_missingness_itt(res_outcomes_itt_by_cond, "oa_m",            7)
 compute_scale_missingness_itt(res_outcomes_itt_by_cond, "dass21_as_m",     4)
 
 sink()
-
-
-
-
-
