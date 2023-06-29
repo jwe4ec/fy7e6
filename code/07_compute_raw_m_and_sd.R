@@ -165,6 +165,11 @@ res_outcomes_itt_by_cond <-
 res_outcomes_s5_train_compl_by_cond <- 
   compute_desc_outcomes_by_cond(anlys_df_s5_train_compl, out, outcomes, ordered_levs)
 
+# Save objects for later use in computing rates of scale-level missingness
+
+save(res_outcomes_itt_by_cond,            file = "./results/descriptives/res_outcomes_itt_by_cond.RData")
+save(res_outcomes_s5_train_compl_by_cond, file = "./results/descriptives/res_outcomes_s5_train_compl_by_cond.RData")
+
 # ---------------------------------------------------------------------------- #
 # Format descriptives tables ----
 # ---------------------------------------------------------------------------- #
