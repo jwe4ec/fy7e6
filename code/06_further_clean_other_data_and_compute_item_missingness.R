@@ -350,24 +350,32 @@ compute_some_item_missingness(dat3_itt$dass21_as, "dass21_as_m",     dass21_as_i
 
 sink()
 
-# TODO (report by arm and condition): Define function to compute number of scale scores missing due to endorsements
+# Define function to compute number of scale scores missing due to endorsements
 # of "prefer not to answer" for all items
 
 compute_all_item_missingness <- function(dat, outcome, items) {
-  num_rows_all_items_na <- sum(rowSums(!is.na(dat[, items])) == 0)
+  rows_all_items_na <- rowSums(!is.na(dat[, items])) == 0
+  num_rows_all_items_na <- sum(rows_all_items_na)
 
   num_missing_outcome <- sum(is.na(dat[, outcome]))
   
-  cat(num_rows_all_items_na == num_missing_outcome, "\n")
+  if (num_rows_all_items_na != num_missing_outcome) {
+    warning(paste0("For ", outcome, ", ",
+                   "number of rows with NA for all items does not equal ",
+                   "number of scale scores with values of NA.", "\n"))
+  }
   
   cat(outcome, ": ", num_rows_all_items_na, "\n", sep = "")
+  
+  print(table(dat[rows_all_items_na, "session_only"]))
+  cat("\n", "-----", "\n\n")
 }
 
+# Run function for ITT participants and write results
 
+sink(file = paste0(missing_rates_path, "all_item_missingness.txt"))
 
-
-
-# TODO: Run function for ITT participants and write results
+cat("Number of Scale Scores Missing Due to 'Prefer Not to Answer' for All Items:", "\n\n")
 
 compute_all_item_missingness(dat3_itt$rr,        "rr_pos_threat_m", rr_pos_threat_items)
 compute_all_item_missingness(dat3_itt$rr,        "rr_neg_threat_m", rr_neg_threat_items)
@@ -376,10 +384,7 @@ compute_all_item_missingness(dat3_itt$bbsiq,     "bbsiq_neg_m",     bbsiq_neg_it
 compute_all_item_missingness(dat3_itt$oa,        "oa_m",            oa_items)
 compute_all_item_missingness(dat3_itt$dass21_as, "dass21_as_m",     c(dass21_as_items, 
                                                                       dass21_as_mean_items))
-
-
-
-
+sink()
 
 # ---------------------------------------------------------------------------- #
 # Collapse "Eligibility" and "preTest" into "baseline" ----
