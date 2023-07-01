@@ -69,6 +69,30 @@ version_control_tables_plots <- function() {
 }
 
 # ---------------------------------------------------------------------------- #
+# Define version_control_gran() ----
+# ---------------------------------------------------------------------------- #
+
+# Define function like version_control() above but using later "meta.groundhog"
+# and "groundhog_day" so groundhog can use GRAN rather than MRAN, which will be
+# discontinued (see https://groundhogr.com/gran/)
+
+version_control_gran <- function() {
+  script_R_version <- "R version 4.1.2 (2021-11-01)"
+  current_R_version <- R.Version()$version.string
+  
+  if(current_R_version != script_R_version) {
+    warning(paste0("This script is based on ", script_R_version,
+                   ". You are running ", current_R_version, "."))
+  }
+  
+  library(groundhog)
+  # meta.groundhog("2023-06-01")
+  groundhog_day <- "2023-06-01"
+  
+  return(groundhog_day)
+}
+
+# ---------------------------------------------------------------------------- #
 # Define convert_POSIXct() ----
 # ---------------------------------------------------------------------------- #
 
