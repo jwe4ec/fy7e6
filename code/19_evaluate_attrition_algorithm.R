@@ -28,7 +28,9 @@ groundhog_day <- version_control_gran()
 
 # Load packages
 
-groundhog.library("caret", groundhog_day, tolerate.R.version = "4.1.2")
+pkgs <- c("caret", "ggplot2")
+
+groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
 # Set seed
 
@@ -94,6 +96,18 @@ table(alg_eval_cbm_class$conditioning[alg_eval_cbm_class$risk_classification_met
 alg_eval_cbm_pure <- alg_eval_cbm_class[alg_eval_cbm_class$session_only == "secondSession" &
                                           alg_eval_cbm_class$conditioning != "HR_COACH", ]
 
+# Note: "compl_session_assess" values map directly onto presence of "SESSION_COMPLETE"
+# values at Session 2 in "task_log" (i.e., what algorithm was trained to predict), even
+# though "SESSION_COMPLETE" required additional tasks to be completed
+
+session_complete_ids <- dat2$task_log[dat2$task_log$session_only == "secondSession" &
+                                        dat2$task_log$task_name == "SESSION_COMPLETE", "participant_id"]
+
+alg_eval_cbm_pure$session_complete <- 0
+alg_eval_cbm_pure$session_complete[alg_eval_cbm_pure$participant_id %in% session_complete_ids] <- 1
+
+all(alg_eval_cbm_pure$session_complete == alg_eval_cbm_pure$compl_session_assess) == TRUE
+
 # Compute predicted and truth labels, where 0 is "low risk" and 1 is "high risk"
 # with respect to completing all Session 2 training and assessment tasks (given
 # that training and assessment are done in series, we can focus on assessment)
@@ -132,3 +146,44 @@ mat <- confusionMatrix(alg_eval_cbm_pure$pred_label, alg_eval_cbm_pure$truth_lab
 
 mat
 mat$byClass[c("Precision", "Recall", "F1")]
+
+# ---------------------------------------------------------------------------- #
+# Explore differences in attrition scores by classification group ----
+# ---------------------------------------------------------------------------- #
+
+# Make condition a factor for ggplot2
+
+alg_eval_cbm_pure$conditioning <- as.factor(alg_eval_cbm_pure$conditioning)
+
+# Create violin plot by group. Colors checked for vision deficiency using HCL 
+# Wizard (http://hclwizard.org:3000/cvdemulator/).
+
+ggplot(alg_eval_cbm_pure, aes(x = conditioning, y = confidence, fill = conditioning)) +
+  geom_violin(scale = "width", trim = FALSE) +
+  geom_boxplot(width = 0.2, fill = "white", color = "black") +
+  scale_fill_manual(values = c("HR_NO_COACH" = "darkgrey", "LR_TRAINING" = "white")) +
+  stat_summary(fun = median, geom = "text", vjust = -7.5, 
+               aes(label = paste0("Median = ", round(..y.., 2))), size = 4) +
+  theme_classic() +
+  labs(x = "Density", y = "Predicted Probability") +
+  ggtitle("Predicted Probability of Dropout by Treatment Arm") +
+  coord_flip() +
+  guides(fill = FALSE) +
+  scale_x_discrete(labels = c("LR_TRAINING" = "Lower Risk CBM-I\n(n = 288)", 
+                              "HR_NO_COACH" = "Higher Risk CBM-I\nNo Coaching\n(n = 263)")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+# Create violin plot across groups
+
+ggplot(alg_eval_cbm_pure, aes(x = 1, y = confidence)) +
+  geom_violin(fill = "lightgrey", scale = "width", trim = FALSE) +
+  geom_boxplot(width = 0.2, fill = "white", color = "black") +
+  stat_summary(fun = median, geom = "text", vjust = -16,
+               aes(label = paste0("Median = ", round(..y.., 2))), size = 4) +
+  theme_classic() +
+  theme(axis.text.y = element_blank()) +
+  theme(axis.ticks.y = element_blank()) +
+  labs(x = "Density", y = "Predicted Probability") +
+  ggtitle("Predicted Probability of Dropout Across Treatment Arms (n = 551)") +
+  coord_flip() +
+  guides(fill = FALSE)
