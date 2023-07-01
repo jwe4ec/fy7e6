@@ -28,13 +28,17 @@ groundhog_day <- version_control_gran()
 
 # Load packages
 
-pkgs <- c("caret", "ggplot2")
+pkgs <- c("caret", "ggplot2", "cowplot", "officer")
 
 groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
 
 # Set seed
 
 set.seed(1234)
+
+# Load "officer" package properties
+
+source("./code/01c_set_officer_properties.R")
 
 # ---------------------------------------------------------------------------- #
 # Import data ----
@@ -124,6 +128,8 @@ alg_eval_cbm_pure$truth_label[alg_eval_cbm_pure$compl_session_assess == 1] <- "l
 # Export data
 
 write.csv(alg_eval_cbm_pure, "./data/temp/alg_eval_cbm_pure.csv", row.names = FALSE)
+write.csv(dat2$condition_assignment_settings, 
+          "./data/temp/condition_assignment_settings.csv", row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Evaluate algorithm performance ----
@@ -132,6 +138,7 @@ write.csv(alg_eval_cbm_pure, "./data/temp/alg_eval_cbm_pure.csv", row.names = FA
 # Import data
 
 alg_eval_cbm_pure <- read.csv("./data/temp/alg_eval_cbm_pure.csv")
+condition_assignment_settings <- read.csv("./data/temp/condition_assignment_settings.csv")
 
 # Convert predicted and truth labels to factors
 
@@ -144,46 +151,124 @@ alg_eval_cbm_pure$truth_label <- factor(alg_eval_cbm_pure$truth_label, levels = 
 
 mat <- confusionMatrix(alg_eval_cbm_pure$pred_label, alg_eval_cbm_pure$truth_label)
 
+# Export results
+
+path <- "./results/attrition_alg/"
+
+dir.create(path)
+
+sink(file = paste0(path, "model_performance.txt"))
+
 mat
 mat$byClass[c("Precision", "Recall", "F1")]
+
+sink()
 
 # ---------------------------------------------------------------------------- #
 # Explore differences in attrition scores by classification group ----
 # ---------------------------------------------------------------------------- #
 
+# Create vertical lines for attrition threshold values
+
+thres_lines <- geom_hline(yintercept = condition_assignment_settings$attrition_threshold, 
+                          linetype = "dotted", color = "red")
+
 # Make condition a factor for ggplot2
 
 alg_eval_cbm_pure$conditioning <- as.factor(alg_eval_cbm_pure$conditioning)
 
+# Define axis range for predicted probability
+
+pred_prob_axis_range <- c(0, 1)
+
 # Create violin plot by group. Colors checked for vision deficiency using HCL 
 # Wizard (http://hclwizard.org:3000/cvdemulator/).
 
-ggplot(alg_eval_cbm_pure, aes(x = conditioning, y = confidence, fill = conditioning)) +
+p_by_grp <- ggplot(alg_eval_cbm_pure, aes(x = conditioning, y = confidence, fill = conditioning)) +
   geom_violin(scale = "width", trim = FALSE) +
   geom_boxplot(width = 0.2, fill = "white", color = "black") +
   scale_fill_manual(values = c("HR_NO_COACH" = "darkgrey", "LR_TRAINING" = "white")) +
-  stat_summary(fun = median, geom = "text", vjust = -7.5, 
-               aes(label = paste0("Median = ", round(..y.., 2))), size = 4) +
+  stat_summary(fun = median, geom = "text", vjust = -5, hjust = 1.5, 
+               aes(label = paste0("Median = ", round(after_stat(y), 2))), size = 4) +
   theme_classic() +
   labs(x = "Density", y = "Predicted Probability") +
-  ggtitle("Predicted Probability of Dropout by Treatment Arm") +
+  ggtitle("By Treatment Arm") +
   coord_flip() +
-  guides(fill = FALSE) +
-  scale_x_discrete(labels = c("LR_TRAINING" = "Lower Risk CBM-I\n(n = 288)", 
-                              "HR_NO_COACH" = "Higher Risk CBM-I\nNo Coaching\n(n = 263)")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
+  guides(fill = "none") +
+  scale_x_discrete(labels = c("LR_TRAINING" = "LR CBM-I\n(n = 288)", 
+                              "HR_NO_COACH" = "HR CBM-I\nNo Coach\n(n = 263)")) +
+  theme(axis.text.y = element_text(hjust = 0.5)) +
+  scale_y_continuous(limits = pred_prob_axis_range) +
+  thres_lines
 
 # Create violin plot across groups
 
-ggplot(alg_eval_cbm_pure, aes(x = 1, y = confidence)) +
+p_across_grps <- ggplot(alg_eval_cbm_pure, aes(x = 1, y = confidence)) +
   geom_violin(fill = "lightgrey", scale = "width", trim = FALSE) +
   geom_boxplot(width = 0.2, fill = "white", color = "black") +
-  stat_summary(fun = median, geom = "text", vjust = -16,
-               aes(label = paste0("Median = ", round(..y.., 2))), size = 4) +
+  stat_summary(fun = median, geom = "text", vjust = -5, hjust = 1.5,
+               aes(label = paste0("Median = ", round(after_stat(y), 2))), size = 4) +
   theme_classic() +
   theme(axis.text.y = element_blank()) +
   theme(axis.ticks.y = element_blank()) +
   labs(x = "Density", y = "Predicted Probability") +
-  ggtitle("Predicted Probability of Dropout Across Treatment Arms (n = 551)") +
+  ggtitle("Across Treatment Arms (n = 551)") +
   coord_flip() +
-  guides(fill = FALSE)
+  guides(fill = "none") +
+  scale_y_continuous(limits = pred_prob_axis_range) +
+  thres_lines
+
+# Arrange plots
+
+plot <- plot_grid(p_by_grp + ylab(NULL),
+                  p_across_grps, 
+                  align = "hv", ncol = 1, rel_heights = c(1, .5), labels = "AUTO")
+
+# Save plots
+
+plots_path <- paste0(path, "plots/")
+
+dir.create(plots_path)
+
+ggsave2(paste0(plots_path, "plot.png"), plot = plot, width = 10, height = 10)
+
+# ---------------------------------------------------------------------------- #
+# Write plot to Word ----
+# ---------------------------------------------------------------------------- #
+
+# TODO: In note, italicize package names (if possible)
+
+
+
+
+
+# Section and text properties are sourced from "set_officer_properties.R" above
+
+plot_number <- "SA1"
+plot_title  <- "Probabilities of Dropout Before Completing Session 2 Predicted by Attrition Algorithm"
+plot_note   <- "Violin and box plots of participants' probabilities of dropout before completing all Session 2 treatment and assessment tasks are shown for CBM-I participants classified as lower or higher risk of dropout (excluding higher-risk CBM-I participants assigned to coaching). Dotted vertical lines show the different thresholds (18 total, with 14 unique values) used throughout the study to determine lower- versus higher-risk CBM-I groups. CBM-I = cognitive bias modification for interpretation; LR = lower risk; HR = higher risk. Plots were generated with the ggplot2 (ver. 3.4.2; Wickham et al., 2023) and cowplot (ver. 1.1.1; Wilke, 2020) packages."
+
+doc <- read_docx()
+doc <- body_set_default_section(doc, psect_prop)
+
+doc <- body_add_fpar(doc, fpar(ftext(paste0("Figure ", plot_number),
+                                     prop = text_prop_bold)))
+doc <- body_add_par(doc, "")
+
+doc <- body_add_fpar(doc, fpar(ftext(plot_title,
+                                     prop = text_prop_italic)))
+doc <- body_add_par(doc, "")
+
+doc <- body_add_gg(doc, plot,
+                   width = 6.5, height = 6.5)
+
+doc <- body_add_fpar(doc, fpar(ftext("Note.",
+                                     prop = text_prop_italic),
+                               ftext(" ",
+                                     prop = text_prop),
+                               ftext(plot_note,
+                                     prop = text_prop)))
+
+doc <- body_end_block_section(doc, block_section(psect_prop))
+
+print(doc, target = paste0(plots_path, "plot.docx"))
