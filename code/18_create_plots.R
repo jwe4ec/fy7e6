@@ -273,7 +273,7 @@ plots <- list(plot_eff_c1_corr_itt_2000_bias,
 
 y_var_types <- c("bias", "anxiety", "bias", "anxiety")
 plot_orientations <- rep("p", 4)
-plot_numbers <- c("2", "3", "SA1", "SA2")
+plot_numbers <- c("2", "3", "SA2", "SA3")
 plot_titles <- 
   c("Stage 1 Estimated Interpretation Bias Means for Intent-To-Treat Sample", 
     "Stage 1 Estimated Anxiety Means for Intent-To-Treat Sample", 
