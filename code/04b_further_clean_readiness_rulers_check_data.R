@@ -24,17 +24,9 @@ source("./code/01_define_functions.R")
 
 # Check correct R version, load groundhog package, and specify groundhog_day
 
-groundhog_day <- version_control_tables_plots()
+groundhog_day <- version_control()
 
-# Load packages
-
-pkgs <- c("flextable", "officer", "ftExtra")
-groundhog.library(pkgs, groundhog_day, tolerate.R.version = "4.1.2")
-
-# Set "flextable" package defaults and load "officer" package properties
-
-source("./code/01b_set_flextable_defaults.R")
-source("./code/01c_set_officer_properties.R")
+# No packages loaded
 
 # ---------------------------------------------------------------------------- #
 # Import data ----
@@ -108,8 +100,8 @@ range(readiness[readiness$conditioning ==
 hist(readiness[readiness$conditioning == "TRAINING", ]$date_as_POSIXct, breaks = "months")
 hist(readiness[readiness$conditioning == "CONTROL",  ]$date_as_POSIXct, breaks = "months")
 
-View(readiness[readiness$conditioning == "TRAINING" & 
-                 readiness$date_as_POSIXct >= "2019-08-26 00:00:00 EST", ])
+# View(readiness[readiness$conditioning == "TRAINING" & 
+#                  readiness$date_as_POSIXct >= "2019-08-26 00:00:00 EST", ])
                                                  # Participant 1009 on 2019-08-26 08:41:32 EST
                                                  # Participant 1373 on 2020-11-12 15:20:51 EST
 
@@ -126,24 +118,22 @@ readiness$button_pressed[readiness$button_pressed == "Mostly"]               <- 
 readiness$button_pressed[readiness$button_pressed == "Very"]                 <- 4
 readiness$button_pressed[readiness$button_pressed == "Prefer not to answer"] <- NA
 
-# TODO: Continue here
+readiness$button_pressed <- as.numeric(readiness$button_pressed)
 
+# Restrict to relevant columns
 
+exclude_cols <- c("time_on_page", "correct", "device", "rt", "rt_first_react",
+                  "session_counter", "session_index", "session_title", 
+                  "step_index", "step_title", "stimulus", "time_elapsed", "trial_type")
 
+readiness <- readiness[, !(names(readiness) %in% exclude_cols)]
 
+# Rename Readiness Rulers Check item
+
+names(readiness)[names(readiness) == "button_pressed"] <- "confident_program"
 
 # ---------------------------------------------------------------------------- #
-# TODO: Recode "Prefer not to answer" ----
+# Save cleaned data ----
 # ---------------------------------------------------------------------------- #
 
-
-
-
-
-# ---------------------------------------------------------------------------- #
-# TODO: Save cleaned data ----
-# ---------------------------------------------------------------------------- #
-
-
-
-
+save(readiness, file = "./data/intermediate_clean_further/readiness.RData")
