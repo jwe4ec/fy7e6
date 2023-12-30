@@ -36,6 +36,7 @@ groundhog.library(pkgs, groundhog_day)
 # ---------------------------------------------------------------------------- #
 
 load("./data/intermediate_clean_further/dat2.RData")
+load("./data/intermediate_clean_further/readiness.RData")
 
 # ---------------------------------------------------------------------------- #
 # Prepare "completion" data ----
@@ -170,23 +171,7 @@ tmp_dem$marital_stat_col <- factor(tmp_dem$marital_stat_col,
 # Extract training confidence and change importance items
 
 tmp_cred <- dat2$credibility[, c("participant_id", "confident_online", "important")]
-
-tmp_at <- dat2$angular_training[dat2$angular_training$stimulus_name == "readiness_rulers",
-                                c("participant_id", "button_pressed")]
-names(tmp_at)[names(tmp_at) == "button_pressed"] <- "confident_design"
-
-# Recode "confident_design" using values from MindTrails Future Thinking Study.
-# Note, however, that in Future Thinking, "very" was replaced with "extremely".
-# See Eberle et al. (2020): https://doi.org/d54p.
-
-tmp_at$confident_design[tmp_at$confident_design == "Not at all"] <- 0
-tmp_at$confident_design[tmp_at$confident_design == "Slightly"] <- 1
-tmp_at$confident_design[tmp_at$confident_design == "Somewhat"] <- 2
-tmp_at$confident_design[tmp_at$confident_design == "Mostly"] <- 3
-tmp_at$confident_design[tmp_at$confident_design == "Very"] <- 4
-tmp_at$confident_design[tmp_at$confident_design == "Prefer not to answer"] <- 555
-
-tmp_at$confident_design <- as.numeric(tmp_at$confident_design)
+tmp_read <- readiness[, c("participant_id", "confident_design")]
 
 # Extract device. Note that "device" is not recorded at "Eligibility" or at "task_name" 
 # of "SESSION_COMPLETE"; remove these rows.
@@ -235,7 +220,7 @@ tmp_tl_unq2$device_col_bin <- factor(tmp_tl_unq2$device_col_bin,
 
 compl_itt <- merge(compl_itt, tmp_dem, by = "participant_id", all.x = TRUE)
 compl_itt <- merge(compl_itt, tmp_cred, by = "participant_id", all.x = TRUE)
-compl_itt <- merge(compl_itt, tmp_at, by = "participant_id", all.x = TRUE)
+compl_itt <- merge(compl_itt, tmp_read, by = "participant_id", all.x = TRUE)
 compl_itt <- merge(compl_itt, tmp_tl_unq2, by = "participant_id", all.x = TRUE)
 
 # Sort by "participant_id" and "session_only"
@@ -295,11 +280,8 @@ GoodmanKruskalGamma(compl_itt_iv$confident_online,
 # Given the strong association, compute and analyze mean of available items, following
 # Hohensee et al. (2020, https://doi.org/hmbk), who found that the mean predicted dropout. 
 # However, given that far more participants have data for "confident_online" (given at 
-# "preTest") than "confident_design" (given during "firstSession" training), also analyze 
-# the items separately. Note: Henry Behan stated on 3/21/22 that "confident_design" data
-# were likely not collected for participants in conditions other than "CONTROL" after
-# 8/2019 due to a software bug (perhaps addition of a videos page interfered with data
-# collection; the videos page was not added to the "CONTROL" condition).
+# "preTest") than "confident_design" (given during "firstSession" training; see script
+# "further_clean_readiness_rulers_check_data.R"), also analyze the items separately.
 
 sum(!is.na(compl_itt_iv$confident_online)) == 1229
 sum(!is.na(compl_itt_iv$confident_design)) == 662

@@ -163,7 +163,9 @@ dat3$dass21_as[dat3$dass21_as$session_only == "Eligibility", dass21_as_items] <-
 # "time_on_page", so use "time_on_page_mean" for analysis) and that "task_log" 
 # table has unexpected multiple entries (some reflecting repeat screenings for 
 # "dass21_as" table; so use "time_on_task_mean" for analysis). Note: Centralized
-# cleaning did not check "angular_training" table for unexpected multiple entries.
+# cleaning did not check "angular_training" table for unexpected multiple entries,
+# but "confident_design" extracted from "angular_training" for Readiness Rulers
+# Check data lacks multiple entries.
 
 # View(dat2$bbsiq[dat2$bbsiq$n_rows > 1, ])
 # View(dat2$oa[dat2$oa$n_rows > 1, ])
@@ -253,6 +255,10 @@ table(compl_itt_unrestricted$marital_stat_col, useNA = "always")
 sum(compl_itt_unrestricted$confident_online == 555, na.rm = TRUE) == 0
 sum(compl_itt_unrestricted$important == 555, na.rm = TRUE) == 0
 
+# Check for Readiness Rulers Check data. "Prefer not to answer" already recoded as NA
+
+sum(compl_itt_unrestricted$confident_design == 555, na.rm = TRUE) == 0
+
 # ---------------------------------------------------------------------------- #
 # Check response ranges ----
 # ---------------------------------------------------------------------------- #
@@ -278,6 +284,10 @@ table(tempDem$income_dollar)
 
 all(sort(unique(compl_itt_unrestricted$confident_online)) %in% 0:4)
 all(sort(unique(compl_itt_unrestricted$important)) %in% 0:4)
+
+# Check for Readiness Rulers Check data
+
+all(sort(unique(compl_itt_unrestricted$confident_design)) %in% 0:4)
 
 # ---------------------------------------------------------------------------- #
 # Compute average item scores ----
@@ -460,8 +470,9 @@ anlys_df_wd <- reshape(anlys_df,
 # Add time-invariant variables ----
 # ---------------------------------------------------------------------------- #
 
-# Add condition, sum and proportion of missing training sessions, covariates, 
-# "income" missing data indicator, and auxiliary variables
+# Add condition, sum and proportion of missing training sessions, covariates,
+# "income" missing data indicator, auxiliary variables, and Readiness Rulers
+# Check data "confident_design"
 
 target_vars <- c("participant_id", "conditioning", "exclude_analysis", 
                  "itt_anlys", "s5_train_compl_anlys_uncorrected_c1", 
@@ -470,7 +481,7 @@ target_vars <- c("participant_id", "conditioning", "exclude_analysis",
                  "gender_col", "device_col_bin",
                  "income_ind",
                  "employment_stat_col", "marital_stat_col", 
-                 "confident_online", "important")
+                 "confident_online", "important", "confident_design")
 
 anlys_df_wd <- merge(anlys_df_wd,
                      compl_itt_unrestricted[, target_vars],

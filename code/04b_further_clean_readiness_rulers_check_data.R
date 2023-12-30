@@ -109,16 +109,22 @@ nrow(readiness[readiness$conditioning == "TRAINING" &
                  readiness$date_as_POSIXct > "2019-08-27 00:00:00 EST" &
                  readiness$date_as_POSIXct < "2020-11-12 00:00:00 EST", ]) == 0
 
-# Recode response options
+# Rename Readiness Rulers Check item
 
-readiness$button_pressed[readiness$button_pressed == "Not at all"]           <- 0
-readiness$button_pressed[readiness$button_pressed == "Slightly"]             <- 1
-readiness$button_pressed[readiness$button_pressed == "Somewhat"]             <- 2
-readiness$button_pressed[readiness$button_pressed == "Mostly"]               <- 3
-readiness$button_pressed[readiness$button_pressed == "Very"]                 <- 4
-readiness$button_pressed[readiness$button_pressed == "Prefer not to answer"] <- NA
+names(readiness)[names(readiness) == "button_pressed"] <- "confident_design"
 
-readiness$button_pressed <- as.numeric(readiness$button_pressed)
+# Recode "confident_design" using values from MindTrails Future Thinking Study.
+# Note, however, that in Future Thinking, "very" was replaced with "extremely".
+# See Eberle et al. (2020): https://doi.org/d54p.
+
+readiness$confident_design[readiness$confident_design == "Not at all"]           <- 0
+readiness$confident_design[readiness$confident_design == "Slightly"]             <- 1
+readiness$confident_design[readiness$confident_design == "Somewhat"]             <- 2
+readiness$confident_design[readiness$confident_design == "Mostly"]               <- 3
+readiness$confident_design[readiness$confident_design == "Very"]                 <- 4
+readiness$confident_design[readiness$confident_design == "Prefer not to answer"] <- 555
+
+readiness$confident_design <- as.numeric(readiness$confident_design)
 
 # Restrict to relevant columns
 
@@ -127,10 +133,6 @@ exclude_cols <- c("time_on_page", "correct", "device", "rt", "rt_first_react",
                   "step_index", "step_title", "stimulus", "time_elapsed", "trial_type")
 
 readiness <- readiness[, !(names(readiness) %in% exclude_cols)]
-
-# Rename Readiness Rulers Check item
-
-names(readiness)[names(readiness) == "button_pressed"] <- "confident_program"
 
 # ---------------------------------------------------------------------------- #
 # Save cleaned data ----
