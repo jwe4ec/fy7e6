@@ -121,6 +121,9 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ## TODOs
 
+- Upload new data files to OSF
+  - From Script 4b: "readiness.RData"
+  - From Script 6: wide files from Lines 658-667 now containing "confident_design"
 - Update code to reflect manual changes to tables and figures in text (see `TASKS.docx`)
 - Remove `results.RData` files for "a1" models based on 500 bs samples and "a2" models based on 20,000 iterations after `trim_results()`, which created `results_trim.RData` files for these models in Script 14
 
