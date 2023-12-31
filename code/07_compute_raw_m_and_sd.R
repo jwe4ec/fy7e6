@@ -42,6 +42,7 @@ source("./code/01c_set_officer_properties.R")
 
 load("./data/intermediate_clean_further/anlys_df.RData")
 load("./data/intermediate_clean_further/dem_tbl.RData")
+load("./data/temp/compl_itt_unrestricted.RData")
 
 # ---------------------------------------------------------------------------- #
 # Prepare data ----
@@ -56,6 +57,19 @@ target_vars <- c("participant_id", "conditioning",
 
 anlys_df <- merge(anlys_df, dem_tbl[, target_vars],
                   by = "participant_id", all.x = TRUE)
+
+# Add training confidence items from "compl_itt_unrestricted"
+
+confident_online_tmp <- compl_itt_unrestricted[, c("participant_id", "confident_online")]
+confident_design_tmp <- compl_itt_unrestricted[, c("participant_id", "confident_design")]
+
+confident_online_tmp$session_only_col <- "baseline"
+confident_design_tmp$session_only_col <- "firstSession"
+
+anlys_df <- merge(anlys_df, confident_online_tmp,
+                  by = c("participant_id", "session_only_col"), all.x = TRUE)
+anlys_df <- merge(anlys_df, confident_design_tmp,
+                  by = c("participant_id", "session_only_col"), all.x = TRUE)
 
 # Check sample sizes (divide by 7 time points to compute number of participants)
 
@@ -85,7 +99,7 @@ anlys_df_s5_train_compl <- anlys_df[anlys_df$s5_train_compl_anlys_c2_4 == 1, ]
 # Define outcomes
 
 outcomes <- c("rr_pos_threat_m", "rr_neg_threat_m", "bbsiq_ben_m", "bbsiq_neg_m",
-              "oa_m", "dass21_as_m")
+              "oa_m", "dass21_as_m", "confident_online", "confident_design")
 
 # Define function for computing n, M, and SD for each score over time
 
@@ -150,10 +164,23 @@ compute_desc_outcomes_by_cond <- function(df, out, outcomes, ordered_levs) {
     }
   }
   
-  res_by_cond <- res_by_cond[!(res_by_cond$Outcome != "oa_m" & 
-                               res_by_cond$Assessment %in% 
-                                 paste0(c("first", "second", "fourth"), "Session")), ]
+  res_by_cond <- res_by_cond[res_by_cond$Outcome == "oa_m" |
+                               
+                               !(res_by_cond$Outcome %in%
+                                   c("oa_m", "confident_online", "confident_design")) &
+                                 res_by_cond$Assessment %in%
+                                   c("baseline", paste0(c("third", "fifth"), "Session"), "PostFollowUp") |
+                               
+                               res_by_cond$Outcome == "confident_online" &
+                                 res_by_cond$Assessment == "baseline" |
+                                 
+                               res_by_cond$Outcome == "confident_design" &
+                                 res_by_cond$Assessment == "firstSession", ]
   
+  # Rename Outcome column given that it now contains training confidence items
+  
+  names(res_by_cond)[names(res_by_cond) == "Outcome"] <- "Measure"
+                                   
   return(res_by_cond)
 }
 
@@ -180,14 +207,16 @@ save(res_outcomes_s5_train_compl_by_cond, file = "./results/descriptives/res_out
 
 # Define function to format descriptives tables (note: horizontal borders for added 
 # header rows for columns in which the ITT and CMC sample headings don't apply must be
-# manually removed after export to MS Word)
+# manually removed after export to MS Word; "DASS-21-AS" was also manually changed to 
+# "DASS-AS" in "Anxiety (DASS-21-AS)" in table for ITT/CMC samples so cell content 
+# would not start on next page)
 
 format_desc_tbl <- function(desc_tbl, analysis_sample, gen_note, footnotes, title) {
   # Define columns
   
   target_cols <- names(desc_tbl)
-  left_align_body_cols <- c("Outcome", "Assessment")
-  merge_v_cols         <- "Outcome"
+  left_align_body_cols <- c("Measure", "Assessment")
+  merge_v_cols         <- "Measure"
   
   # Define column formats
   
@@ -227,19 +256,21 @@ format_desc_tbl <- function(desc_tbl, analysis_sample, gen_note, footnotes, titl
     add_footer_lines(gen_note) |>
     
     labelizor(part = "body",
-              labels = c("rr_pos_threat_m" = "Positive Bias (RR)",
-                         "rr_neg_threat_m" = "Negative Bias (RR)",
-                         "bbsiq_ben_m"     = "Benign Bias (BBSIQ)",
-                         "bbsiq_neg_m"     = "Negative Bias (BBSIQ)",
-                         "oa_m"            = "Anxiety (OASIS)",
-                         "dass21_as_m"     = "Anxiety (DASS-21-AS)",
-                         "baseline"        = "Baseline",
-                         "firstSession"    = "Session 1",
-                         "secondSession"   = "Session 2",
-                         "thirdSession"    = "Session 3",
-                         "fourthSession"   = "Session 4",
-                         "fifthSession"    = "Session 5",
-                         "PostFollowUp"    = "Follow-up")) |>
+              labels = c("rr_pos_threat_m"  = "Positive Bias (RR)",
+                         "rr_neg_threat_m"  = "Negative Bias (RR)",
+                         "bbsiq_ben_m"      = "Benign Bias (BBSIQ)",
+                         "bbsiq_neg_m"      = "Negative Bias (BBSIQ)",
+                         "oa_m"             = "Anxiety (OASIS)",
+                         "dass21_as_m"      = "Anxiety (DASS-21-AS)",
+                         "confident_online" = "Training Confidence",
+                         "confident_design" = "Program Confidence",
+                         "baseline"         = "Baseline",
+                         "firstSession"     = "Session 1",
+                         "secondSession"    = "Session 2",
+                         "thirdSession"     = "Session 3",
+                         "fourthSession"    = "Session 4",
+                         "fifthSession"     = "Session 5",
+                         "PostFollowUp"     = "Follow-up")) |>
     
     fontsize(size = 10, part = "all")
   if (analysis_sample == "itt") {
@@ -271,6 +302,10 @@ format_desc_tbl <- function(desc_tbl, analysis_sample, gen_note, footnotes, titl
                value = as_paragraph_md(footnotes$screening),
                ref_symbols = " c",
                part = "body") |>
+      footnote(i = 29, j = 1,
+               value = as_paragraph_md(footnotes$program_confidence),
+               ref_symbols = " d",
+               part = "body") |>
     
       autofit() |>
       
@@ -293,6 +328,10 @@ format_desc_tbl <- function(desc_tbl, analysis_sample, gen_note, footnotes, titl
                value = as_paragraph_md(footnotes$screening),
                ref_symbols = " b",
                part = "body") |>
+      footnote(i = 29, j = 1,
+               value = as_paragraph_md(footnotes$program_confidence),
+               ref_symbols = " c",
+               part = "body") |>
       
       autofit()
   }
@@ -304,7 +343,8 @@ gen_note <- as_paragraph_md("*Note.* CBM-I = cognitive bias modification for int
 
 footnotes <- list(TRAINING = "\\ Includes 2 participants who completed classification measures but were not classified (software bug).",
                   HR_COACH = "\\ Excluded from CBM-I vs. psychoeducation comparison.",
-                  screening = "\\ Screening. All other baseline values were assessed at pretreatment.")
+                  screening = "\\ Screening. All other baseline values were assessed at pretreatment.",
+                  program_confidence = "\\ Data were not collected on this item for CBM-I participants partway through the study (software bug after 8/26/2019).")
 
 # TODO: Consider looking into why some baseline numbers are off by one (see yellow 
 # highlight in "desc_tbls.docx". Likely due to refusals to answer all items.)
