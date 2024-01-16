@@ -32,10 +32,13 @@ groundhog_day <- version_control()
 # Import intermediate clean data ----
 # ---------------------------------------------------------------------------- #
 
-# Obtain file names of intermediate clean CSV data files
+# Obtain file names of selected intermediate clean CSV data files and output a
+# warning if they do not contain all those relevant to present manuscript
 
 int_cln_data_dir <- paste0(wd_dir, "/data/intermediate_clean")
 filenames <- list.files(int_cln_data_dir, pattern = "\\.csv$", full.names = FALSE)
+
+check_relevant_files(filenames)
 
 # Import tables into list and name tables
 

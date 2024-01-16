@@ -93,6 +93,28 @@ version_control_gran <- function() {
 }
 
 # ---------------------------------------------------------------------------- #
+# Define check_relevant_files() ----
+# ---------------------------------------------------------------------------- #
+
+# Define function to check that selected intermediate clean CSV data files contain
+# those relevant to present manuscript (for full set of intermediate clean CSV data 
+# files, see https://github.com/TeachmanLab/MT-Data-CalmThinkingStudy)
+
+check_relevant_files <- function(filenames) {
+  relevant_files <- c("affect.csv", "angular_training.csv", "attrition_prediction.csv", 
+                      "bbsiq.csv", "condition_assignment_settings.csv", "credibility.csv", 
+                      "dass21_as.csv", "demographics.csv", "demographics_race.csv", 
+                      "js_psych_trial.csv", "mental_health_history.csv", "oa.csv", 
+                      "participant.csv", "rr.csv", "study.csv", "task_log.csv")
+  
+  if (all(relevant_files %in% filenames) == FALSE) {
+    missing_files <- setdiff(relevant_files, filenames)
+    
+    warning(paste0(c("You are missing these files:", paste0(" ", missing_files))))
+  }
+}
+
+# ---------------------------------------------------------------------------- #
 # Define convert_POSIXct() ----
 # ---------------------------------------------------------------------------- #
 
