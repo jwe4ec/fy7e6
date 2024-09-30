@@ -325,6 +325,16 @@ dem_tbl$condition_sep <-
 
 save(dem_tbl, file = "./data/intermediate_clean_further/dem_tbl.RData")
 
+# Export demographics of participants who started Session 1 training but are
+# excluded from analyses (for ClinicalTrials.gov reporting)
+
+temp_dem_tbl <- dem_tbl[dem_tbl$participant_id %in% c(1644, 608, 1529, 1755, 382), ]
+temp_dem_tbl <- temp_dem_tbl[, !names(temp_dem_tbl) %in% c("X", "id", "date",
+                                                           "exclude_analysis",
+                                                           "conditioning")]
+
+  # write.csv(temp_dem_tbl, file = "temp_dem_tbl.csv", row.names = FALSE)
+
 # Restrict to ITT and Session 5 training completer samples
 
 table(dem_tbl$condition_sep[dem_tbl$itt_anlys == 1])
