@@ -55,6 +55,12 @@ load("./data/temp/compl_itt_unrestricted.RData")
 dat3 <- dat2[c("angular_training", "bbsiq", "completion", "credibility", "dass21_as", 
                "demographics", "oa", "participant", "rr", "study", "task_log")]
 
+# TODO: Identify tables for secondary outcomes (for ClinicalTrials.gov reporting)
+
+
+
+
+
 # ---------------------------------------------------------------------------- #
 # Define scale items ----
 # ---------------------------------------------------------------------------- #
@@ -114,6 +120,12 @@ dass21_as_items <- c("bre", "dry", "hea", "pan", "sca", "tre", "wor")
 dass21_as_mean_items <- paste0(dass21_as_items, "_mean")
 
 length(dass21_as_items) == 7
+
+# TODO: Define items for secondary outcomes (for ClinicalTrials.gov reporting)
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Handle repeated screenings ----
@@ -259,6 +271,12 @@ sum(compl_itt_unrestricted$important == 555, na.rm = TRUE) == 0
 
 sum(compl_itt_unrestricted$confident_design == 555, na.rm = TRUE) == 0
 
+# TODO: Do for secondary outcomes (for ClinicalTrials.gov reporting)
+
+
+
+
+
 # ---------------------------------------------------------------------------- #
 # Check response ranges ----
 # ---------------------------------------------------------------------------- #
@@ -289,6 +307,24 @@ all(sort(unique(compl_itt_unrestricted$important)) %in% 0:4)
 
 all(sort(unique(compl_itt_unrestricted$confident_design)) %in% 0:4)
 
+# TODO: Check for secondary outcomes (for ClinicalTrials.gov reporting)
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# Reverse-score items (if needed) ----
+# ---------------------------------------------------------------------------- #
+
+# Not needed for any main outcomes
+
+# TODO: Do for secondary outcomes if needed (for ClinicalTrials.gov reporting)
+
+
+
+
+
 # ---------------------------------------------------------------------------- #
 # Compute average item scores ----
 # ---------------------------------------------------------------------------- #
@@ -314,6 +350,12 @@ dat3$bbsiq$bbsiq_ben_m[is.nan(dat3$bbsiq$bbsiq_ben_m)] <- NA
 dat3$oa$oa_m[is.nan(dat3$oa$oa_m)] <- NA
 
 sum(is.nan(dat3$dass21_as$dass21_as_m)) == 0
+
+# TODO: Do for secondary outcomes (for ClinicalTrials.gov reporting)
+
+
+
+
 
 # ---------------------------------------------------------------------------- #
 # Compute rates of item-level missingness for ITT participants ----
