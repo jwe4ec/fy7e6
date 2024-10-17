@@ -36,7 +36,7 @@ load("./data/intermediate_clean_further/dat2.RData")
 load("./data/temp/compl_itt_unrestricted.RData")
 
 # ---------------------------------------------------------------------------- #
-# Restrict tables ----
+# Restrict tables for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 # Tables for substantive analysis:
@@ -55,14 +55,39 @@ load("./data/temp/compl_itt_unrestricted.RData")
 dat3 <- dat2[c("angular_training", "bbsiq", "completion", "credibility", "dass21_as", 
                "demographics", "oa", "participant", "rr", "study", "task_log")]
 
-# TODO: Identify tables for secondary outcomes (for ClinicalTrials.gov reporting)
+# ---------------------------------------------------------------------------- #
+# Restrict tables for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
 
+# Based on NCT03498651 (see https://clinicaltrials.gov/study/NCT03498651)
 
+# Table for Change in Depression Comorbid Symptoms:
+#   - "comorbid" ("depressed" and "pleasure")
+# Table for Change in Alcohol Use Comorbid Symptoms:
+#   - "comorbid" ("how_often", "number_of_drinks", "six_or_more")
+# Table for Change in Wellness Measures - Optimism:
+#   - "wellness" ("hardly_ever", "wrong_will")
+# Table for Change in Wellness Measures - Growth Mindset:
+#   - "wellness" ("always_change_thinking", "learn", "particular_thinking")
+# Table for Change in Wellness Measures - Self-Efficacy:
+#   - "wellness" ("accomplish_tasks", "do_most", "perform_multitask")
+# Table for Change in Wellness Measures - Life Satisfaction:
+#   - "wellness" ("satisfaction")
+# Table for Change in Mechanisms Underlying Bias Change - Cognitive Flexibility:
+#   - "mechanisms" ("cfi_viewpoints")
+# Table for Change in Mechanisms Underlying Bias Change - Experiential Avoidance:
+#   - "mechanisms" ("comp_act_willing")
+# Table for Change in Mechanisms Underlying Bias Change - Cognitive Reappraisal:
+#   - "mechanisms" ("erq_negative", "erq_positive")
+# Table for Change in Mechanisms Underlying Bias Change - Intolerance of Uncertainty:
+#   - "mechanisms" ("ius_uncertain", "ius_unexpected")
+# Table for Change in Anxiety and Identity Circles:
+#   - "anxiety_identity" ("anxiety_identity")
 
-
+dat4 <- dat2[c("comorbid", "wellness", "mechanisms", "anxiety_identity")]
 
 # ---------------------------------------------------------------------------- #
-# Define scale items ----
+# Define scale items for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 # Define items for RR, BBSIQ, OASIS, and DASS-21-AS
@@ -70,9 +95,9 @@ dat3 <- dat2[c("angular_training", "bbsiq", "completion", "credibility", "dass21
 rr_scenarios <- c("blood_test", "elevator", "job", "lunch", "meeting_friend",
                   "noise", "scrape", "shopping", "wedding")
 
-rr_neg_threat_items <-    paste0(rr_scenarios, "_ns")
+rr_neg_threat_items    <- paste0(rr_scenarios, "_ns")
 rr_neg_nonthreat_items <- paste0(rr_scenarios, "_nf")
-rr_pos_threat_items <-    paste0(rr_scenarios, "_ps")
+rr_pos_threat_items    <- paste0(rr_scenarios, "_ps")
 rr_pos_nonthreat_items <- paste0(rr_scenarios, "_pf")
 
 rr_items <- c(rr_neg_threat_items, rr_neg_nonthreat_items, 
@@ -121,11 +146,45 @@ dass21_as_mean_items <- paste0(dass21_as_items, "_mean")
 
 length(dass21_as_items) == 7
 
-# TODO: Define items for secondary outcomes (for ClinicalTrials.gov reporting)
+# ---------------------------------------------------------------------------- #
+# Define scale items secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
 
+comorbid_depression_items <- c("depressed", "pleasure")
+comorbid_alcohol_items    <- c("how_often", "number_of_drinks", "six_or_more")
 
+length(comorbid_depression_items) == 2 # Analyze for Change in Depression Comorbid Symptoms
+length(comorbid_alcohol_items)    == 3 # Analyze for Change in Alcohol Use Comorbid Symptoms
 
+comorbid_items <- c(comorbid_depression_items, comorbid_alcohol_items)
 
+wellness_optimism_items     <- c("hardly_ever", "wrong_will")
+wellness_growth_items       <- c("always_change_thinking", "learn", "particular_thinking")
+wellness_self_items         <- c("accomplish_tasks", "do_most", "perform_multitask")
+wellness_satisfaction_item  <- c("satisfaction")
+
+length(wellness_optimism_items)    == 2 # Analyze for Change in Wellness Measures - Optimism
+length(wellness_growth_items)      == 3 # Analyze for Change in Wellness Measures - Growth Mindset
+length(wellness_self_items)        == 3 # Analyze for Change in Wellness Measures - Self-efficacy
+length(wellness_satisfaction_item) == 1 # Analyze for Change in Wellness Measures - Life Satisfaction
+
+wellness_items <- c(wellness_optimism_items, wellness_growth_items, wellness_self_items, wellness_satisfaction_item)
+
+mechanisms_cfi_item          <- "cfi_viewpoints"
+mechanisms_avoid_item        <- "comp_act_willing"
+mechanisms_reappraisal_items <- c("erq_negative", "erq_positive")
+mechanisms_iu_items          <- c("ius_uncertain", "ius_unexpected")
+
+length(mechanisms_cfi_item)          == 1 # Analyze for Change in Mechanisms Underlying Bias Change - Cognitive Flexibility
+length(mechanisms_avoid_item)        == 1 # Analyze for Change in Mechanisms Underlying Bias Change - Experiential Avoidance
+length(mechanisms_reappraisal_items) == 2 # Analyze for Change in Mechanisms Underlying Bias Change - Cognitive Reappraisal
+length(mechanisms_iu_items)          == 2 # Analyze for Change in Mechanisms Underlying Bias Change - Intolerance of Uncertainty
+
+mechanisms_items <- c(mechanisms_cfi_item, mechanisms_avoid_item, mechanisms_reappraisal_items, mechanisms_iu_items)
+
+anxiety_identity_item <- c("anxiety_identity")
+
+length(anxiety_identity_item) == 1 # Analyze for Change in Anxiety and Identity Circles
 
 # ---------------------------------------------------------------------------- #
 # Handle repeated screenings ----
@@ -167,7 +226,7 @@ dat3$dass21_as <-
 dat3$dass21_as[dat3$dass21_as$session_only == "Eligibility", dass21_as_items] <- NA
 
 # ---------------------------------------------------------------------------- #
-# Handle unexpected multiple entries ----
+# Handle unexpected multiple entries for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 # Centralized Calm Thinking data cleaning revealed that "bbsiq" and "oa" tables 
@@ -198,6 +257,13 @@ dat3$oa <-    dat3$oa[!duplicated(dat3$oa[, c("participant_id", "session_only")]
                                   fromLast = TRUE), ]
 
 # ---------------------------------------------------------------------------- #
+# Handle unexpected multiple entries for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
+
+# Centralized Calm Thinking data cleaning did not reveal unexpected multiple
+# entries for "comorbid", "wellness", "mechanisms", or "anxiety_identity" tables
+
+# ---------------------------------------------------------------------------- #
 # Compute "income_dollar" ----
 # ---------------------------------------------------------------------------- #
 
@@ -223,7 +289,7 @@ tempDem$income_dollar[tempDem$income == "$200,000 through $249,999"] <- 225000
 tempDem$income_dollar[tempDem$income == "$250,000 or greater"]       <- 250000
 
 # ---------------------------------------------------------------------------- #
-# Recode "prefer not to answer" values ----
+# Recode "prefer not to answer" values for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 # Check for outcomes. No relevant tables already have NA values except "dass21_as". 
@@ -271,14 +337,30 @@ sum(compl_itt_unrestricted$important == 555, na.rm = TRUE) == 0
 
 sum(compl_itt_unrestricted$confident_design == 555, na.rm = TRUE) == 0
 
-# TODO: Do for secondary outcomes (for ClinicalTrials.gov reporting)
+# ---------------------------------------------------------------------------- #
+# Recode "prefer not to answer" values for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
 
+# No relevant tables already have NA values. All "prefer not to answer" values are 
+# coded as 555; recode them as NA.
 
+sum(is.na(dat4$comorbid[, comorbid_items])) == 0
+sum(is.na(dat4$wellness[, wellness_items])) == 0
+sum(is.na(dat4$mechanisms[, mechanisms_items])) == 0
+sum(is.na(dat4$anxiety_identity[, anxiety_identity_item])) == 0
 
+sum(dat4$comorbid[, comorbid_items] == 555, na.rm = TRUE)
+sum(dat4$wellness[, wellness_items] == 555, na.rm = TRUE)
+sum(dat4$mechanisms[, mechanisms_items] == 555, na.rm = TRUE)
+sum(dat4$anxiety_identity[, anxiety_identity_item] == 555, na.rm = TRUE)
 
+dat4$comorbid[, comorbid_items][dat4$comorbid[, comorbid_items] == 555] <- NA
+dat4$wellness[, wellness_items][dat4$wellness[, wellness_items] == 555] <- NA
+dat4$mechanisms[, mechanisms_items][dat4$mechanisms[, mechanisms_items] == 555] <- NA
+dat4$anxiety_identity[, anxiety_identity_item][dat4$anxiety_identity[, anxiety_identity_item] == 555] <- NA
 
 # ---------------------------------------------------------------------------- #
-# Check response ranges ----
+# Check response ranges for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 # Check for outcomes
@@ -307,26 +389,35 @@ all(sort(unique(compl_itt_unrestricted$important)) %in% 0:4)
 
 all(sort(unique(compl_itt_unrestricted$confident_design)) %in% 0:4)
 
-# TODO: Check for secondary outcomes (for ClinicalTrials.gov reporting)
-
-
-
-
-
 # ---------------------------------------------------------------------------- #
-# Reverse-score items (if needed) ----
+# Check response ranges for secondary outcomes (for ClinicalTrials.gov reporting) ----
 # ---------------------------------------------------------------------------- #
 
-# Not needed for any main outcomes
+all(sort(unique(as.vector(as.matrix(dat4$comorbid[, comorbid_depression_items])))) %in% 1:4)
+all(sort(unique(as.vector(as.matrix(dat4$comorbid[, comorbid_alcohol_items])))) %in% 0:4)
 
-# TODO: Do for secondary outcomes if needed (for ClinicalTrials.gov reporting)
+all(sort(unique(as.vector(as.matrix(dat4$wellness[, wellness_optimism_items])))) %in% 0:4)
+all(sort(unique(as.vector(as.matrix(dat4$wellness[, wellness_growth_items])))) %in% 0:4)
+all(sort(unique(as.vector(as.matrix(dat4$wellness[, wellness_self_items])))) %in% 0:4)
+all(sort(unique(as.vector(as.matrix(dat4$wellness[, wellness_satisfaction_item])))) %in% 0:10)
 
+all(sort(unique(as.vector(as.matrix(dat4$mechanisms[, mechanisms_items])))) %in% 1:7)
 
-
-
+all(sort(unique(as.vector(as.matrix(dat4$anxiety_identity[, anxiety_identity_item])))) %in% 0:4)
 
 # ---------------------------------------------------------------------------- #
-# Compute average item scores ----
+# Reverse-score items for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
+
+dat4$wellness$hardly_ever_rev <- abs(dat4$wellness$hardly_ever - 4)
+dat4$wellness$wrong_will_rev  <- abs(dat4$wellness$wrong_will - 4)
+
+wellness_optimism_items_rev <- c("hardly_ever_rev", "wrong_will_rev")
+
+dat4$anxiety_identity$anxiety_identity_rev <- abs(dat4$anxiety_identity$anxiety_identity - 4)
+
+# ---------------------------------------------------------------------------- #
+# Compute average item scores for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 dat3$rr$rr_neg_threat_m <- rowMeans(dat3$rr[, rr_neg_threat_items], na.rm = TRUE)
@@ -351,11 +442,29 @@ dat3$oa$oa_m[is.nan(dat3$oa$oa_m)] <- NA
 
 sum(is.nan(dat3$dass21_as$dass21_as_m)) == 0
 
-# TODO: Do for secondary outcomes (for ClinicalTrials.gov reporting)
+# ---------------------------------------------------------------------------- #
+# Compute average item scores for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
 
+dat4$comorbid$comorbid_depression_m <- rowMeans(dat4$comorbid[, comorbid_depression_items], na.rm = TRUE)
+dat4$comorbid$comorbid_alcohol_m    <- rowMeans(dat4$comorbid[, comorbid_alcohol_items],    na.rm = TRUE)
 
+dat4$wellness$wellness_optimism_m <- rowMeans(dat4$wellness[, wellness_optimism_items_rev], na.rm = TRUE)
+dat4$wellness$wellness_growth_m   <- rowMeans(dat4$wellness[, wellness_growth_items],       na.rm = TRUE)
+dat4$wellness$wellness_self_m     <- rowMeans(dat4$wellness[, wellness_self_items],         na.rm = TRUE)
 
+dat4$mechanisms$mechanisms_reappraisal_m <- rowMeans(dat4$mechanisms[, mechanisms_reappraisal_items], na.rm = TRUE)
+dat4$mechanisms$mechanisms_iu_m          <- rowMeans(dat4$mechanisms[, mechanisms_iu_items],          na.rm = TRUE)
 
+# Change NaN values (occur when all items are NA) to NA
+
+dat4$comorbid$comorbid_depression_m[is.nan(dat4$comorbid$comorbid_depression_m)]           <- NA
+dat4$comorbid$comorbid_alcohol_m[is.nan(dat4$comorbid$comorbid_alcohol_m)]                 <- NA
+dat4$wellness$wellness_optimism_m[is.nan(dat4$wellness$wellness_optimism_m)]               <- NA
+dat4$wellness$wellness_growth_m[is.nan(dat4$wellness$wellness_growth_m)]                   <- NA
+dat4$wellness$wellness_self_m[is.nan(dat4$wellness$wellness_self_m)]                       <- NA
+dat4$mechanisms$mechanisms_reappraisal_m[is.nan(dat4$mechanisms$mechanisms_reappraisal_m)] <- NA
+dat4$mechanisms$mechanisms_iu_m[is.nan(dat4$mechanisms$mechanisms_iu_m)]                   <- NA
 
 # ---------------------------------------------------------------------------- #
 # Compute rates of item-level missingness for ITT participants ----
@@ -439,7 +548,7 @@ compute_all_item_missingness(dat3_itt$dass21_as, "dass21_as_m",     c(dass21_as_
 sink()
 
 # ---------------------------------------------------------------------------- #
-# Collapse "Eligibility" and "preTest" into "baseline" ----
+# Collapse "Eligibility" and "preTest" into "baseline" for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 target_dfs <- c("rr", "bbsiq", "oa", "dass21_as")
@@ -453,7 +562,16 @@ for (i in 1:length(dat3)) {
 }
 
 # ---------------------------------------------------------------------------- #
-# Combine relevant time-varying columns into one long-format table ----
+# Recode "preTest" as "baseline" for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
+
+for (i in 1:length(dat4)) {
+    dat4[[i]][, "session_only_col"] <- dat4[[i]][, "session_only"]
+    dat4[[i]][, "session_only_col"][dat4[[i]][, "session_only_col"] == "preTest"] <- "baseline" 
+}
+
+# ---------------------------------------------------------------------------- #
+# Combine relevant time-varying columns into one long-format table for main outcomes paper ----
 # ---------------------------------------------------------------------------- #
 
 # Create template data frame
@@ -494,6 +612,40 @@ anlys_df <- anlys_df[order(anlys_df$participant_id, anlys_df$j), ]
 # Save data for later use in computing raw means and standard deviations
 
 save(anlys_df, file = "./data/intermediate_clean_further/anlys_df.RData")
+
+# ---------------------------------------------------------------------------- #
+# Combine relevant time-varying columns into one long-format table for secondary outcomes (for ClinicalTrials.gov reporting) ----
+# ---------------------------------------------------------------------------- #
+
+anlys_df_2er <- data.frame(participant_id = rep(participant_ids,
+                                                each = length(sessions_col)),
+                           session_only_col = rep(sessions_col, N),
+                           j = rep(1:J, N))
+
+# Add secondary outcomes
+
+anlys_df_2er <- merge(anlys_df_2er,
+                      dat4$comorbid[, c(index_vars, "comorbid_depression_m", "comorbid_alcohol_m")],
+                      by = index_vars, all.x = TRUE)
+anlys_df_2er <- merge(anlys_df_2er,
+                      dat4$wellness[, c(index_vars, "wellness_optimism_m", "wellness_growth_m", 
+                                        "wellness_self_m", "satisfaction")],
+                      by = index_vars, all.x = TRUE)
+anlys_df_2er <- merge(anlys_df_2er,
+                      dat4$mechanisms[, c(index_vars, "cfi_viewpoints", "comp_act_willing",
+                                          "mechanisms_reappraisal_m", "mechanisms_iu_m")],
+                      by = index_vars, all.x = TRUE)
+anlys_df_2er <- merge(anlys_df_2er,
+                      dat4$anxiety_identity[, c(index_vars, "anxiety_identity_rev")],
+                      by = index_vars, all.x = TRUE)
+
+# Sort table
+
+anlys_df_2er <- anlys_df_2er[order(anlys_df_2er$participant_id, anlys_df_2er$j), ]
+
+# Save data for later use in computing raw means and standard deviations
+
+save(anlys_df_2er, file = "./data/intermediate_clean_further/anlys_df_2er.RData")
 
 # ---------------------------------------------------------------------------- #
 # Convert to wide format ----

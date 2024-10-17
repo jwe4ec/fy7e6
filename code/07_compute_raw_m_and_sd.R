@@ -40,9 +40,15 @@ source("./code/01c_set_officer_properties.R")
 # Import data ----
 # ---------------------------------------------------------------------------- #
 
+# For main outcomes paper
+
 load("./data/intermediate_clean_further/anlys_df.RData")
 load("./data/intermediate_clean_further/dem_tbl.RData")
 load("./data/temp/compl_itt_unrestricted.RData")
+
+# For secondary outcomes (for ClinicalTrials.gov reporting)
+
+load("./data/intermediate_clean_further/anlys_df_2er.RData")
 
 # ---------------------------------------------------------------------------- #
 # Prepare data ----
@@ -55,8 +61,15 @@ target_vars <- c("participant_id", "conditioning",
                  "class_meas_compl_anlys", "s5_train_compl_anlys_c2_4",
                  "condition_sep")
 
+  # For main outcomes paper
+
 anlys_df <- merge(anlys_df, dem_tbl[, target_vars],
                   by = "participant_id", all.x = TRUE)
+
+  # For secondary outcomes (for ClinicalTrials.gov reporting)
+
+anlys_df_2er <- merge(anlys_df_2er, dem_tbl[, target_vars],
+                      by = "participant_id", all.x = TRUE)
 
 # Add training confidence items from "compl_itt_unrestricted"
 
@@ -85,12 +98,24 @@ ordered_levs <- c("baseline",
                   paste0(c("first", "second", "third", "fourth", "fifth"), "Session"),
                   "PostFollowUp")
 
+  # For main outcomes paper
+
 anlys_df$session_only_col <- factor(anlys_df$session_only_col, levels = ordered_levs)
+
+  # For secondary outcomes (for ClinicalTrials.gov reporting)
+
+anlys_df_2er$session_only_col <- factor(anlys_df_2er$session_only_col, levels = ordered_levs)
 
 # Restrict to ITT and Session 5 training completer samples
 
+  # For main outcomes paper
+
 anlys_df_itt            <- anlys_df[anlys_df$itt_anlys == 1, ]
 anlys_df_s5_train_compl <- anlys_df[anlys_df$s5_train_compl_anlys_c2_4 == 1, ]
+
+  # For secondary outcomes (for ClinicalTrials.gov reporting)
+
+anlys_df_2er_itt <- anlys_df_2er[anlys_df_2er$itt_anlys == 1, ]
 
 # ---------------------------------------------------------------------------- #
 # Compute n, M, and SD for each average item score by condition over time ----
@@ -98,12 +123,21 @@ anlys_df_s5_train_compl <- anlys_df[anlys_df$s5_train_compl_anlys_c2_4 == 1, ]
 
 # Define outcomes
 
+  # For main outcomes paper
+
 outcomes <- c("rr_pos_threat_m", "rr_neg_threat_m", "bbsiq_ben_m", "bbsiq_neg_m",
               "oa_m", "dass21_as_m", "confident_online", "confident_design")
 
+  # For secondary outcomes (for ClinicalTrials.gov reporting)
+
+outcomes_2er <- c("comorbid_depression_m", "comorbid_alcohol_m", 
+                  "wellness_optimism_m", "wellness_growth_m", "wellness_self_m", "satisfaction", 
+                  "cfi_viewpoints", "comp_act_willing", "mechanisms_reappraisal_m", "mechanisms_iu_m", 
+                  "anxiety_identity_rev")
+
 # Define function for computing n, M, and SD for each score over time
 
-compute_desc_outcomes <- function(df) {
+compute_desc_outcomes <- function(df, outcomes) {
   for (k in 1:length(outcomes)) {
     fml <- as.formula(paste0(outcomes[k], "~ session_only_col"))
     ag <- do.call(data.frame, aggregate(fml, 
@@ -132,8 +166,15 @@ compute_desc_outcomes <- function(df) {
 # Create empty data frame with all outcomes at all time points to store output 
 # (given that not all conditions will have observations at all time points)
 
+  # For main outcomes paper
+
 out <- data.frame(Outcome    = rep(outcomes, each = length(ordered_levs)),
                   Assessment = rep(ordered_levs, length(outcomes)))
+
+  # For secondary outcomes (for ClinicalTrials.gov reporting)
+
+out_2er <- data.frame(Outcome    = rep(outcomes_2er, each = length(ordered_levs)),
+                      Assessment = rep(ordered_levs, length(outcomes_2er)))
 
 # Define function for computing n, M, and SD for each score by condition over time
 
@@ -143,7 +184,7 @@ compute_desc_outcomes_by_cond <- function(df, out, outcomes, ordered_levs) {
   for (i in 1:length(conditions)) {
     df_cond <- df[df$condition_sep == conditions[i], ]
     
-    cond_res <- compute_desc_outcomes(df_cond)
+    cond_res <- compute_desc_outcomes(df_cond, outcomes)
     
     cond_out <- merge(out, cond_res, by = c("Outcome", "Assessment"), all.x = TRUE)
     
@@ -186,16 +227,30 @@ compute_desc_outcomes_by_cond <- function(df, out, outcomes, ordered_levs) {
 
 # Compute descriptives by condition for the ITT sample (which includes the
 # classification measure completer sample) and Session 5 training completers
+# for main outcomes paper
 
 res_outcomes_itt_by_cond <- 
   compute_desc_outcomes_by_cond(anlys_df_itt,            out, outcomes, ordered_levs)
 res_outcomes_s5_train_compl_by_cond <- 
   compute_desc_outcomes_by_cond(anlys_df_s5_train_compl, out, outcomes, ordered_levs)
 
-# Save objects for later use in computing rates of scale-level missingness
+# Compute descriptives by condition for the ITT sample for secondary outcomes 
+# (for ClinicalTrials.gov reporting)
+
+res_outcomes_2er_itt_by_cond <- 
+  compute_desc_outcomes_by_cond(anlys_df_2er_itt, out_2er, outcomes_2er, ordered_levs)
+
+# Save main outcomes objects for later use in computing rates of scale-level missingness
 
 save(res_outcomes_itt_by_cond,            file = "./results/descriptives/res_outcomes_itt_by_cond.RData")
 save(res_outcomes_s5_train_compl_by_cond, file = "./results/descriptives/res_outcomes_s5_train_compl_by_cond.RData")
+
+# Save secondary outcomes objects for ClinicalTrials.gov reporting
+
+save(res_outcomes_2er_itt_by_cond, file = "./results/descriptives/res_outcomes_2er_itt_by_cond.RData")
+
+write.csv(res_outcomes_2er_itt_by_cond, file = "./results/descriptives/res_outcomes_2er_itt_by_cond.csv",
+          row.names = FALSE)
 
 # ---------------------------------------------------------------------------- #
 # Format descriptives tables ----
