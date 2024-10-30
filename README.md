@@ -27,7 +27,7 @@ Scripts 15a-15d were used to run the "a1" analysis models in parallel on Rivanna
 - The models are run via `sbatch 15b_run_models_std_partition_lg_array_a1.slurm` on Rivanna's CLI, which uses a large job array to submit jobs for a single desired model based on its row number in `parameter_table`. Each job in the array analyzes one bootstrap sample. A separate job array must be run for each desired model.
 - Once all job arrays have run, results across bootstrap samples for the models are then concatenated by running `sbatch 15d_concatenate_results.slurm`, which is a job array in which each job handles one model.
 
-Once results from Scripts 15a-15d are downloaded from Rivanna, Scripts 16-18 (run on laptop) pool results and create tables and plots.
+Once results from Scripts 15a-15d are downloaded from Rivanna, Scripts 16-18 (run on laptop) pool results and create tables and plots. Script 19 (also run on laptop) evaluates the attrition algorithm.
 
 ### `parallel_partition` Folder
 
@@ -106,14 +106,10 @@ Prior to running Scripts 12a-12c and 15a-15d on Rivanna, create the following fo
 
 ## Results
 
-- TODO: Add results to components on OSF project using `osfr` package
-  - results_bayesian_set1_efficacy_out_a
-  - results_bayesian_set1_efficacy_out_b
-  - results_bayesian_set1_dropout_out
-  - results_bayesian_set2_efficacy_out_a
-  - results_bayesian_set2_efficacy_out_b
-  - results_bayesian_set2_dropout_out
-- TODO: Describe components on OSF project
+- TODO: Add results to components on OSF project and describe here
+  - results
+  - results_bayesian_efficacy_out_c1
+  - results_bayesian_efficacy_out_c2_4
 
 ## Acknowledgments
 
