@@ -106,10 +106,10 @@ Prior to running Scripts 12a-12c and 15a-15d on Rivanna, create the following fo
 
 ## Results
 
-- TODO: Add results to components on OSF project and describe here
+- TODO: Add results to components on OSF project (50-GB limit per component, 5-GB limit per file) and describe here
   - results
-  - results_bayesian_efficacy_out_c1
-  - results_bayesian_efficacy_out_c2_4
+  - results_bayesian_efficacy_out_c1_500
+  - results_bayesian_efficacy_out
 
 ## Acknowledgments
 
