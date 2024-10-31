@@ -146,11 +146,40 @@ trim_results("efficacy/out/c2_4_")
 # Remove "results.RData" for models with "results_trim.RData" ----
 # ---------------------------------------------------------------------------- #
 
-# TODO: Remove "results.RData" files for "a1" models based on 500 bs samples and 
-# "a2" models based on 20,000 iterations (which now have "results_trim.RData" files)
+# Define function to remove "results.RData" files for "a1" models based on 500 bs samples 
+# and "a2" models based on 20,000 iterations (which now have "results_trim.RData" files)
 
+rm_results <- function(anlys_path_pattern) {
+  res_dir <- "./results/bayesian"
+  
+  res_filenames <- list.files(res_dir, pattern = "results.RData",
+                              recursive = TRUE, full.names = FALSE)
+  res_filenames <- res_filenames[grep(anlys_path_pattern, res_filenames)]
+  
+  # Restrict to "a1" models based on 500 bootstrap samples and "a2" models based 
+  # on 20,000 iterations
+  
+  res_filenames <- res_filenames[grepl("c1_500", res_filenames) |
+                                   (grepl("c2_4_", res_filenames) &
+                                      grepl("burn_10000_total_20000", res_filenames))]
+  
+  if (length(res_filenames) > 0) {
+    for (i in 1:length(res_filenames)) {
+      cat("On file", i, "\n")
+      
+      file.remove(paste0(res_dir, "/", res_filenames[i]))
+    }
+  } else if (length(res_filenames) == 0) {
+    cat("File(s) already removed")
+  }
+}
 
+# Run function for each analysis type for "a1" ("c1_"; large "results.RData" files
+# were saved only for initial models based on 500 bootstrap samples) and "a2" ("c2_4_"; 
+# large "results.RData" files were saved only for initial models based on 20,000 iterations, 
+# which is a restriction implemented in the rm_results function itself) models
 
-
-
-
+rm_results("dropout/out/c1_500")
+rm_results("dropout/out/c2_4_")
+rm_results("efficacy/out/c1_500")
+rm_results("efficacy/out/c2_4_")
