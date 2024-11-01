@@ -106,9 +106,80 @@ Prior to running Scripts 12a-12c and 15a-15d on Rivanna, create the following fo
 
 ## Results
 
-- TODO: Add results to components on OSF project (50-GB limit per component, 5-GB limit per file) and describe here
-  - results
-  - results_bayesian_efficacy_out_c2_4 (ZIP pairs of folders: 2 BBSIQ folders, 2 DASS-21-AS and OA folders, 2 RR folders)
+Given a large number of files (OSF limits each public project or component to 50 GB), contents of the `results` folder are stored in two components of the [OSF project](https://osf.io/fy7e6/).
+
+### `results` Component
+
+All results, with the exception of those in the `./results/bayesian/efficacy/out` folder, are stored in a ZIP file called `results` in this component. The ZIP file contains the correct directory structure for the `./results` folder. The `./results/bayesian/efficacy/out` folder in this structure is empty and needs to be populated with the contents of the ZIP files in the `results_bayesian_efficacy_out` component below.
+
+### `results_bayesian_efficacy_out` Component
+
+This component contains 19 ZIP files (given that OSF limits each individual file to 5 GB) whose contents belong in the `./results/bayesian/efficacy/out` folder above. Each ZIP file contains multiple folders (39 total) listed below.
+
+<details>
+
+<summary>Contents of ZIP Files</summary>
+
+- `c1.zip`
+  - `c1_500/`
+  - `c1_2000/`
+  - `c1_2000_old/`
+- `c2_4_class_meas_compl_a2_1_bbsiq.zip`
+  - `c2_4_class_meas_compl_a2_1_bbsiq_ben_m/`
+  - `c2_4_class_meas_compl_a2_1_bbsiq_neg_m/`
+- `c2_4_class_meas_compl_a2_1_dass21_as_oa.zip`
+  - `c2_4_class_meas_compl_a2_1_dass21_as_m/`
+  - `c2_4_class_meas_compl_a2_1_oa_m/`
+- `c2_4_class_meas_compl_a2_1_rr.zip`
+  - `c2_4_class_meas_compl_a2_1_rr_neg_threat_m/`
+  - `c2_4_class_meas_compl_a2_1_rr_pos_threat_m/`
+- `c2_4_class_meas_compl_a2_2_bbsiq.zip`
+  - `c2_4_class_meas_compl_a2_2_bbsiq_ben_m/`
+  - `c2_4_class_meas_compl_a2_2_bbsiq_neg_m/`
+- `c2_4_class_meas_compl_a2_2_dass21_as_oa.zip`
+  - `c2_4_class_meas_compl_a2_2_dass21_as_m/`
+  - `c2_4_class_meas_compl_a2_2_oa_m/`
+- `c2_4_class_meas_compl_a2_2_rr.zip`
+  - `c2_4_class_meas_compl_a2_2_rr_neg_threat_m/`
+  - `c2_4_class_meas_compl_a2_2_rr_pos_threat_m/`
+- `c2_4_class_meas_compl_a2_3_bbsiq.zip`
+  - `c2_4_class_meas_compl_a2_3_bbsiq_ben_m/`
+  - `c2_4_class_meas_compl_a2_3_bbsiq_neg_m/`
+- `c2_4_class_meas_compl_a2_3_dass21_as_oa.zip`
+  - `c2_4_class_meas_compl_a2_3_dass21_as_m/`
+  - `c2_4_class_meas_compl_a2_3_oa_m/`
+- `c2_4_class_meas_compl_a2_3_rr.zip`
+  - `c2_4_class_meas_compl_a2_3_rr_neg_threat_m/`
+  - `c2_4_class_meas_compl_a2_3_rr_pos_threat_m/`
+- `c2_4_s5_train_compl_a2_1_bbsiq.zip`
+  - `c2_4_s5_train_compl_a2_1_bbsiq_ben_m/`
+  - `c2_4_s5_train_compl_a2_1_bbsiq_neg_m/`
+- `c2_4_s5_train_compl_a2_1_dass21_as_oa.zip`
+  - `c2_4_s5_train_compl_a2_1_dass21_as_m/`
+  - `c2_4_s5_train_compl_a2_1_oa_m/`
+- `c2_4_s5_train_compl_a2_1_rr.zip`
+  - `c2_4_s5_train_compl_a2_1_rr_neg_threat_m/`
+  - `c2_4_s5_train_compl_a2_1_rr_pos_threat_m/`
+- `c2_4_s5_train_compl_a2_2_bbsiq.zip`
+  - `c2_4_s5_train_compl_a2_2_bbsiq_ben_m/`
+  - `c2_4_s5_train_compl_a2_2_bbsiq_neg_m/`
+- `c2_4_s5_train_compl_a2_2_dass21_as_oa.zip`
+  - `c2_4_s5_train_compl_a2_2_dass21_as_m/`
+  - `c2_4_s5_train_compl_a2_2_oa_m/`
+- `c2_4_s5_train_compl_a2_2_rr.zip`
+  - `c2_4_s5_train_compl_a2_2_rr_neg_threat_m/`
+  - `c2_4_s5_train_compl_a2_2_rr_pos_threat_m/`
+- `c2_4_s5_train_compl_a2_3_bbsiq.zip`
+  - `c2_4_s5_train_compl_a2_3_bbsiq_ben_m/`
+  - `c2_4_s5_train_compl_a2_3_bbsiq_neg_m/`
+- `c2_4_s5_train_compl_a2_3_dass21_as_oa.zip`
+  - `c2_4_s5_train_compl_a2_3_dass21_as_m/`
+  - `c2_4_s5_train_compl_a2_3_oa_m/`
+- `c2_4_s5_train_compl_a2_3_rr.zip`
+  - `c2_4_s5_train_compl_a2_3_rr_neg_threat_m/`
+  - `c2_4_s5_train_compl_a2_3_rr_pos_threat_m/`
+
+</details>
 
 ## Acknowledgments
 
