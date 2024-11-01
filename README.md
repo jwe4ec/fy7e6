@@ -106,11 +106,11 @@ Prior to running Scripts 12a-12c and 15a-15d on Rivanna, create the following fo
 
 ## Results
 
-Given a large number of files (OSF limits each public project or component to 50 GB), contents of the `results` folder are stored in two components of the [OSF project](https://osf.io/fy7e6/).
+Given a large number of files, contents of the `./results` folder are stored in two components of the [OSF project](https://osf.io/fy7e6/).
 
 ### `results` Component
 
-All results, with the exception of those in the `./results/bayesian/efficacy/out` folder, are stored in a ZIP file called `results` in this component. The ZIP file contains the correct directory structure for the `./results` folder. The `./results/bayesian/efficacy/out` folder in this structure is empty and needs to be populated with the contents of the ZIP files in the `results_bayesian_efficacy_out` component below.
+All results, with the exception of those in the `./results/bayesian/efficacy/out` folder, are stored in a ZIP file called `results` in this component. The ZIP file contains the correct directory structure for the `./results` folder. The `./results/bayesian/efficacy/out` folder in this structure is empty and needs to be populated with the contents of the ZIP files stored in the `results_bayesian_efficacy_out` component below.
 
 ### `results_bayesian_efficacy_out` Component
 
@@ -191,6 +191,7 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
   - From Script 4b: "readiness.RData"
   - From Script 6: wide files from Lines 658-667 now containing "confident_design"
   - From Script 7: results objects from Lines 197-198 and Word tables from Line 397
+- Upload `./results` folder contents to `results` component on OSF
 - Update code to reflect manual changes to tables and figures in text (see `TASKS.docx`)
 
 ### Hold
