@@ -188,7 +188,6 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 ## TODOs
 
 - Upload new data and results files to OSF
-  - From Script 4b: "readiness.RData"
   - From Script 6: wide files from Lines 658-667 now containing "confident_design"
   - From Script 7: results objects from Lines 197-198 and Word tables from Line 397
 - Upload `./results` folder contents to `results` component on OSF
