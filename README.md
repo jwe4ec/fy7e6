@@ -188,8 +188,8 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 ## TODOs
 
 - Update code to reflect manual changes to tables and figures in text (see `TASKS.docx`)
+- Finish documenting data filenames in `doc_data_filenames.R`
 
 ### Hold
 
-- Resolve TODOs in `compute_flow.R`, `further_clean_demog_data.R`, `run_models_parallel.R`
 - Document steps for running scripts on Rivanna in README (inc. runtimes and storage requirements)
