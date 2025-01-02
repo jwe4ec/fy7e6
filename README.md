@@ -191,13 +191,5 @@ We thank [Jackie Huband](https://www.rc.virginia.edu/about/people/huband/) of [R
 
 ### Hold
 
-- Add data and results to OSF
-
-- Resolve TOC issue for full tables
-- Resolve border issue in some summary tables
-- Resolve border issue in demographics and descriptives tables
-
-- Add plus-minus sign and italicize package names in general notes for plots
-
 - Resolve TODOs in `compute_flow.R`, `further_clean_demog_data.R`, `run_models_parallel.R`
 - Document steps for running scripts on Rivanna in README (inc. runtimes and storage requirements)
