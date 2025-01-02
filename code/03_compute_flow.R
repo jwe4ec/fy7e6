@@ -64,22 +64,6 @@ dat$completion <- read.csv("./data/temp/completion.csv")
 coach_completion <- read.csv("./data/temp/coach_completion.csv")
 
 # ---------------------------------------------------------------------------- #
-# Document data filenames ----
-# ---------------------------------------------------------------------------- #
-
-# TODO: Move this to end of code scripts. Output file names to TXT
-
-dir.create("./docs")
-
-sink(file = "./docs/data_filenames.txt")
-print(list.files("./data", recursive = TRUE, full.names = FALSE), width = 80)
-sink()
-
-
-
-
-
-# ---------------------------------------------------------------------------- #
 # Note on filtering data ----
 # ---------------------------------------------------------------------------- #
 
